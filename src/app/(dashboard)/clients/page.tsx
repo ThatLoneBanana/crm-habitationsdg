@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Mail, Phone } from 'lucide-react';
+import { ClientDialog } from '@/components/clients/client-dialog';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -37,7 +39,7 @@ export default function ClientsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
           <p className="text-gray-600 mt-2">Liste de tous les clients ({clients.length})</p>
         </div>
-        <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setDialogOpen(true)} className="gap-2 bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4" />
           Nouveau client
         </Button>
@@ -88,6 +90,14 @@ export default function ClientsPage() {
           </div>
         ))}
       </div>
+
+      <ClientDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onClientCreated={(newClient) => {
+          setClients([newClient, ...clients]);
+        }}
+      />
     </div>
   );
 }

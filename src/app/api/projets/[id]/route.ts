@@ -33,3 +33,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+
+    // Vérifier que le projet existe
+    const projet = await prisma.projet.findUnique({
+      where: { id },
+    });
+
+    if (!projet) {
+      return NextResponse.json(
+        { error: 'Projet non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Supprimer le projet (cascade supprimes taches, paiements, extras, etc.)
+    await prisma.projet.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: 'Projet supprimé avec succès' });
+  } catch (error: any) {
+    console.error('Erreur suppression projet:', error);
+    return NextResponse.json(
+      { error: error.message || 'Erreur serveur' },
+      { status: 500 }
+    );
+  }
+}

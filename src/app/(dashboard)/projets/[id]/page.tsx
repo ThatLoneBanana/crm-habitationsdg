@@ -11,7 +11,8 @@ import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
 import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import { Printer, Send, Eye, MapPin, FileText, Calendar } from 'lucide-react';
+import { Printer, Send, Eye, MapPin, FileText, Calendar, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ProjetPageProps {
   params: Promise<{ id: string }>;
@@ -19,9 +20,11 @@ interface ProjetPageProps {
 
 export default function ProjetDetailPage({ params: paramPromise }: ProjetPageProps) {
   const params = use(paramPromise);
+  const router = useRouter();
   const [projet, setProjet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchProjet = async () => {
@@ -64,6 +67,27 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
       </div>
     );
   }
+
+  const handleDelete = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet? Cela supprimera aussi toutes les étapes, paiements et extras.')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/projets/${projet.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) throw new Error('Erreur suppression');
+      router.push('/projets');
+    } catch (err: any) {
+      alert('Erreur: ' + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Calculs
   const avancement = projet.taches.length > 0
@@ -122,6 +146,15 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           <Send className="w-4 h-4" />
           Envoyer au client
         </Button>
+        <Button
+          variant="outline"
+          className="gap-2 text-red-600 hover:bg-red-50"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          <Trash2 className="w-4 h-4" />
+          {deleting ? 'Suppression...' : 'Supprimer'}
+        </Button>
       </div>
 
       {/* Entête */}
@@ -154,13 +187,13 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-xs text-gray-500">Vendeur</p>
             <p className="font-semibold text-gray-900">
-              {projet.vendeur.prenom} {projet.vendeur.nom}
+              {projet.vendeur ? `${projet.vendeur.prenom} ${projet.vendeur.nom}` : 'Non assigné'}
             </p>
           </div>
           <div className="bg-white p-4 rounded-lg border">
             <p className="text-xs text-gray-500">Chargé de projet</p>
             <p className="font-semibold text-gray-900">
-              {projet.chargeProjet.prenom} {projet.chargeProjet.nom}
+              {projet.chargeProjet ? `${projet.chargeProjet.prenom} ${projet.chargeProjet.nom}` : 'Non assigné'}
             </p>
           </div>
           <div className="bg-white p-4 rounded-lg border">
