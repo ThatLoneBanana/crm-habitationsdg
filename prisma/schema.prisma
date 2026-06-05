@@ -174,3 +174,31 @@ model ProjetFournisseur {
   projet      Projet      @relation(fields: [projetId], references: [id], onDelete: Cascade)
   fournisseur Fournisseur @relation(fields: [fournisseurId], references: [id])
 }
+
+model Template {
+  id        String   @id @default(uuid())
+  nom       String
+  type      TypeProjet
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  etapes TemplateEtape[]
+}
+
+model TemplateEtape {
+  id            String  @id @default(uuid())
+  templateId    String
+  nom           String
+  ordre         Int
+  joursDefaut   Int
+  assigneA      String?
+  visibleClient Boolean @default(true)
+  interne       Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, ordre])
+}
