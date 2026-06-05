@@ -4,6 +4,20 @@ import { ETAPES_NOMS, DUREES_DEFAUT, ASSIGNATIONS_DEFAUT, ETAPES_INTERNES } from
 
 export async function GET() {
   try {
+    console.log('Prisma instance:', typeof prisma);
+    console.log('Prisma models:', Object.keys(prisma).slice(0, 20));
+    console.log('Has template:', 'template' in prisma);
+
+    // Vérifier que prisma.template existe
+    if (!prisma || !prisma.template) {
+      console.error('Prisma template model not found:', {
+        prismaType: typeof prisma,
+        hasTemplate: 'template' in prisma,
+        keys: Object.keys(prisma || {}).slice(0, 30)
+      });
+      return NextResponse.json({ error: 'Template model not initialized' }, { status: 500 });
+    }
+
     let templates = await prisma.template.findMany({
       include: {
         etapes: { orderBy: { ordre: 'asc' } },
