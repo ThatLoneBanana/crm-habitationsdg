@@ -113,7 +113,7 @@ export default function FeuillesDeTempsPage() {
         const data = await res.json()
         const lignesMap: { [key: string]: LigneGrille } = {}
 
-        console.log('📊 Feuilles chargées:', data.feuilles?.length || 0)
+        console.log('📊 Feuilles chargées:', data.feuilles?.length || 0);
         (data.feuilles || []).forEach((f: FeuilleTemps) => {
           const key = `${f.employeId}-${f.projetId}`
           if (!lignesMap[key]) {

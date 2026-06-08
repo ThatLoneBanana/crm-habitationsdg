@@ -18,7 +18,7 @@ export default function ParametresPage() {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteForm, setInviteForm] = useState({ prenom: '', nom: '', email: '', role: 'VENDEUR' as Role })
   const [passwordForm, setPasswordForm] = useState({ nouveau: '', confirmer: '' })
-  const [parametres, setParametres] = useState({ nomCompagnie: 'Habitations DG', rbq: '5856-1036-01', email: 'info@habitations-dg.com', telephone: '', siteWeb: 'habitations-dg.com' })
+  const [parametres, setParametres] = useState({ nomCompagnie: 'Habitations DG', rbq: '5856-1036-01', email: 'info@habitations-dg.com', telephone: '', siteWeb: 'habitations-dg.com', maxHeuresParSemaine: 36.5 })
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,7 +51,8 @@ export default function ParametresPage() {
         }
 
         if (paramRes?.ok) {
-          setParametres(await paramRes.json())
+          const data = await paramRes.json()
+          setParametres(data.parametres || data)
         }
 
         setLoading(false)
@@ -183,6 +184,11 @@ export default function ParametresPage() {
               <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>RBQ</label><input value={parametres.rbq} onChange={(e) => setParametres({ ...parametres, rbq: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
               <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={parametres.email} onChange={(e) => setParametres({ ...parametres, email: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Téléphone</label><input type="tel" value={parametres.telephone} onChange={(e) => setParametres({ ...parametres, telephone: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Site web</label><input value={parametres.siteWeb} onChange={(e) => setParametres({ ...parametres, siteWeb: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+            </div>
+            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Max heures par semaine</label><input type="number" step="0.5" value={parametres.maxHeuresParSemaine} onChange={(e) => setParametres({ ...parametres, maxHeuresParSemaine: parseFloat(e.target.value) })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
             <button onClick={handleSaveParametres} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
             </div>
           </div>
