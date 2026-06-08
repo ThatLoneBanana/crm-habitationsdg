@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { TrendingUp } from 'lucide-react'
+import { formatMontant } from '@/lib/utils'
 
 interface ProjetCosting {
   id: string
@@ -54,16 +55,16 @@ export default function CostingPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
         <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
           <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Total contrats</div>
-          <div style={{ fontSize: '20px', fontWeight: '600' }}>${totalContrat.toFixed(0)}</div>
+          <div style={{ fontSize: '20px', fontWeight: '600' }}>{formatMontant(totalContrat, 0)}</div>
         </div>
         <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
           <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Total dépenses</div>
-          <div style={{ fontSize: '20px', fontWeight: '600' }}>${totalDepenses.toFixed(0)}</div>
+          <div style={{ fontSize: '20px', fontWeight: '600' }}>{formatMontant(totalDepenses, 0)}</div>
         </div>
         <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
           <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Profit brut</div>
           <div style={{ fontSize: '20px', fontWeight: '600', color: profitBrut >= 0 ? '#3B6D11' : '#DC2626' }}>
-            ${profitBrut.toFixed(0)}
+{formatMontant(profitBrut, 0)}
           </div>
         </div>
         <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
@@ -97,12 +98,12 @@ export default function CostingPage() {
               return (
                 <tr key={p.id} style={{ borderBottom: i < projets.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
                   <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>{p.numero} — {p.adresse}</td>
-                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${(p.montantTotal || 0).toFixed(0)}</td>
-                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${p.depensesMateriaux.toFixed(0)}</td>
-                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${p.depensesSousTraitant.toFixed(0)}</td>
-                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${p.depensesMainOeuvre.toFixed(0)}</td>
+                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.montantTotal || 0, 0)}</td>
+                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.depensesMateriaux, 0)}</td>
+                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.depensesSousTraitant, 0)}</td>
+                  <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.depensesMainOeuvre, 0)}</td>
                   <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500, color: profit >= 0 ? '#3B6D11' : '#DC2626' }}>
-                    ${profit.toFixed(0)}
+                    {formatMontant(profit, 0)}
                   </td>
                   <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500, color: marginColor }}>
                     {margin.toFixed(1)}%
