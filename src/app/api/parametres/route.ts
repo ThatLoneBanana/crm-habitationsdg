@@ -1,19 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
     let parametres = await prisma.parametres.findUnique({
       where: { id: 'singleton' }
     })
@@ -24,67 +13,32 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
-      nomCompagnie: parametres.nomCompagnie,
-      rbq: parametres.rbq,
-      email: parametres.email,
-      telephone: parametres.telephone,
-      siteWeb: parametres.siteWeb
-    })
+    return NextResponse.json({ parametres })
   } catch (error: any) {
     console.error('Erreur API parametres:', error)
-    return NextResponse.json(
-      { error: error.message || 'Erreur serveur' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const body = await request.json()
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
-
-    const { nomCompagnie, rbq, email, telephone, siteWeb } = await request.json()
-
-    const parametres = await prisma.parametres.upsert({
+    const parametres = await prisma.parametres.update({
       where: { id: 'singleton' },
-      update: {
-        nomCompagnie,
-        rbq,
-        email,
-        telephone,
-        siteWeb
-      },
-      create: {
-        id: 'singleton',
-        nomCompagnie,
-        rbq,
-        email,
-        telephone,
-        siteWeb
+      data: {
+        nomCompagnie: body.nomCompagnie,
+        rbq: body.rbq,
+        email: body.email,
+        telephone: body.telephone,
+        siteWeb: body.siteWeb,
+        maxHeuresParSemaine: body.maxHeuresParSemaine ? parseFloat(body.maxHeuresParSemaine) : undefined,
       }
     })
 
-    return NextResponse.json({
-      nomCompagnie: parametres.nomCompagnie,
-      rbq: parametres.rbq,
-      email: parametres.email,
-      telephone: parametres.telephone,
-      siteWeb: parametres.siteWeb
-    })
+    return NextResponse.json({ parametres })
   } catch (error: any) {
-    console.error('Erreur API parametres PUT:', error)
-    return NextResponse.json(
-      { error: error.message || 'Erreur serveur' },
-      { status: 500 }
-    )
+    console.error('Erreur mise à jour parametres:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

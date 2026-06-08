@@ -218,13 +218,14 @@ model TemplateEtape {
 }
 
 model Parametres {
-  id           String   @id @default("singleton")
-  nomCompagnie String   @default("Habitations DG")
-  rbq          String   @default("5856-1036-01")
-  email        String   @default("info@habitations-dg.com")
-  telephone    String   @default("")
-  siteWeb      String   @default("habitations-dg.com")
-  updatedAt    DateTime @updatedAt
+  id                      String   @id @default("singleton")
+  nomCompagnie            String   @default("Habitations DG")
+  rbq                     String   @default("5856-1036-01")
+  email                   String   @default("info@habitations-dg.com")
+  telephone               String   @default("")
+  siteWeb                 String   @default("habitations-dg.com")
+  maxHeuresParSemaine     Float    @default(36.5)
+  updatedAt               DateTime @updatedAt
 }
 
 model Employe {
