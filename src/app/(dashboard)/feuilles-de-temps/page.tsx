@@ -13,6 +13,16 @@ interface Employe {
   actif: boolean
 }
 
+interface User {
+  id: string
+  email: string
+  prenom: string
+  nom: string
+  role: string
+  tauxHoraire: number
+  actif: boolean
+}
+
 interface FeuilleTemps {
   id: string
   projetId: string
@@ -35,20 +45,32 @@ interface LigneGrille {
   notes: string
 }
 
-type Mode = 'employes' | 'saisie' | 'consultation'
+type Onglet = 'consultation' | 'saisie' | 'employes'
+
+const onglets = [
+  { id: 'consultation' as const, label: '📋 Consultation' },
+  { id: 'saisie' as const, label: '✏️ Saisie' },
+  { id: 'employes' as const, label: '👥 Employés' },
+]
+
+const formatRole = (role: string) => {
+  const roles: { [key: string]: string } = {
+    'ADMIN': 'Administrateur',
+    'COMPTABILITE': 'Comptabilité',
+    'VENDEUR': 'Vendeur',
+    'CHARGE_PROJET': 'Chargé de projet',
+  }
+  return roles[role] || role
+}
 
 export default function FeuillesDeTempsPage() {
-  const [mode, setMode] = useState<Mode>('employes')
+  const [ongletActif, setOngletActif] = useState<Onglet>('consultation')
   const [employes, setEmployes] = useState<Employe[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [projets, setProjets] = useState<any[]>([])
   const [feuilles, setFeuilles] = useState<FeuilleTemps[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-
-  // Gestion employés
-  const [editingEmploye, setEditingEmploye] = useState<Employe | null>(null)
-  const [formEmploye, setFormEmploye] = useState({ prenom: '', nom: '', email: '', telephone: '', tauxHoraire: '', metier: '', actif: true })
-  const [showFormEmploye, setShowFormEmploye] = useState(false)
 
   // Grille saisie
   const [semaineLundi, setSemaineLundi] = useState<Date>(() => {
@@ -63,25 +85,39 @@ export default function FeuillesDeTempsPage() {
   // Filtres consultation
   const [filtreProjet, setFiltreProjet] = useState('')
   const [filtreEmploye, setFiltreEmploye] = useState('')
+  const [filtreSemaine, setFiltreSemaine] = useState('')
+
+  // Onglet employés
+  const [tauxEdits, setTauxEdits] = useState<{ [key: string]: number }>({})
+  const [heuresmoisMap, setHeuresmoisMap] = useState<{ [key: string]: number }>({})
 
   useEffect(() => {
     loadAllData()
   }, [])
 
   useEffect(() => {
-    if (mode === 'saisie') loadGrilleSemaine()
-  }, [mode, semaineLundi])
+    if (ongletActif === 'saisie') loadGrilleSemaine()
+  }, [ongletActif, semaineLundi])
+
+  useEffect(() => {
+    if (ongletActif === 'employes') calculerHeuresMois()
+  }, [ongletActif, feuilles])
 
   const loadAllData = async () => {
     try {
-      const [empRes, projRes, fRes] = await Promise.all([
+      const [empRes, userRes, projRes, fRes] = await Promise.all([
         fetch('/api/employes'),
+        fetch('/api/users'),
         fetch('/api/projets'),
         fetch('/api/feuilles-de-temps')
       ])
       if (empRes.ok) {
         const data = await empRes.json()
         setEmployes(data.employes || [])
+      }
+      if (userRes.ok) {
+        const data = await userRes.json()
+        setUsers(Array.isArray(data) ? data : data.users || [])
       }
       if (projRes.ok) {
         const data = await projRes.json()
@@ -133,63 +169,23 @@ export default function FeuillesDeTempsPage() {
     }
   }
 
-  // === GESTION EMPLOYÉS ===
+  const calculerHeuresMois = () => {
+    const maintenant = new Date()
+    const debut = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1)
+    const map: { [key: string]: number } = {}
 
-  const handleSauvegarderEmploye = async () => {
-    if (!formEmploye.prenom || !formEmploye.nom) {
-      alert('Nom et prénom requis')
-      return
-    }
-
-    setSaving(true)
-    try {
-      const method = editingEmploye ? 'PUT' : 'POST'
-      const url = editingEmploye ? `/api/employes/${editingEmploye.id}` : '/api/employes'
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formEmploye)
-      })
-
-      if (res.ok) {
-        setFormEmploye({ prenom: '', nom: '', email: '', telephone: '', tauxHoraire: '', metier: '', actif: true })
-        setEditingEmploye(null)
-        setShowFormEmploye(false)
-        loadAllData()
+    feuilles.forEach(f => {
+      const date = new Date(f.date)
+      if (date >= debut) {
+        const key = f.employe.id
+        map[key] = (map[key] || 0) + f.heures
       }
-    } catch (err) {
-      console.error('Erreur:', err)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSupprimer = async (id: string) => {
-    if (!confirm('Supprimer cet employé?')) return
-    try {
-      await fetch(`/api/employes/${id}`, { method: 'DELETE' })
-      loadAllData()
-    } catch (err) {
-      console.error('Erreur:', err)
-    }
-  }
-
-  const handleEditer = (emp: Employe) => {
-    setEditingEmploye(emp)
-    setFormEmploye({
-      prenom: emp.prenom,
-      nom: emp.nom,
-      email: emp.email || '',
-      telephone: emp.telephone || '',
-      tauxHoraire: emp.tauxHoraire.toString(),
-      metier: emp.metier || '',
-      actif: emp.actif
     })
-    setShowFormEmploye(true)
+
+    setHeuresmoisMap(map)
   }
 
-  // === GRILLE SAISIE ===
+  // === SAISIE ===
 
   const semainePrecedente = () => {
     const prev = new Date(semaineLundi)
@@ -281,7 +277,6 @@ export default function FeuillesDeTempsPage() {
 
       if (res.ok) {
         setUnsavedChanges(false)
-        setMode('consultation')
         loadAllData()
       }
     } catch (err) {
@@ -291,15 +286,50 @@ export default function FeuillesDeTempsPage() {
     }
   }
 
-  if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
+  // === CONSULTATION ===
 
   const feuilles_filtrees = feuilles
     .filter(f => !filtreProjet || f.projetId === filtreProjet)
     .filter(f => !filtreEmploye || f.employeId === filtreEmploye)
+    .filter(f => {
+      if (!filtreSemaine) return true
+      const debut = new Date(filtreSemaine)
+      const fin = new Date(debut)
+      fin.setDate(fin.getDate() + 7)
+      const date = new Date(f.date)
+      return date >= debut && date < fin
+    })
 
   const totalHeures = feuilles.reduce((s, f) => s + f.heures, 0)
   const totalMontant = feuilles.reduce((s, f) => s + (f.heures * f.tauxHoraire), 0)
-  const approuvees = feuilles.filter(f => f.approuve).length
+
+  // === EMPLOYÉS ===
+
+  const handleSauvegarderTaux = async (userId: string) => {
+    const taux = tauxEdits[userId]
+    if (taux === undefined) return
+
+    try {
+      const res = await fetch(`/api/users/${userId}/taux`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tauxHoraire: taux })
+      })
+
+      if (res.ok) {
+        setUsers(users.map(u => u.id === userId ? { ...u, tauxHoraire: taux } : u))
+        setTauxEdits(prev => {
+          const newEdits = { ...prev }
+          delete newEdits[userId]
+          return newEdits
+        })
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    }
+  }
+
+  if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
 
   return (
     <div style={{ padding: '24px' }}>
@@ -310,68 +340,91 @@ export default function FeuillesDeTempsPage() {
       </div>
 
       {/* ONGLETS NAVIGATION */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', borderBottom: '1px solid #E5E7EB', paddingBottom: '8px' }}>
-        {(['employes', 'saisie', 'consultation'] as const).map(tab => (
+      <div style={{ display: 'flex', gap: '0', marginBottom: '24px', borderBottom: '2px solid #E5E7EB' }}>
+        {onglets.map(tab => (
           <button
-            key={tab}
-            onClick={() => setMode(tab)}
+            key={tab.id}
+            onClick={() => setOngletActif(tab.id)}
             style={{
-              padding: '8px 16px',
+              padding: '12px 20px',
               border: 'none',
-              background: mode === tab ? '#ea1c24' : 'transparent',
-              color: mode === tab ? 'white' : '#6B7280',
-              borderRadius: '6px 6px 0 0',
+              background: ongletActif === tab.id ? '#ea1c24' : 'transparent',
+              color: ongletActif === tab.id ? 'white' : '#6B7280',
+              borderBottom: ongletActif === tab.id ? '3px solid #ea1c24' : 'none',
               cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: mode === tab ? 500 : 400,
+              fontSize: '14px',
+              fontWeight: ongletActif === tab.id ? 600 : 400,
+              transition: 'all 0.2s',
             }}
           >
-            {tab === 'employes' && '👥 Employés'}
-            {tab === 'saisie' && '✏️ Saisie'}
-            {tab === 'consultation' && '📋 Consultation'}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* === MODE EMPLOYÉS === */}
-      {mode === 'employes' && (
+      {/* === ONGLET CONSULTATION === */}
+      {ongletActif === 'consultation' && (
         <div>
-          <div style={{ marginBottom: '24px' }}>
-            <button onClick={() => { setShowFormEmploye(true); setEditingEmploye(null); setFormEmploye({ prenom: '', nom: '', email: '', telephone: '', tauxHoraire: '', metier: '', actif: true }) }} style={{ padding: '10px 16px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}>
-              + Ajouter employé
-            </button>
+          {/* Métriques */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
+              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Total heures</div>
+              <div style={{ fontSize: '24px', fontWeight: '600' }}>{totalHeures.toFixed(1)}h</div>
+            </div>
+            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
+              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Total montant</div>
+              <div style={{ fontSize: '24px', fontWeight: '600' }}>${totalMontant.toFixed(2)}</div>
+            </div>
           </div>
 
-          {/* Tableau employés */}
+          {/* Filtres */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <select value={filtreProjet} onChange={e => setFiltreProjet(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}>
+              <option value="">Tous les projets</option>
+              {projets.map((p: any) => <option key={p.id} value={p.id}>{p.numero} — {p.adresse}</option>)}
+            </select>
+            <select value={filtreEmploye} onChange={e => setFiltreEmploye(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}>
+              <option value="">Tous les employés</option>
+              {employes.map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
+            </select>
+            <input
+              type="week"
+              value={filtreSemaine}
+              onChange={e => setFiltreSemaine(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+            />
+          </div>
+
+          {/* Tableau */}
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: '#F9FAFB' }}>
                 <tr>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Nom</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Email</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Métier</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Date</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Employé</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Projet</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Heures</th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Taux/h</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Statut</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Notes</th>
                   <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {employes.map((emp, i) => (
-                  <tr key={emp.id} style={{ borderBottom: i < employes.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
-                    <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>{emp.prenom} {emp.nom}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', color: '#6B7280' }}>{emp.email || '—'}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', color: '#6B7280' }}>{emp.metier || '—'}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${emp.tauxHoraire.toFixed(2)}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '3px', background: emp.actif ? '#EAF3DE' : '#F3F4F6', color: emp.actif ? '#3B6D11' : '#6B7280' }}>
-                        {emp.actif ? 'Actif' : 'Inactif'}
-                      </span>
-                    </td>
+                {feuilles_filtrees.map((f, i) => (
+                  <tr key={f.id} style={{ borderBottom: i < feuilles_filtrees.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(f.date).toLocaleDateString()}</td>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.employe.prenom} {f.employe.nom}</td>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.numero}</td>
+                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{f.heures.toFixed(1)}</td>
+                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${f.tauxHoraire.toFixed(2)}</td>
+                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500 }}>${(f.heures * f.tauxHoraire).toFixed(2)}</td>
+                    <td style={{ padding: '12px', fontSize: '12px', color: '#6B7280' }}>{f.notes || '—'}</td>
                     <td style={{ padding: '12px', textAlign: 'center', display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      <button onClick={() => handleEditer(emp)} style={{ padding: '4px 8px', border: '1px solid #E5E7EB', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
+                      <button style={{ padding: '4px 8px', border: '1px solid #E5E7EB', background: 'white', borderRadius: '4px', cursor: 'pointer' }}>
                         <Edit2 size={14} />
                       </button>
-                      <button onClick={() => handleSupprimer(emp.id)} style={{ padding: '4px 8px', border: '1px solid #E5E7EB', background: 'white', borderRadius: '4px', cursor: 'pointer', color: '#DC2626' }}>
+                      <button style={{ padding: '4px 8px', border: '1px solid #E5E7EB', background: 'white', borderRadius: '4px', cursor: 'pointer', color: '#DC2626' }}>
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -379,74 +432,17 @@ export default function FeuillesDeTempsPage() {
                 ))}
               </tbody>
             </table>
-            {employes.length === 0 && (
+            {feuilles_filtrees.length === 0 && (
               <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280', fontSize: '13px' }}>
-                Aucun employé
+                Aucune feuille de temps
               </div>
             )}
           </div>
-
-          {/* Dialog ajouter/modifier employé */}
-          {showFormEmploye && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-              <div style={{ background: 'white', borderRadius: '8px', padding: '24px', maxWidth: '500px', width: '90%' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>{editingEmploye ? 'Modifier' : 'Ajouter'} employé</h2>
-
-                <div style={{ display: 'grid', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <div>
-                      <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label>
-                      <input type="text" value={formEmploye.prenom} onChange={e => setFormEmploye({...formEmploye, prenom: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label>
-                      <input type="text" value={formEmploye.nom} onChange={e => setFormEmploye({...formEmploye, nom: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Email</label>
-                    <input type="email" value={formEmploye.email} onChange={e => setFormEmploye({...formEmploye, email: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Téléphone</label>
-                    <input type="tel" value={formEmploye.telephone} onChange={e => setFormEmploye({...formEmploye, telephone: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <div>
-                      <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Métier</label>
-                      <input type="text" value={formEmploye.metier} onChange={e => setFormEmploye({...formEmploye, metier: e.target.value})} placeholder="Menuisier, électricien..." style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Taux/h ($)</label>
-                      <input type="number" step="0.01" value={formEmploye.tauxHoraire} onChange={e => setFormEmploye({...formEmploye, tauxHoraire: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="checkbox" checked={formEmploye.actif} onChange={e => setFormEmploye({...formEmploye, actif: e.target.checked})} id="actif" />
-                    <label htmlFor="actif" style={{ fontSize: '13px' }}>Actif</label>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setShowFormEmploye(false)} style={{ flex: 1, padding: '10px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
-                    Annuler
-                  </button>
-                  <button onClick={handleSauvegarderEmploye} disabled={saving} style={{ flex: 1, padding: '10px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500, opacity: saving ? 0.6 : 1 }}>
-                    {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* === MODE SAISIE === */}
-      {mode === 'saisie' && (
+      {/* === ONGLET SAISIE === */}
+      {ongletActif === 'saisie' && (
         <div>
           {/* Navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
@@ -520,7 +516,7 @@ export default function FeuillesDeTempsPage() {
                 Modifications non sauvegardées
               </span>
             )}
-            <button onClick={() => { setMode('employes'); setUnsavedChanges(false) }} style={{ padding: '10px 16px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+            <button onClick={() => setUnsavedChanges(false)} style={{ padding: '10px 16px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
               Annuler
             </button>
             <button onClick={handleSauvegarderSemaine} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500, opacity: saving ? 0.6 : 1 }}>
@@ -532,74 +528,43 @@ export default function FeuillesDeTempsPage() {
         </div>
       )}
 
-      {/* === MODE CONSULTATION === */}
-      {mode === 'consultation' && (
+      {/* === ONGLET EMPLOYÉS === */}
+      {ongletActif === 'employes' && (
         <div>
-          {/* Résumé */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
-              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Total heures</div>
-              <div style={{ fontSize: '24px', fontWeight: '600' }}>{totalHeures.toFixed(1)}h</div>
-            </div>
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
-              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Total montant</div>
-              <div style={{ fontSize: '24px', fontWeight: '600' }}>${totalMontant.toFixed(2)}</div>
-            </div>
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
-              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>Approuvées</div>
-              <div style={{ fontSize: '24px', fontWeight: '600' }}>{approuvees}/{feuilles.length}</div>
-            </div>
-          </div>
-
-          {/* Filtres */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
-            <select value={filtreProjet} onChange={e => setFiltreProjet(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}>
-              <option value="">Tous les projets</option>
-              {projets.map((p: any) => <option key={p.id} value={p.id}>{p.numero} — {p.adresse}</option>)}
-            </select>
-            <select value={filtreEmploye} onChange={e => setFiltreEmploye(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}>
-              <option value="">Tous les employés</option>
-              {employes.map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
-            </select>
-          </div>
-
-          {/* Tableau */}
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ background: '#F9FAFB' }}>
-                <tr>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Date</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Employé</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Projet</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Heures</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Taux/h</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Notes</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Approuvé</th>
-                </tr>
-              </thead>
-              <tbody>
-                {feuilles_filtrees.map((f, i) => (
-                  <tr key={f.id} style={{ borderBottom: i < feuilles_filtrees.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(f.date).toLocaleDateString()}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.employe.prenom} {f.employe.nom}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.numero}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{f.heures.toFixed(1)}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>${f.tauxHoraire.toFixed(2)}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500 }}>${(f.heures * f.tauxHoraire).toFixed(2)}</td>
-                    <td style={{ padding: '12px', fontSize: '12px', color: '#6B7280' }}>{f.notes || '—'}</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <input type="checkbox" checked={f.approuve} style={{ cursor: 'pointer' }} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {feuilles_filtrees.length === 0 && (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280', fontSize: '13px' }}>
-                Aucune feuille de temps
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 150px 120px', alignItems: 'center', padding: '12px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '12px', fontWeight: 500, color: '#6B7280' }}>
+              <div>Employé</div>
+              <div>Ce mois</div>
+              <div>Taux/h</div>
+              <div></div>
+            </div>
+
+            {users.filter(u => u.actif).map((user, i) => (
+              <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 150px 120px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
+                <div>
+                  <div style={{ fontWeight: 500, fontSize: '13px' }}>{user.prenom} {user.nom}</div>
+                  <div style={{ fontSize: '11px', color: '#6B7280' }}>{formatRole(user.role)}</div>
+                </div>
+                <div style={{ fontSize: '13px', color: '#6B7280' }}>{heuresmoisMap[user.id] || 0}h</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tauxEdits[user.id] !== undefined ? tauxEdits[user.id] : user.tauxHoraire}
+                    onChange={e => setTauxEdits(prev => ({ ...prev, [user.id]: parseFloat(e.target.value) }))}
+                    style={{ width: '70px', padding: '6px 8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#6B7280' }}>$/h</span>
+                </div>
+                <button
+                  onClick={() => handleSauvegarderTaux(user.id)}
+                  disabled={tauxEdits[user.id] === undefined}
+                  style={{ padding: '6px 12px', background: tauxEdits[user.id] !== undefined ? '#ea1c24' : '#D1D5DB', color: 'white', border: 'none', borderRadius: '4px', fontSize: '12px', cursor: tauxEdits[user.id] !== undefined ? 'pointer' : 'not-allowed', fontWeight: 500 }}
+                >
+                  Sauvegarder
+                </button>
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}

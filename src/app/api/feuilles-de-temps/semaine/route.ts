@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         heures: parseFloat(e.heures),
         tauxHoraire: parseFloat(e.tauxHoraire),
         notes: e.notes || '',
-        approuve: false,
+        approuve: true,
       }))
     })
 
