@@ -303,7 +303,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
             Paiements ({projet.paiements.length})
           </TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="costing">💰 Costing</TabsTrigger>
+          <TabsTrigger value="costing">Costing</TabsTrigger>
         </TabsList>
 
         <div className="p-6">
@@ -378,8 +378,6 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
                   <div className="bg-white p-4 rounded-lg border">
                     <p className="text-xs text-gray-500">Dépenses</p>
                     <p className="text-2xl font-bold text-red-600">-${costing.totalDepenses.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                    <p className="text-xs text-gray-500 mt-2">Matériaux: ${costing.depensesMateriaux.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                    <p className="text-xs text-gray-500">Main d'œuvre: ${costing.depensesMainOeuvre.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
                   </div>
                   <div className={`p-4 rounded-lg border ${costing.marge >= 20 ? 'bg-green-50' : costing.marge >= 10 ? 'bg-orange-50' : 'bg-red-50'}`}>
                     <p className="text-xs text-gray-500">Profit Net</p>
