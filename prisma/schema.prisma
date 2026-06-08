@@ -13,6 +13,7 @@ enum Role {
   COMPTABILITE
   VENDEUR
   CHARGE_PROJET
+  DEVELOPPEUR
 }
 
 enum TypeContrat {

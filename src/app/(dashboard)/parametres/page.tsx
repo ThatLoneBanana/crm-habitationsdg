@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-type Role = 'ADMIN' | 'COMPTABILITE' | 'VENDEUR' | 'CHARGE_PROJET'
+type Role = 'ADMIN' | 'COMPTABILITE' | 'VENDEUR' | 'CHARGE_PROJET' | 'DEVELOPPEUR'
 interface User { id: string; email: string; prenom: string; nom: string; role: Role; actif: boolean }
 
 export default function ParametresPage() {
@@ -169,8 +169,8 @@ export default function ParametresPage() {
 
   if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
 
-  const roleLabel = (r: Role) => ({ ADMIN: 'Admin', COMPTABILITE: 'Comptabilité', VENDEUR: 'Vendeur', CHARGE_PROJET: 'Chargé de projet' }[r])
-  const roleColor = (r: Role) => ({ ADMIN: '#185FA5', COMPTABILITE: '#3C3489', VENDEUR: '#854F0B', CHARGE_PROJET: '#1D9E75' }[r])
+  const roleLabel = (r: Role) => ({ ADMIN: 'Admin', COMPTABILITE: 'Comptabilité', VENDEUR: 'Vendeur', CHARGE_PROJET: 'Chargé de projet', DEVELOPPEUR: 'Développeur' }[r])
+  const roleColor = (r: Role) => ({ ADMIN: '#185FA5', COMPTABILITE: '#3C3489', VENDEUR: '#854F0B', CHARGE_PROJET: '#1D9E75', DEVELOPPEUR: '#7C3AED' }[r])
 
   return (
     <div style={{ padding: '24px' }}>
@@ -251,7 +251,7 @@ export default function ParametresPage() {
                     <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={inviteForm.nom} onChange={(e) => setInviteForm({ ...inviteForm, nom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
                   </div>
                   <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Rôle</label><select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as Role })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}><option value="ADMIN">Admin</option><option value="COMPTABILITE">Comptabilité</option><option value="VENDEUR">Vendeur</option><option value="CHARGE_PROJET">Chargé de projet</option></select></div>
+                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Rôle</label><select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as Role })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}><option value="ADMIN">Admin</option><option value="COMPTABILITE">Comptabilité</option><option value="VENDEUR">Vendeur</option><option value="CHARGE_PROJET">Chargé de projet</option><option value="DEVELOPPEUR">Développeur</option></select></div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Invitation...' : 'Inviter'}</button>
                     <button type="button" onClick={() => setInviteOpen(false)} style={{ flex: 1, padding: '10px', background: '#E5E7EB', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Annuler</button>

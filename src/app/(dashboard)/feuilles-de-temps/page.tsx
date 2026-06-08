@@ -28,6 +28,7 @@ const formatRole = (role: string) => {
     'COMPTABILITE': 'Comptabilité',
     'VENDEUR': 'Vendeur',
     'CHARGE_PROJET': 'Chargé de projet',
+    'DEVELOPPEUR': 'Développeur',
   }
   return roles[role] || role
 }

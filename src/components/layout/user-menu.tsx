@@ -20,6 +20,7 @@ const roleLabels: Record<string, string> = {
   COMPTABILITE: 'Comptabilité',
   VENDEUR: 'Vendeur',
   CHARGE_PROJET: 'Chargé de projet',
+  DEVELOPPEUR: 'Développeur',
 };
 
 export function UserMenu({ user }: UserMenuProps) {
