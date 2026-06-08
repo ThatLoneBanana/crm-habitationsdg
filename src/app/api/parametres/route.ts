@@ -24,21 +24,30 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
 
-    const parametres = await prisma.parametres.update({
+    const parametres = await prisma.parametres.upsert({
       where: { id: 'singleton' },
-      data: {
-        nomCompagnie: body.nomCompagnie,
-        rbq: body.rbq,
-        email: body.email,
-        telephone: body.telephone,
-        siteWeb: body.siteWeb,
+      create: {
+        id: 'singleton',
+        nomCompagnie: body.nomCompagnie || 'Habitations DG',
+        rbq: body.rbq || '5856-1036-01',
+        email: body.email || '',
+        telephone: body.telephone || '',
+        siteWeb: body.siteWeb || '',
+        maxHeuresParSemaine: body.maxHeuresParSemaine ? parseFloat(body.maxHeuresParSemaine) : 36.5,
+      },
+      update: {
+        nomCompagnie: body.nomCompagnie || undefined,
+        rbq: body.rbq || undefined,
+        email: body.email || undefined,
+        telephone: body.telephone || undefined,
+        siteWeb: body.siteWeb || undefined,
         maxHeuresParSemaine: body.maxHeuresParSemaine ? parseFloat(body.maxHeuresParSemaine) : undefined,
       }
     })
 
-    return NextResponse.json({ parametres })
+    return NextResponse.json({ success: true, parametres })
   } catch (error: any) {
-    console.error('Erreur mise à jour parametres:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Erreur parametres:', error)
+    return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }

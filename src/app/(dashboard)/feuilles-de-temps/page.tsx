@@ -189,6 +189,28 @@ export default function FeuillesDeTempsPage() {
     return acc
   }, {} as { [key: string]: number })
 
+  const ajouterLigne = () => {
+    const newId = Math.random().toString(36).substr(2, 9)
+    setLignes(prev => [...prev, {
+      id: newId,
+      employeId: '',
+      projetId: '',
+      heures: { lun: null, mar: null, mer: null, jeu: null, ven: null },
+      tauxHoraire: 0,
+    }])
+    setUnsavedChanges(true)
+  }
+
+  const onEmployeChange = (ligneId: string, employeId: string) => {
+    const emp = employes.find(e => e.id === employeId)
+    setLignes(prev => prev.map(l =>
+      l.id === ligneId
+        ? { ...l, employeId, tauxHoraire: emp?.tauxHoraire || 0 }
+        : l
+    ))
+    setUnsavedChanges(true)
+  }
+
   const handleChangerHeures = (ligneId: string, jour: string, valeur: string) => {
     setLignes(lignes.map(l =>
       l.id === ligneId
@@ -397,10 +419,15 @@ export default function FeuillesDeTempsPage() {
             })}
           </div>
 
+          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '600' }}>Saisie hebdomadaire</h3>
+            <button onClick={ajouterLigne} style={{ padding: '8px 14px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Ajouter une ligne</button>
+          </div>
+
           {lignes.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>Aucune saisie pour cette semaine</div>
-              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Ajoute les heures des employés ci-dessus ou crée des feuilles existantes dans les données</div>
+              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Clique sur "+ Ajouter une ligne" pour commencer</div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
@@ -413,6 +440,7 @@ export default function FeuillesDeTempsPage() {
                       <th key={j} style={{ padding: '8px', textAlign: 'center', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{j}</th>
                     ))}
                     <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
+                    <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -422,14 +450,27 @@ export default function FeuillesDeTempsPage() {
                     const proj = projets.find(p => p.id === ligne.projetId)
                     return (
                       <tr key={ligne.id} style={{ borderBottom: i < lignes.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#FAFAFA' }}>
-                        <td style={{ padding: '8px', fontSize: '12px' }}>{emp?.prenom} {emp?.nom}</td>
-                        <td style={{ padding: '8px', fontSize: '12px' }}>{proj?.numero}</td>
+                        <td style={{ padding: '4px' }}>
+                          <select value={ligne.employeId} onChange={e => onEmployeChange(ligne.id, e.target.value)} style={{ width: '100%', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px' }}>
+                            <option value=''>Choisir...</option>
+                            {employes.map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
+                          </select>
+                        </td>
+                        <td style={{ padding: '4px' }}>
+                          <select value={ligne.projetId} onChange={e => setLignes(lignes.map(l => l.id === ligne.id ? { ...l, projetId: e.target.value } : l))} style={{ width: '100%', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px' }}>
+                            <option value=''>Choisir...</option>
+                            {projets.map(p => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                          </select>
+                        </td>
                         {['lun', 'mar', 'mer', 'jeu', 'ven'].map(jour => (
                           <td key={jour} style={{ padding: '4px' }}>
                             <input type="number" step="0.5" value={ligne.heures[jour as keyof typeof ligne.heures] || ''} onChange={e => handleChangerHeures(ligne.id, jour, e.target.value)} style={{ width: '100%', padding: '4px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
                           </td>
                         ))}
                         <td style={{ padding: '8px', textAlign: 'right', fontWeight: 500, fontSize: '12px' }}>${total.toFixed(0)}</td>
+                        <td style={{ padding: '4px', textAlign: 'center' }}>
+                          <button onClick={() => setLignes(lignes.filter(l => l.id !== ligne.id))} style={{ padding: '2px 6px', border: '1px solid #E5E7EB', background: 'white', borderRadius: '3px', cursor: 'pointer', color: '#DC2626', fontSize: '11px' }}>✕</button>
+                        </td>
                       </tr>
                     )
                   })}
@@ -441,26 +482,49 @@ export default function FeuillesDeTempsPage() {
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '2px solid #E5E7EB' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>💰 Dépenses fournisseurs</h3>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '16px' }}>
-              <input type="text" placeholder="Fournisseur" value={newDepense.fournisseur} onChange={e => setNewDepense({...newDepense, fournisseur: e.target.value})} style={{ padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }} />
-              <select value={newDepense.projetId} onChange={e => setNewDepense({...newDepense, projetId: e.target.value})} style={{ padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }}>
-                <option value="">Projet</option>
-                {projets.map(p => <option key={p.id} value={p.id}>{p.numero}</option>)}
-              </select>
-              <input type="date" value={newDepense.date} onChange={e => setNewDepense({...newDepense, date: e.target.value})} style={{ padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }} />
-              <input type="number" step="0.01" placeholder="Montant" value={newDepense.montant} onChange={e => setNewDepense({...newDepense, montant: e.target.value})} style={{ padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }} />
-              <input type="text" placeholder="Facture" value={newDepense.facture} onChange={e => setNewDepense({...newDepense, facture: e.target.value})} style={{ padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }} />
-              <select value={newDepense.categorie} onChange={e => setNewDepense({...newDepense, categorie: e.target.value})} style={{ padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }}>
-                <option value="MATERIAUX">Matériaux</option>
-                <option value="SOUS_TRAITANT">S-Traitant</option>
-                <option value="EQUIPEMENT">Équipement</option>
-                <option value="AUTRE">Autre</option>
-              </select>
-              <button onClick={handleAjouterDepense} style={{ padding: '8px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}>+ Ajouter</button>
+            <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px' }}>+ Nouvelle dépense fournisseur</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 130px 120px 140px 140px', gap: '8px', alignItems: 'end' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', fontWeight: 500 }}>Fournisseur</label>
+                  <input type="text" placeholder="Ajouter..." value={newDepense.fournisseur} onChange={e => setNewDepense({...newDepense, fournisseur: e.target.value})} style={{ width: '100%', padding: '7px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', fontWeight: 500 }}>Projet</label>
+                  <select value={newDepense.projetId} onChange={e => setNewDepense({...newDepense, projetId: e.target.value})} style={{ width: '100%', padding: '7px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }}>
+                    <option value="">Choisir...</option>
+                    {projets.map(p => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', fontWeight: 500 }}>Date</label>
+                  <input type="date" value={newDepense.date} onChange={e => setNewDepense({...newDepense, date: e.target.value})} style={{ width: '100%', padding: '7px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', fontWeight: 500 }}>Montant ($)</label>
+                  <input type="number" step="0.01" placeholder="0.00" value={newDepense.montant} onChange={e => setNewDepense({...newDepense, montant: e.target.value})} style={{ width: '100%', padding: '7px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', fontWeight: 500 }}>N° Facture</label>
+                  <input type="text" placeholder="FAC-001" value={newDepense.facture} onChange={e => setNewDepense({...newDepense, facture: e.target.value})} style={{ width: '100%', padding: '7px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '3px', fontWeight: 500 }}>Catégorie</label>
+                  <select value={newDepense.categorie} onChange={e => setNewDepense({...newDepense, categorie: e.target.value})} style={{ width: '100%', padding: '7px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }}>
+                    <option value="MATERIAUX">Matériaux</option>
+                    <option value="SOUS_TRAITANT">Sous-traitant</option>
+                    <option value="EQUIPEMENT">Équipement</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button onClick={handleAjouterDepense} style={{ padding: '8px 20px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>+ Enregistrer la dépense</button>
+              </div>
             </div>
 
-            <div style={{ marginTop: '16px' }}>
-              <h4 style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px', color: '#6B7280' }}>30 derniers jours</h4>
+            <div>
+              <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px', color: '#374151' }}>Dépenses des 30 derniers jours</h4>
               <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead style={{ background: '#F9FAFB' }}>
