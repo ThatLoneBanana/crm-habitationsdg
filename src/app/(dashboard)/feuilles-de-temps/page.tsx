@@ -440,7 +440,7 @@ export default function FeuillesDeTempsPage() {
                   <tr key={f.id} style={{ borderBottom: i < 19 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
                     <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(f.date).toLocaleDateString()}</td>
                     <td style={{ padding: '12px', fontSize: '13px' }}>{f.employe.prenom} {f.employe.nom}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.numero}</td>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.adresse} ({f.projet.numero})</td>
                     <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{f.heures.toFixed(1)}</td>
                     <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500 }}>${(f.heures * f.tauxHoraire).toFixed(2)}</td>
                   </tr>
