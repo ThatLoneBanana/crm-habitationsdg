@@ -113,6 +113,7 @@ export default function FeuillesDeTempsPage() {
         const data = await res.json()
         const lignesMap: { [key: string]: LigneGrille } = {}
 
+        console.log('📊 Feuilles chargées:', data.feuilles?.length || 0)
         (data.feuilles || []).forEach((f: FeuilleTemps) => {
           const key = `${f.employeId}-${f.projetId}`
           if (!lignesMap[key]) {
@@ -129,7 +130,9 @@ export default function FeuillesDeTempsPage() {
           if (jourKey) lignesMap[key].heures[jourKey] = f.heures
         })
 
-        setLignes(Object.values(lignesMap).length > 0 ? Object.values(lignesMap) : [])
+        const finalLignes = Object.values(lignesMap)
+        console.log('✅ Lignes grille:', finalLignes.length)
+        setLignes(finalLignes)
       }
     } catch (err) {
       console.error('Erreur:', err)
@@ -394,39 +397,46 @@ export default function FeuillesDeTempsPage() {
             })}
           </div>
 
-          <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
-              <thead style={{ background: '#F9FAFB' }}>
-                <tr>
-                  <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Employé</th>
-                  <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Projet</th>
-                  {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'].map(j => (
-                    <th key={j} style={{ padding: '8px', textAlign: 'center', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{j}</th>
-                  ))}
-                  <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lignes.map((ligne, i) => {
-                  const total = totalLigne(ligne)
-                  const emp = employes.find(e => e.id === ligne.employeId)
-                  const proj = projets.find(p => p.id === ligne.projetId)
-                  return (
-                    <tr key={ligne.id} style={{ borderBottom: i < lignes.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#FAFAFA' }}>
-                      <td style={{ padding: '8px', fontSize: '12px' }}>{emp?.prenom} {emp?.nom}</td>
-                      <td style={{ padding: '8px', fontSize: '12px' }}>{proj?.numero}</td>
-                      {['lun', 'mar', 'mer', 'jeu', 'ven'].map(jour => (
-                        <td key={jour} style={{ padding: '4px' }}>
-                          <input type="number" step="0.5" value={ligne.heures[jour as keyof typeof ligne.heures] || ''} onChange={e => handleChangerHeures(ligne.id, jour, e.target.value)} style={{ width: '100%', padding: '4px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
-                        </td>
-                      ))}
-                      <td style={{ padding: '8px', textAlign: 'right', fontWeight: 500, fontSize: '12px' }}>${total.toFixed(0)}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          {lignes.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>Aucune saisie pour cette semaine</div>
+              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Ajoute les heures des employés ci-dessus ou crée des feuilles existantes dans les données</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                <thead style={{ background: '#F9FAFB' }}>
+                  <tr>
+                    <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Employé</th>
+                    <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Projet</th>
+                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'].map(j => (
+                      <th key={j} style={{ padding: '8px', textAlign: 'center', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{j}</th>
+                    ))}
+                    <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lignes.map((ligne, i) => {
+                    const total = totalLigne(ligne)
+                    const emp = employes.find(e => e.id === ligne.employeId)
+                    const proj = projets.find(p => p.id === ligne.projetId)
+                    return (
+                      <tr key={ligne.id} style={{ borderBottom: i < lignes.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#FAFAFA' }}>
+                        <td style={{ padding: '8px', fontSize: '12px' }}>{emp?.prenom} {emp?.nom}</td>
+                        <td style={{ padding: '8px', fontSize: '12px' }}>{proj?.numero}</td>
+                        {['lun', 'mar', 'mer', 'jeu', 'ven'].map(jour => (
+                          <td key={jour} style={{ padding: '4px' }}>
+                            <input type="number" step="0.5" value={ligne.heures[jour as keyof typeof ligne.heures] || ''} onChange={e => handleChangerHeures(ligne.id, jour, e.target.value)} style={{ width: '100%', padding: '4px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
+                          </td>
+                        ))}
+                        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 500, fontSize: '12px' }}>${total.toFixed(0)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '2px solid #E5E7EB' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>💰 Dépenses fournisseurs</h3>
