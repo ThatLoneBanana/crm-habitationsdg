@@ -17,15 +17,58 @@ interface FeuilleTemps {
 
 export default function FeuillesDeTempsPage() {
   const [feuilles, setFeuilles] = useState<FeuilleTemps[]>([])
+  const [projets, setProjets] = useState<any[]>([])
+  const [employes, setEmployes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [nouvelleDlg, setNouvelleDlg] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [filtreProjet, setFiltreProjet] = useState('')
   const [filtreEmploye, setFiltreEmploye] = useState('')
   const [filtreSemaine, setFiltreSemaine] = useState('')
+  const [formData, setFormData] = useState({ projetId: '', userId: '', date: '', heures: '', tauxHoraire: '', notes: '' })
 
   useEffect(() => {
     loadFeuilles()
+    loadProjetEtEmployes()
   }, [filtreProjet, filtreEmploye, filtreSemaine])
+
+  const loadProjetEtEmployes = async () => {
+    try {
+      const [projRes, empRes] = await Promise.all([
+        fetch('/api/projets'),
+        fetch('/api/users')
+      ])
+      if (projRes.ok) setProjets(await projRes.json())
+      if (empRes.ok) setEmployes(await empRes.json())
+    } catch (err) {
+      console.error('Erreur:', err)
+    }
+  }
+
+  const handleAjouter = async () => {
+    if (!formData.projetId || !formData.userId || !formData.date || !formData.heures || !formData.tauxHoraire) {
+      alert('Remplissez tous les champs requis')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await fetch('/api/feuilles-de-temps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      if (res.ok) {
+        setNouvelleDlg(false)
+        setFormData({ projetId: '', userId: '', date: '', heures: '', tauxHoraire: '', notes: '' })
+        loadFeuilles()
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const loadFeuilles = async () => {
     try {
@@ -143,6 +186,99 @@ export default function FeuillesDeTempsPage() {
           </div>
         )}
       </div>
+
+      {/* Dialog Ajouter */}
+      {nouvelleDlg && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '8px', padding: '24px', maxWidth: '500px', width: '90%' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px' }}>Ajouter une feuille de temps</h2>
+
+            <div style={{ display: 'grid', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Projet</label>
+                <select
+                  value={formData.projetId}
+                  onChange={e => setFormData({...formData, projetId: e.target.value})}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+                >
+                  <option value="">Choisir un projet...</option>
+                  {projets.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.numero} — {p.adresse}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Employé</label>
+                <select
+                  value={formData.userId}
+                  onChange={e => setFormData({...formData, userId: e.target.value})}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+                >
+                  <option value="">Choisir un employé...</option>
+                  {employes.map((u: any) => (
+                    <option key={u.id} value={u.id}>{u.prenom} {u.nom}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Date</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={e => setFormData({...formData, date: e.target.value})}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Heures</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={formData.heures}
+                    onChange={e => setFormData({...formData, heures: e.target.value})}
+                    placeholder="7.5"
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Taux/h</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.tauxHoraire}
+                    onChange={e => setFormData({...formData, tauxHoraire: e.target.value})}
+                    placeholder="50.00"
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Notes (optionnel)</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={e => setFormData({...formData, notes: e.target.value})}
+                  placeholder="Remarques..."
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px', minHeight: '60px', fontFamily: 'inherit' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setNouvelleDlg(false)} style={{ flex: 1, padding: '10px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+                Annuler
+              </button>
+              <button onClick={handleAjouter} disabled={saving} style={{ flex: 1, padding: '10px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500, opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Sauvegarde...' : 'Ajouter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
