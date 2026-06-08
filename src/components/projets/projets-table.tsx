@@ -99,7 +99,7 @@ export function ProjetsTable({ projets }: ProjetsTableProps) {
                   <TableCell className="cursor-pointer hover:underline">
                     <a href={`/projets/${projet.slug}`}>
                       <div>
-                        <p className="font-medium text-sm text-blue-600">
+                        <p className="font-medium text-sm text-gray-900 hover:text-gray-700">
                           {projet.adresse}, {projet.ville}
                         </p>
                         <p className="text-xs text-gray-500">

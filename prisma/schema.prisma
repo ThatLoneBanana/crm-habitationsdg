@@ -49,17 +49,19 @@ enum StatutExtra {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  nom       String
-  prenom    String
-  role      Role
-  actif     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  nom           String
+  prenom        String
+  role          Role
+  actif         Boolean  @default(true)
+  tauxHoraire   Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  projetsVendeur Projet[] @relation("Vendeur")
-  projetsCharge  Projet[] @relation("ChargeProjet")
+  projetsVendeur Projet[]        @relation("Vendeur")
+  projetsCharge  Projet[]        @relation("ChargeProjet")
+  feuillesTemps  FeuilleTemps[]
 }
 
 model Client {
@@ -100,10 +102,11 @@ model Projet {
   vendeur     User?   @relation("Vendeur", fields: [vendeurId], references: [id])
   chargeProjet User?  @relation("ChargeProjet", fields: [chargeProjetId], references: [id])
 
-  taches      Tache[]
-  extras      Extra[]
-  paiements   Paiement[]
-  fournisseurs ProjetFournisseur[]
+  taches        Tache[]
+  extras        Extra[]
+  paiements     Paiement[]
+  fournisseurs  ProjetFournisseur[]
+  feuillesTemps FeuilleTemps[]
 }
 
 model Tache {
@@ -214,4 +217,23 @@ model Parametres {
   telephone    String   @default("")
   siteWeb      String   @default("habitations-dg.com")
   updatedAt    DateTime @updatedAt
+}
+
+model FeuilleTemps {
+  id          String   @id @default(uuid())
+  projetId    String
+  userId      String
+  date        DateTime
+  heures      Float
+  tauxHoraire Float
+  notes       String?
+  approuve    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([projetId])
+  @@index([userId])
 }
