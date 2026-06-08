@@ -2,6 +2,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LayoutDashboard, Building2, Map, Users, Truck, Settings, LogOut } from 'lucide-react'
+import { useState } from 'react'
 
 const settingsIcon = Settings
 const logoutIcon = LogOut
@@ -22,6 +23,7 @@ export default function Sidebar({ projetsCount, userPrenom, userEmail }: {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const [logoutHover, setLogoutHover] = useState(false)
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -165,9 +167,9 @@ export default function Sidebar({ projetsCount, userPrenom, userEmail }: {
           style={{
             width: '28px',
             height: '28px',
-            border: '1px solid #E5E7EB',
+            border: `1px solid ${logoutHover ? '#FCA5A5' : '#E5E7EB'}`,
             borderRadius: '6px',
-            background: 'white',
+            background: logoutHover ? '#FEF2F2' : 'white',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -175,20 +177,10 @@ export default function Sidebar({ projetsCount, userPrenom, userEmail }: {
             flexShrink: 0,
             transition: 'all 0.15s',
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = '#FEF2F2'
-            e.currentTarget.style.borderColor = '#FCA5A5'
-            const svg = e.currentTarget.getElementsByTagName('svg')[0]
-            if (svg) svg.style.color = '#ea1c24'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'white'
-            e.currentTarget.style.borderColor = '#E5E7EB'
-            const svg = e.currentTarget.getElementsByTagName('svg')[0]
-            if (svg) svg.style.color = '#E5E7EB'
-          }}
+          onMouseEnter={() => setLogoutHover(true)}
+          onMouseLeave={() => setLogoutHover(false)}
         >
-          <logoutIcon size={18} style={{ color: '#E5E7EB', transition: 'color 0.15s' }} />
+          <LogOut size={18} color={logoutHover ? '#ea1c24' : '#6B7280'} strokeWidth={2.5} />
         </button>
       </div>
 

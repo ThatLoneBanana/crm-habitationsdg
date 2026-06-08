@@ -119,13 +119,13 @@ export default function ClientsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Clients</h1>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => setVue('cartes')} style={{ padding: '8px 12px', border: vue === 'cartes' ? 'none' : '1px solid #E5E7EB', background: vue === 'cartes' ? '#1D9E75' : 'white', color: vue === 'cartes' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>⊞ Cartes</button>
-          <button onClick={() => setVue('liste')} style={{ padding: '8px 12px', border: vue === 'liste' ? 'none' : '1px solid #E5E7EB', background: vue === 'liste' ? '#1D9E75' : 'white', color: vue === 'liste' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>☰ Liste</button>
+          <button onClick={() => setVue('cartes')} style={{ padding: '8px 12px', border: vue === 'cartes' ? 'none' : '1px solid #E5E7EB', background: vue === 'cartes' ? '#ea1c24' : 'white', color: vue === 'cartes' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>⊞ Cartes</button>
+          <button onClick={() => setVue('liste')} style={{ padding: '8px 12px', border: vue === 'liste' ? 'none' : '1px solid #E5E7EB', background: vue === 'liste' ? '#ea1c24' : 'white', color: vue === 'liste' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>☰ Liste</button>
           <select value={tri} onChange={e => setTri(e.target.value as any)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
             <option value='nom'>Trier par nom</option>
             <option value='prenom'>Trier par prénom</option>
           </select>
-          <button onClick={() => { setNouveauOpen(true); setSelectedClient(null); setFormData({ prenom: '', nom: '', email: '', telephone: '' }); }} style={{ padding: '8px 12px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>+ Nouveau client</button>
+          <button onClick={() => { setNouveauOpen(true); setSelectedClient(null); setFormData({ prenom: '', nom: '', email: '', telephone: '' }); }} style={{ padding: '8px 12px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>+ Nouveau client</button>
         </div>
       </div>
 
@@ -142,7 +142,7 @@ export default function ClientsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
           {clientsFiltres.map(client => (
             <div key={client.id} style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: 'white' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#1D9E75', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, marginBottom: '10px', fontSize: '14px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#ea1c24', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, marginBottom: '10px', fontSize: '14px' }}>
                 {client.prenom[0]}{client.nom[0]}
               </div>
               <div style={{ fontWeight: 600, fontSize: '14px' }}>{client.prenom} {client.nom}</div>
@@ -212,7 +212,7 @@ export default function ClientsPage() {
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { setNouveauOpen(false); setModifierOpen(false); setSelectedClient(null); }} style={{ flex: 1, padding: '8px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>Annuler</button>
-              <button onClick={handleSauvegarder} style={{ flex: 1, padding: '8px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Sauvegarder</button>
+              <button onClick={handleSauvegarder} style={{ flex: 1, padding: '8px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Sauvegarder</button>
             </div>
           </div>
         </div>

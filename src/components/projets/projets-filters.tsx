@@ -56,7 +56,7 @@ export function ProjetsFilters({
           />
         </div>
         <Link href="/projets/nouveau">
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button style={{ background: '#ea1c24' }} className="gap-2 hover:opacity-90" onMouseEnter={e => e.currentTarget.style.background = '#d41a1f'} onMouseLeave={e => e.currentTarget.style.background = '#ea1c24'}>
             <Plus className="w-4 h-4" />
             Nouveau projet
           </Button>
@@ -71,11 +71,10 @@ export function ProjetsFilters({
             variant={phase === p.value ? 'default' : 'outline'}
             size="sm"
             onClick={() => handlePhase(p.value)}
-            className={
-              phase === p.value
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'text-gray-700'
-            }
+            style={phase === p.value ? { background: '#ea1c24', color: 'white' } : {}}
+            className={phase === p.value ? '' : 'text-gray-700'}
+            onMouseEnter={e => phase === p.value && (e.currentTarget.style.background = '#d41a1f')}
+            onMouseLeave={e => phase === p.value && (e.currentTarget.style.background = '#ea1c24')}
           >
             {p.label}
           </Button>

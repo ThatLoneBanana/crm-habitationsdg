@@ -105,13 +105,13 @@ export default function FournisseursPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Fournisseurs</h1>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => setVue('cartes')} style={{ padding: '8px 12px', border: vue === 'cartes' ? 'none' : '1px solid #E5E7EB', background: vue === 'cartes' ? '#1D9E75' : 'white', color: vue === 'cartes' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>⊞ Cartes</button>
-          <button onClick={() => setVue('liste')} style={{ padding: '8px 12px', border: vue === 'liste' ? 'none' : '1px solid #E5E7EB', background: vue === 'liste' ? '#1D9E75' : 'white', color: vue === 'liste' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>☰ Liste</button>
+          <button onClick={() => setVue('cartes')} style={{ padding: '8px 12px', border: vue === 'cartes' ? 'none' : '1px solid #E5E7EB', background: vue === 'cartes' ? '#ea1c24' : 'white', color: vue === 'cartes' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>⊞ Cartes</button>
+          <button onClick={() => setVue('liste')} style={{ padding: '8px 12px', border: vue === 'liste' ? 'none' : '1px solid #E5E7EB', background: vue === 'liste' ? '#ea1c24' : 'white', color: vue === 'liste' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>☰ Liste</button>
           <select value={tri} onChange={e => setTri(e.target.value as any)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
             <option value='nom'>Trier par nom</option>
             <option value='metier'>Trier par métier</option>
           </select>
-          <button onClick={() => { setNouveauOpen(true); setSelectedFournisseur(null); setFormData({ nom: '', metier: '', email: '', telephone: '', actif: true }); }} style={{ padding: '8px 12px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>+ Nouveau</button>
+          <button onClick={() => { setNouveauOpen(true); setSelectedFournisseur(null); setFormData({ nom: '', metier: '', email: '', telephone: '', actif: true }); }} style={{ padding: '8px 12px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>+ Nouveau</button>
         </div>
       </div>
 
@@ -203,7 +203,7 @@ export default function FournisseursPage() {
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { setNouveauOpen(false); setModifierOpen(false); setSelectedFournisseur(null); }} style={{ flex: 1, padding: '8px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>Annuler</button>
-              <button onClick={handleSauvegarder} style={{ flex: 1, padding: '8px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Sauvegarder</button>
+              <button onClick={handleSauvegarder} style={{ flex: 1, padding: '8px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Sauvegarder</button>
             </div>
           </div>
         </div>

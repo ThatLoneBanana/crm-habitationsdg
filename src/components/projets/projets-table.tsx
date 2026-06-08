@@ -103,7 +103,7 @@ export function ProjetsTable({ projets }: ProjetsTableProps) {
                           {projet.adresse}, {projet.ville}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {projet.client.nom} {projet.client.prenom}
+                          {projet.client.prenom} {projet.client.nom}
                         </p>
                       </div>
                     </a>
