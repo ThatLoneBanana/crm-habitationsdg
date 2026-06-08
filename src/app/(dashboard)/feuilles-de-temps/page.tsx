@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Clock, Trash2 } from 'lucide-react'
 
-interface Employe { id: string; prenom: string; nom: string; tauxHoraire: number; actif: boolean }
+interface Employe { id: string; prenom: string; nom: string; email?: string; telephone?: string; tauxHoraire: number; actif: boolean }
 interface User { id: string; prenom: string; nom: string; role: string; tauxHoraire: number; actif: boolean }
 interface FeuilleTemps { id: string; employeId: string; projetId: string; date: string; heures: number; tauxHoraire: number; employe: { prenom: string; nom: string }; projet: { numero: string; adresse: string } }
 interface Depense { id: string; projetId: string; categorie: string; description: string; montant: number; dateDepense: string; facture?: string; projet: { numero: string; adresse: string } }
@@ -129,8 +129,11 @@ export default function FeuillesDeTempsPage() {
             }
           }
           const jour = new Date(f.date).getDay()
-          const jourKey = ['', 'lun', 'mar', 'mer', 'jeu', 'ven'][jour] as keyof typeof lignesMap[key]['heures']
-          if (jourKey) lignesMap[key].heures[jourKey] = f.heures
+          const jourKey = ['', 'lun', 'mar', 'mer', 'jeu', 'ven'][jour]
+          if (jourKey) {
+            // @ts-ignore
+            lignesMap[key].heures[jourKey] = f.heures
+          }
         })
 
         const finalLignes = Object.values(lignesMap)
@@ -187,7 +190,7 @@ export default function FeuillesDeTempsPage() {
   const annee = semaineLundi.getFullYear()
 
   const heuresParEmploye = lignes.reduce((acc, ligne) => {
-    const total = Object.values(ligne.heures).reduce((s, h) => s + (h || 0), 0)
+    const total = Object.values(ligne.heures).reduce((s: number, h: number | null) => s + (h || 0), 0)
     acc[ligne.employeId] = (acc[ligne.employeId] || 0) + total
     return acc
   }, {} as { [key: string]: number })
@@ -224,12 +227,12 @@ export default function FeuillesDeTempsPage() {
   }
 
   const totalLigne = (l: LigneGrille) =>
-    Object.values(l.heures).reduce((s, h) => s + (h || 0), 0) * l.tauxHoraire
+    Object.values(l.heures).reduce((s: number, h: number | null) => s + (h || 0), 0) * l.tauxHoraire
 
   const handleSauvegarderSemaine = async () => {
     setSaving(true)
     try {
-      const entries = []
+      const entries: any[] = []
       lignes.forEach(ligne => {
         if (!ligne.employeId || !ligne.projetId) return
         const jours = ['lun', 'mar', 'mer', 'jeu', 'ven']
@@ -647,7 +650,7 @@ export default function FeuillesDeTempsPage() {
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 100px 120px 120px 80px', alignItems: 'center', padding: '12px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '11px', fontWeight: 600, color: '#6B7280' }}>
               <div>Employé</div>
-              <div textAlign='center'>Heures</div>
+              <div style={{ textAlign: 'center' }}>Heures</div>
               <div>Taux/h</div>
               <div>Statut</div>
               <div>Actions</div>

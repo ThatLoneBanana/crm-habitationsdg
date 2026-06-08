@@ -59,10 +59,15 @@ export function ProjetsTable({ projets }: ProjetsTableProps) {
     return 'text-green-600';
   };
 
-  const calculAvancement = (projet: ProjetWithRelations) => {
+  const calculAvancement = (projet: any) => {
+    // Utiliser l'avancement retourné par l'API (basé sur les dates)
+    if (projet.avancement !== undefined) {
+      return projet.avancement;
+    }
+    // Fallback: calculer par statut si avancement non disponible
     if (projet.taches.length === 0) return 0;
     const tachesCompletes = projet.taches.filter(
-      (t) => t.statut === 'COMPLETE'
+      (t: any) => t.statut === 'COMPLETE'
     ).length;
     return Math.round((tachesCompletes / projet.taches.length) * 100);
   };
