@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
         prenom: true,
         nom: true,
         role: true,
-        actif: true
+        actif: true,
+        tauxHoraire: true
       },
       orderBy: { createdAt: 'desc' }
     })

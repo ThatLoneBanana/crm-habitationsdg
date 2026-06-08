@@ -61,8 +61,14 @@ export default function FeuillesDeTempsPage() {
         fetch('/api/users'),
         fetch('/api/feuilles-de-temps')
       ])
-      if (projRes.ok) setProjets(await projRes.json())
-      if (empRes.ok) setEmployes(await empRes.json())
+      if (projRes.ok) {
+        const data = await projRes.json()
+        setProjets(data.projets || [])
+      }
+      if (empRes.ok) {
+        const data = await empRes.json()
+        setEmployes(Array.isArray(data) ? data : data.users || [])
+      }
       if (fRes.ok) {
         const data = await fRes.json()
         setFeuilles(data.feuilles || [])
