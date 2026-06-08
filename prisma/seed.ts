@@ -2,486 +2,428 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// 45 étapes de la cédule JUMELE avec durées
-const CEDULE_JUMELE = [
-  { ordre: 1, nom: 'Plombier fond de cave', duree: 2, interne: true, visible: false },
-  { ordre: 2, nom: 'Couler plancher intérieur', duree: 1, interne: true, visible: false },
-  { ordre: 3, nom: 'Intérieur division', duree: 3, interne: true, visible: false },
-  { ordre: 4, nom: 'Installation foyer', duree: 2, interne: true, visible: false },
-  { ordre: 5, nom: 'Intérieur division', duree: 1, interne: false, visible: true },
-  { ordre: 6, nom: 'Mesure armoire', duree: 1, interne: false, visible: true },
-  { ordre: 7, nom: 'Air climatisé', duree: 1, interne: false, visible: true },
-  { ordre: 8, nom: 'Électricien + TV & Tél', duree: 2, interne: false, visible: true },
-  { ordre: 9, nom: 'Plombier', duree: 1, interne: false, visible: true },
-  { ordre: 10, nom: 'Échangeur d\'air', duree: 1, interne: false, visible: true },
-  { ordre: 11, nom: 'Isolation entretoit', duree: 1, interne: false, visible: true },
-  { ordre: 12, nom: 'Mesure finition', duree: 1, interne: false, visible: true },
-  { ordre: 13, nom: 'Final menuiserie', duree: 2, interne: false, visible: true },
-  { ordre: 14, nom: 'Entrée gypse', duree: 0.5, interne: false, visible: true },
-  { ordre: 15, nom: 'Pose gypse', duree: 3, interne: false, visible: true },
-  { ordre: 16, nom: 'Tireur de joints', duree: 5, interne: false, visible: true },
-  { ordre: 17, nom: 'Entrée finition', duree: 0.5, interne: false, visible: true },
-  { ordre: 18, nom: 'Pose finition', duree: 3, interne: false, visible: true },
-  { ordre: 19, nom: 'Peinture', duree: 3, interne: false, visible: true },
-  { ordre: 20, nom: 'Livraison céramique', duree: 0.5, interne: false, visible: true },
-  { ordre: 21, nom: 'Pose céramique', duree: 2, interne: false, visible: true },
-  { ordre: 22, nom: 'Coulis', duree: 1, interne: false, visible: true },
-  { ordre: 23, nom: 'Livraison armoire', duree: 1, interne: false, visible: true },
-  { ordre: 24, nom: 'Pose armoire', duree: 1, interne: false, visible: true },
-  { ordre: 25, nom: 'Dosseret', duree: 1, interne: false, visible: true },
-  { ordre: 26, nom: 'Livraison fixture', duree: 1, interne: false, visible: true },
-  { ordre: 27, nom: 'Finition électrique + TV & Tél', duree: 1, interne: false, visible: true },
-  { ordre: 28, nom: 'Finition plomberie', duree: 1, interne: false, visible: true },
-  { ordre: 29, nom: 'Finition échangeur d\'air', duree: 1, interne: false, visible: true },
-  { ordre: 30, nom: 'Air climatisé final', duree: 1, interne: false, visible: true },
-  { ordre: 31, nom: 'Installation porte de douche', duree: 1, interne: false, visible: true },
-  { ordre: 32, nom: 'Pose escalier ou rampe', duree: 1, interne: false, visible: true },
-  { ordre: 33, nom: 'Pose plancher', duree: 2, interne: false, visible: true },
-  { ordre: 34, nom: 'Petite finition', duree: 1, interne: false, visible: true },
-  { ordre: 35, nom: 'Peinture finale', duree: 2, interne: false, visible: true },
-  { ordre: 36, nom: 'Pose miroir + tablettes', duree: 1, interne: false, visible: true },
-  { ordre: 37, nom: 'Service +', duree: 1, interne: false, visible: true },
-  { ordre: 38, nom: 'Pose tapis', duree: 1, interne: false, visible: true },
-  { ordre: 39, nom: 'Ménage', duree: 1, interne: false, visible: true },
+const CEDULE_JUMELE_ETAPES = [
+  { ordre: 1, nom: 'Inspection du site', duree: 1 },
+  { ordre: 2, nom: 'Excavation et fondations', duree: 8 },
+  { ordre: 3, nom: 'Couler plancher intérieur', duree: 2 },
+  { ordre: 4, nom: 'Charpente', duree: 6 },
+  { ordre: 5, nom: 'Couverture', duree: 3 },
+  { ordre: 6, nom: 'Murs extérieurs', duree: 5 },
+  { ordre: 7, nom: 'Fenêtres et portes', duree: 4 },
+  { ordre: 8, nom: 'Plomberie fond de cave', duree: 2 },
+  { ordre: 9, nom: 'Électricité rough', duree: 3 },
+  { ordre: 10, nom: 'Isolation', duree: 4 },
+  { ordre: 11, nom: 'Gypse intérieur', duree: 5 },
+  { ordre: 12, nom: 'Plomberie finitions', duree: 3 },
+  { ordre: 13, nom: 'Électricité finitions', duree: 3 },
+  { ordre: 14, nom: 'Échangeur d\'air', duree: 2 },
+  { ordre: 15, nom: 'Revêtements sol', duree: 4 },
+  { ordre: 16, nom: 'Peinture intérieure', duree: 3 },
+  { ordre: 17, nom: 'Armoires cuisine', duree: 2 },
+  { ordre: 18, nom: 'Comptoirs', duree: 2 },
+  { ordre: 19, nom: 'Céramique salle de bain', duree: 3 },
+  { ordre: 20, nom: 'Tuyauterie finition', duree: 2 },
+  { ordre: 21, nom: 'Finition électrique', duree: 2 },
+  { ordre: 22, nom: 'Portes intérieures', duree: 2 },
+  { ordre: 23, nom: 'Revêtement extérieur', duree: 5 },
+  { ordre: 24, nom: 'Peinture extérieure', duree: 3 },
+  { ordre: 25, nom: 'Terrasses et entrées', duree: 4 },
+  { ordre: 26, nom: 'Clôture', duree: 3 },
+  { ordre: 27, nom: 'Accès véhiculaire', duree: 2 },
+  { ordre: 28, nom: 'Ensemencement gazon', duree: 1 },
+  { ordre: 29, nom: 'Ménage final', duree: 2 },
+  { ordre: 30, nom: 'Inspection finale', duree: 1 },
+  { ordre: 31, nom: 'Corrections mineures', duree: 2 },
+  { ordre: 32, nom: 'Remise des clés', duree: 1 },
 ];
 
-// Fonction pour assigner le fournisseur selon l'étape
-function assignerFournisseur(nomTache: string): string | null {
-  if (
-    nomTache.includes('Plombier') ||
-    nomTache.includes('Finition plomberie')
-  ) {
-    return 'Plomberie Côté';
-  }
-  if (
-    nomTache.includes('Électricien') ||
-    nomTache.includes('Finition électrique')
-  ) {
-    return 'Élec. Vachon';
-  }
-  if (
-    nomTache.includes('Échangeur') ||
-    nomTache.includes('Air climatisé')
-  ) {
-    return 'Ventil. Express';
-  }
-  if (
-    nomTache.includes('Mesure armoire') ||
-    nomTache.includes('Pose armoire') ||
-    nomTache.includes('Dosseret') ||
-    nomTache.includes('Livraison armoire')
-  ) {
-    return 'Cuisines Beauce';
-  }
-  if (
-    nomTache.includes('Pose gypse') ||
-    nomTache.includes('Entrée gypse') ||
-    nomTache.includes('Tireur de joints')
-  ) {
-    return 'Gypse Beauce';
-  }
-  if (
-    nomTache.includes('Pose céramique') ||
-    nomTache.includes('Livraison céramique') ||
-    nomTache.includes('Coulis')
-  ) {
-    return 'Céramique Plus';
-  }
-  if (
-    nomTache.includes('Peinture') &&
-    !nomTache.includes('Final menuiserie')
-  ) {
-    return 'Peinture Martin';
-  }
-  return null;
-}
-
-// Fonction pour calculer dates à rebours sans weekends
-function calculerDatesProjet(dateLivraison: Date, cedule: any[]) {
-  const dates: { ordre: number; debut: Date; fin: Date }[] = [];
-
-  let dateActuelle = new Date(dateLivraison);
-  dateActuelle.setHours(0, 0, 0, 0);
-
-  // Reculer depuis la fin
-  for (let i = cedule.length - 1; i >= 0; i--) {
-    const tache = cedule[i];
-    const dureeJours = tache.duree;
-
-    // Reculer du nombre de jours (en sautant les weekends)
-    // pour trouver le début de cette étape
-    let joursAReculer = dureeJours;
-    while (joursAReculer > 0) {
-      dateActuelle.setDate(dateActuelle.getDate() - 1);
-      const jour = dateActuelle.getDay();
-      if (jour !== 0 && jour !== 6) { // pas dimanche (0) ni samedi (6)
-        joursAReculer--;
-      }
-    }
-
-    // dateActuelle est maintenant le premier jour ouvrable de cette étape
-    const debut = new Date(dateActuelle);
-    debut.setHours(0, 0, 0, 0);
-
-    // La fin est dateActuelle + (dureeJours - 1) jours ouvrables
-    let dateFinEtape = new Date(dateActuelle);
-    let joursAAvancer = dureeJours - 1;
-    while (joursAAvancer > 0) {
-      dateFinEtape.setDate(dateFinEtape.getDate() + 1);
-      const jour = dateFinEtape.getDay();
-      if (jour !== 0 && jour !== 6) { // pas dimanche (0) ni samedi (6)
-        joursAAvancer--;
-      }
-    }
-
-    const fin = new Date(dateFinEtape);
-    fin.setHours(23, 59, 59, 999);
-
-    dates.unshift({ ordre: tache.ordre, debut, fin });
-  }
-
-  return dates;
-}
+const CEDULE_MAISON_ETAPES = [
+  { ordre: 1, nom: 'Inspection du site', duree: 1 },
+  { ordre: 2, nom: 'Excavation et fondations', duree: 10 },
+  { ordre: 3, nom: 'Coulage plancher', duree: 2 },
+  { ordre: 4, nom: 'Charpente', duree: 8 },
+  { ordre: 5, nom: 'Toiture', duree: 4 },
+  { ordre: 6, nom: 'Murs extérieurs', duree: 6 },
+  { ordre: 7, nom: 'Fenêtres et portes', duree: 5 },
+  { ordre: 8, nom: 'Plomberie fond de cave', duree: 3 },
+  { ordre: 9, nom: 'Électricité rough', duree: 4 },
+  { ordre: 10, nom: 'Isolation', duree: 5 },
+  { ordre: 11, nom: 'Gypse', duree: 6 },
+  { ordre: 12, nom: 'Plomberie finitions', duree: 4 },
+  { ordre: 13, nom: 'Électricité finitions', duree: 4 },
+  { ordre: 14, nom: 'Ventilation', duree: 2 },
+  { ordre: 15, nom: 'Revêtements sol', duree: 5 },
+  { ordre: 16, nom: 'Peinture', duree: 4 },
+  { ordre: 17, nom: 'Armoires', duree: 3 },
+  { ordre: 18, nom: 'Comptoirs', duree: 2 },
+  { ordre: 19, nom: 'Céramique', duree: 4 },
+  { ordre: 20, nom: 'Finition plomberie', duree: 2 },
+  { ordre: 21, nom: 'Finition électrique', duree: 2 },
+  { ordre: 22, nom: 'Portes intérieures', duree: 3 },
+  { ordre: 23, nom: 'Revêtement extérieur', duree: 6 },
+  { ordre: 24, nom: 'Peinture extérieure', duree: 4 },
+  { ordre: 25, nom: 'Terrasses', duree: 5 },
+  { ordre: 26, nom: 'Clôture', duree: 3 },
+  { ordre: 27, nom: 'Accès véhiculaire', duree: 2 },
+  { ordre: 28, nom: 'Aménagement extérieur', duree: 3 },
+  { ordre: 29, nom: 'Ménage', duree: 2 },
+  { ordre: 30, nom: 'Inspection finale', duree: 1 },
+  { ordre: 31, nom: 'Corrections', duree: 2 },
+  { ordre: 32, nom: 'Remise clés', duree: 1 },
+];
 
 async function main() {
-  console.log('🌱 Démarrage du seed Habitations DG...');
+  console.log('🌱 Démarrage du seed réaliste...\n');
 
-  // Nettoyer
-  await prisma.tache.deleteMany({});
-  await prisma.extra.deleteMany({});
-  await prisma.paiement.deleteMany({});
-  await prisma.projetFournisseur.deleteMany({});
-  await prisma.projet.deleteMany({});
-  await prisma.fournisseur.deleteMany({});
-  await prisma.client.deleteMany({});
-  await prisma.user.deleteMany({});
+  // ÉTAPE 1 — Effacer les données existantes (dans l'ordre des relations)
+  console.log('🗑️  Effacement des données existantes...');
+  await prisma.depense.deleteMany();
+  await prisma.feuilleTemps.deleteMany();
+  await prisma.paiement.deleteMany();
+  await prisma.extra.deleteMany();
+  await prisma.tache.deleteMany();
+  await prisma.projetFournisseur.deleteMany();
+  await prisma.projet.deleteMany();
+  await prisma.client.deleteMany();
+  console.log('✅ Données effacées\n');
 
-  console.log('✅ Base de données nettoyée');
-
-  // Utilisateurs
-  const jason = await prisma.user.create({
-    data: { email: 'jason@sideways.media', nom: 'Dion', prenom: 'Jason', role: 'ADMIN', actif: true },
-  });
-
-  const nicolas = await prisma.user.create({
-    data: { email: 'nicolas@habitations-dg.com', nom: 'Savard', prenom: 'Nicolas', role: 'ADMIN', actif: true },
-  });
-
-  const sophie = await prisma.user.create({
-    data: { email: 'sophierose@habitations-dg.com', nom: 'Rose', prenom: 'Sophie', role: 'CHARGE_PROJET', actif: true },
-  });
-
-  const louis = await prisma.user.create({
-    data: { email: 'louis@habitations-dg.com', nom: 'Bellavance', prenom: 'Louis', role: 'CHARGE_PROJET', actif: true },
-  });
-
-  console.log('✅ 4 utilisateurs créés (Louis Bellavance ajouté comme chargé par défaut)');
-
-  // Fournisseurs
-  const fournisseurs = await prisma.fournisseur.createMany({
+  // ÉTAPE 2 — Créer 4 clients réels
+  console.log('👥 Création des clients...');
+  const clients = await prisma.client.createMany({
     data: [
-      { nom: 'Plomberie Côté', metier: 'Plomberie', actif: true },
-      { nom: 'Élec. Vachon', metier: 'Électricité', actif: true },
-      { nom: 'Ventil. Express', metier: 'Ventilation/Climatisation', actif: true },
-      { nom: 'Cuisines Beauce', metier: 'Armoires de cuisine', actif: true },
-      { nom: 'Gypse Beauce', metier: 'Gypse et finitions', actif: true },
-      { nom: 'Céramique Plus', metier: 'Céramique', actif: true },
-      { nom: 'Peinture Martin', metier: 'Peinture', actif: true },
+      { prenom: 'Michel', nom: 'Rodrigue', email: 'michel.rodrigue@gmail.com', telephone: '418-882-3241' },
+      { prenom: 'Isabelle', nom: 'Cloutier', email: 'isabelle.cloutier@hotmail.com', telephone: '418-774-5523' },
+      { prenom: 'Steve', nom: 'Beaulieu', email: 'steve.beaulieu@gmail.com', telephone: '418-889-1847' },
+      { prenom: 'Nathalie', nom: 'Grondin', email: 'nathalie.grondin@outlook.com', telephone: '418-887-6632' },
+    ],
+  });
+  console.log(`✅ ${clients.count} clients créés\n`);
+
+  // Récupérer les clients pour les utiliser
+  const allClients = await prisma.client.findMany();
+  const michel = allClients.find(c => c.nom === 'Rodrigue')!;
+  const isabelle = allClients.find(c => c.nom === 'Cloutier')!;
+  const steve = allClients.find(c => c.nom === 'Beaulieu')!;
+  const nathalie = allClients.find(c => c.nom === 'Grondin')!;
+
+  // Créer les projets
+  console.log('🏗️  Création des projets...');
+  const proj1 = await prisma.projet.create({
+    data: {
+      numero: 'PROJ-2026-001',
+      slug: 'michel-rodrigue-18-rue-des-erables',
+      urlClient: 'michel-rodrigue-18-rue-des-erables',
+      adresse: '18 Rue des Érables',
+      ville: 'Saint-Henri',
+      typeProjet: 'JUMELE',
+      typeContrat: 'PRELIMINAIRE',
+      montantTotal: 487500,
+      dateContrat: new Date('2025-09-15'),
+      dateLivraison: new Date('2026-06-20'),
+      phase: 'LIVRAISON',
+      clientId: michel.id,
+    },
+  });
+
+  const proj2 = await prisma.projet.create({
+    data: {
+      numero: 'PROJ-2026-002',
+      slug: 'isabelle-cloutier-7-chemin-des-pins',
+      urlClient: 'isabelle-cloutier-7-chemin-des-pins',
+      adresse: '7 Chemin des Pins',
+      ville: 'Saint-Lazare-de-Bellechasse',
+      typeProjet: 'MAISON',
+      typeContrat: 'ENTREPRISE',
+      montantTotal: 612000,
+      dateContrat: new Date('2025-11-03'),
+      dateLivraison: new Date('2026-08-14'),
+      phase: 'CHANTIER',
+      clientId: isabelle.id,
+    },
+  });
+
+  const proj3 = await prisma.projet.create({
+    data: {
+      numero: 'PROJ-2026-003',
+      slug: 'steve-beaulieu-144-route-du-lac',
+      urlClient: 'steve-beaulieu-144-route-du-lac',
+      adresse: '144 Route du Lac',
+      ville: 'Saint-Damien-de-Buckland',
+      typeProjet: 'JUMELE',
+      typeContrat: 'ENTREPRISE',
+      montantTotal: 398000,
+      dateContrat: new Date('2026-01-20'),
+      dateLivraison: new Date('2026-10-03'),
+      phase: 'CHANTIER',
+      clientId: steve.id,
+    },
+  });
+
+  const proj4 = await prisma.projet.create({
+    data: {
+      numero: 'PROJ-2026-004',
+      slug: 'nathalie-grondin-33-rue-principale',
+      urlClient: 'nathalie-grondin-33-rue-principale',
+      adresse: '33 Rue Principale',
+      ville: 'Saint-Gervais',
+      typeProjet: 'MAISON',
+      typeContrat: 'PRELIMINAIRE',
+      montantTotal: 541000,
+      dateContrat: new Date('2026-04-08'),
+      dateLivraison: new Date('2026-12-18'),
+      phase: 'PREPARATION',
+      clientId: nathalie.id,
+    },
+  });
+
+  console.log(`✅ 4 projets créés\n`);
+
+  // Créer les étapes pour chaque projet avec les avancements réalistes
+  console.log('📋 Création des étapes...');
+
+  const createEtapesForProjet = async (projetId: string, dateLivraison: Date, etapesTemplate: any[], completedCount: number) => {
+    const totalJours = etapesTemplate.reduce((s, e) => s + e.duree, 0);
+    let currentDate = new Date(dateLivraison);
+    currentDate.setDate(currentDate.getDate() - totalJours);
+
+    const etapes = etapesTemplate.map((etape, idx) => {
+      const dateDebut = new Date(currentDate);
+      const dateFin = new Date(currentDate.getTime() + etape.duree * 24 * 60 * 60 * 1000);
+      currentDate = dateFin;
+
+      return {
+        projetId,
+        nom: etape.nom,
+        ordre: etape.ordre,
+        dureeJours: etape.duree,
+        dateDebut,
+        dateFin,
+        statut: idx < completedCount ? 'COMPLETE' : 'NON_COMMENCE',
+        visibleClient: true,
+        interne: false,
+      };
+    });
+
+    return prisma.tache.createMany({ data: etapes });
+  };
+
+  await createEtapesForProjet(proj1.id, new Date('2026-06-20'), CEDULE_JUMELE_ETAPES, 28); // 88%
+  await createEtapesForProjet(proj2.id, new Date('2026-08-14'), CEDULE_MAISON_ETAPES, 19); // 60%
+  await createEtapesForProjet(proj3.id, new Date('2026-10-03'), CEDULE_JUMELE_ETAPES, 11); // 25%
+  await createEtapesForProjet(proj4.id, new Date('2026-12-18'), CEDULE_MAISON_ETAPES, 2);  // 5%
+
+  console.log(`✅ Étapes créées\n`);
+
+  // Créer les paiements
+  console.log('💰 Création des paiements...');
+
+  // Projet 1 — Préliminaire
+  await prisma.paiement.createMany({
+    data: [
+      { projetId: proj1.id, description: 'Acompte', montant: 15000, pourcentage: null, recu: true, dateRecu: new Date('2025-09-20') },
+      { projetId: proj1.id, description: 'Solde final', montant: 472500, pourcentage: null, recu: false, datePrevu: new Date('2026-06-04') },
     ],
   });
 
-  console.log('✅ 7 fournisseurs créés');
+  // Projet 2 — Entreprise
+  await prisma.paiement.createMany({
+    data: [
+      { projetId: proj2.id, description: 'Tranche 1 (50%)', montant: 306000, pourcentage: 50, recu: true, dateRecu: new Date('2026-03-15') },
+      { projetId: proj2.id, description: 'Tranche 2 (35%)', montant: 214200, pourcentage: 35, recu: false, datePrevu: new Date('2026-06-15') },
+      { projetId: proj2.id, description: 'Tranche 3 (15%)', montant: 91800, pourcentage: 15, recu: false, datePrevu: new Date('2026-08-14') },
+    ],
+  });
 
-  // Clients
-  const clients = await Promise.all([
-    prisma.client.create({
-      data: { nom: 'Pelchat', prenom: 'Cedrick', email: 'cedrick@email.com', telephone: '418-555-1001' },
-    }),
-    prisma.client.create({
-      data: { nom: 'Tanguay', prenom: 'Famille', email: 'tanguay@email.com', telephone: '418-555-1002' },
-    }),
-    prisma.client.create({
-      data: { nom: 'Fortier', prenom: 'Mélanie', email: 'melanie@email.com', telephone: '418-555-1003' },
-    }),
-    prisma.client.create({
-      data: { nom: 'Drouin', prenom: 'Patrick', email: 'patrick@email.com', telephone: '418-555-1004' },
-    }),
-    prisma.client.create({
-      data: { nom: 'Veilleux', prenom: 'Marc-Antoine', email: 'marc-antoine@email.com', telephone: '418-555-1005' },
-    }),
-  ]);
+  // Projet 3 — Entreprise
+  await prisma.paiement.createMany({
+    data: [
+      { projetId: proj3.id, description: 'Tranche 1 (50%)', montant: 199000, pourcentage: 50, recu: false, datePrevu: new Date('2026-04-20') },
+      { projetId: proj3.id, description: 'Tranche 2 (35%)', montant: 139300, pourcentage: 35, recu: false, datePrevu: new Date('2026-07-15') },
+      { projetId: proj3.id, description: 'Tranche 3 (15%)', montant: 59700, pourcentage: 15, recu: false, datePrevu: new Date('2026-10-03') },
+    ],
+  });
 
-  console.log('✅ 5 clients créés');
+  // Projet 4 — Préliminaire
+  await prisma.paiement.createMany({
+    data: [
+      { projetId: proj4.id, description: 'Acompte', montant: 15000, pourcentage: null, recu: true, dateRecu: new Date('2026-04-10') },
+      { projetId: proj4.id, description: 'Solde final', montant: 526000, pourcentage: null, recu: false, datePrevu: new Date('2026-12-18') },
+    ],
+  });
 
-  // Générer slug unique: prenom+nom-adresse-complete (sans accents)
-  const removeAccents = (str: string) => {
-    return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
-  };
+  console.log(`✅ Paiements créés\n`);
 
-  const generateSlug = (prenom: string, nom: string, adresse: string) => {
-    const prenomNom = removeAccents(`${prenom}${nom}`).toLowerCase().replace(/\s+/g, '');
-    const adresseClean = removeAccents(adresse).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    return `${prenomNom}-${adresseClean}`;
-  };
+  // Créer les extras
+  console.log('✨ Création des extras...');
 
-  // 5 Projets avec leurs tâches
-  const projets = [
-    {
-      numero: 'PROJ-2026-001',
-      slug: generateSlug(clients[0].prenom, clients[0].nom, '31 Anna-Dussault'),
-      urlClient: generateSlug(clients[0].prenom, clients[0].nom, '31 Anna-Dussault'),
-      adresse: '31 Anna-Dussault',
-      ville: 'Ste-Claire',
-      typeProjet: 'JUMELE' as const,
-      typeContrat: 'PRELIMINAIRE' as const,
-      montantTotal: 300000,
-      phase: 'LIVRAISON' as const,
-      dateLivraison: new Date('2026-06-25'),
-      client: clients[0],
-      etapesCompletes: 18,
-      etapeCourante: 19,
-    },
-    {
-      numero: 'PROJ-2026-002',
-      slug: generateSlug(clients[1].prenom, clients[1].nom, '14 des Érables'),
-      urlClient: generateSlug(clients[1].prenom, clients[1].nom, '14 des Érables'),
-      adresse: '14 des Érables',
-      ville: 'St-Joseph',
-      typeProjet: 'JUMELE' as const,
-      typeContrat: 'PRELIMINAIRE' as const,
-      montantTotal: 320000,
-      phase: 'LIVRAISON' as const,
-      dateLivraison: new Date('2026-06-10'),
-      client: clients[1],
-      etapesCompletes: 35,
-      etapeCourante: 36,
-    },
-    {
-      numero: 'PROJ-2026-003',
-      slug: generateSlug(clients[2].prenom, clients[2].nom, '8 du Boisé'),
-      urlClient: generateSlug(clients[2].prenom, clients[2].nom, '8 du Boisé'),
-      adresse: '8 du Boisé',
-      ville: 'Ste-Marie',
-      typeProjet: 'MAISON' as const,
-      typeContrat: 'ENTREPRISE' as const,
-      montantTotal: 280000,
-      phase: 'CHANTIER' as const,
-      dateLivraison: new Date('2026-07-18'),
-      client: clients[2],
-      etapesCompletes: 14,
-      etapeCourante: 15,
-    },
-    {
-      numero: 'PROJ-2026-004',
-      slug: generateSlug(clients[3].prenom, clients[3].nom, '22 des Pins'),
-      urlClient: generateSlug(clients[3].prenom, clients[3].nom, '22 des Pins'),
-      adresse: '22 des Pins',
-      ville: 'St-Lambert',
-      typeProjet: 'JUMELE' as const,
-      typeContrat: 'ENTREPRISE' as const,
-      montantTotal: 350000,
-      phase: 'PREPARATION' as const,
-      dateLivraison: new Date('2026-08-15'),
-      client: clients[3],
-      etapesCompletes: 8,
-      etapeCourante: 9,
-    },
-    {
-      numero: 'PROJ-2026-005',
-      slug: generateSlug(clients[4].prenom, clients[4].nom, '5 Bellevue'),
-      urlClient: generateSlug(clients[4].prenom, clients[4].nom, '5 Bellevue'),
-      adresse: '5 Bellevue',
-      ville: 'Vallée-Jonction',
-      typeProjet: 'MAISON' as const,
-      typeContrat: 'PRELIMINAIRE' as const,
-      montantTotal: 310000,
-      phase: 'CHANTIER' as const,
-      dateLivraison: new Date('2026-10-01'),
-      client: clients[4],
-      etapesCompletes: 5,
-      etapeCourante: 6,
-    },
-  ];
+  await prisma.extra.createMany({
+    data: [
+      { projetId: proj1.id, description: 'Céramique format 24x24', montant: 1200, statut: 'SIGNE', signeLe: new Date('2026-04-15') },
+      { projetId: proj1.id, description: 'Escalier bois franc', montant: 2400, statut: 'SIGNE', signeLe: new Date('2026-04-20') },
+      { projetId: proj2.id, description: 'Fenêtres triple vitrage', montant: 3800, statut: 'SIGNE', signeLe: new Date('2026-02-10') },
+      { projetId: proj2.id, description: 'Îlot de cuisine', montant: 1650, statut: 'SIGNE', signeLe: new Date('2026-03-05') },
+      { projetId: proj3.id, description: 'Porte de garage supplémentaire', montant: 890, statut: 'EN_ATTENTE' },
+    ],
+  });
 
-  for (const projetData of projets) {
-    // Créer le projet
-    const projet = await prisma.projet.create({
-      data: {
-        numero: projetData.numero,
-        slug: projetData.slug,
-        urlClient: projetData.urlClient,
-        adresse: projetData.adresse,
-        ville: projetData.ville,
-        typeProjet: projetData.typeProjet,
-        typeContrat: projetData.typeContrat,
-        montantTotal: projetData.montantTotal,
-        phase: projetData.phase,
-        dateLivraison: projetData.dateLivraison,
-        dateContrat: new Date(projetData.dateLivraison.getTime() - 90 * 24 * 60 * 60 * 1000),
-        toleranceJours: 3,
-        clientId: projetData.client.id,
-        vendeurId: jason.id,
-        chargeProjetId: louis.id,
-      },
+  console.log(`✅ Extras créés\n`);
+
+  // Créer les dépenses fournisseurs
+  console.log('🏪 Création des dépenses fournisseurs...');
+
+  // Projet 1
+  await prisma.depense.createMany({
+    data: [
+      { projetId: proj1.id, categorie: 'MATERIAUX', description: 'Matériaux structure', fournisseur: 'Bomat', montant: 67400, dateDepense: new Date('2025-11-20'), facture: 'BOF-2025-1847' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Plomberie complète', fournisseur: 'Plomberie Côté', montant: 18200, dateDepense: new Date('2026-01-15'), facture: 'PC-2026-0234' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Électricité rough + finition', fournisseur: 'Élec. Vachon', montant: 14800, dateDepense: new Date('2026-02-08'), facture: 'EV-2026-0089' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Pose gypse + joints', fournisseur: 'Gypse Beauce', montant: 9600, dateDepense: new Date('2026-03-02'), facture: 'GB-2026-0156' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Peinture complète', fournisseur: 'Peinture Martin', montant: 7200, dateDepense: new Date('2026-04-10'), facture: 'PM-2026-0312' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Céramique salle de bain + cuisine', fournisseur: 'Céramique Plus', montant: 6800, dateDepense: new Date('2026-04-22'), facture: 'CP-2026-0178' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Armoires cuisine', fournisseur: 'Cuisines Beauce', montant: 22400, dateDepense: new Date('2026-05-03'), facture: 'CB-2026-0445' },
+      { projetId: proj1.id, categorie: 'MATERIAUX', description: 'Matériaux finition', fournisseur: 'Canac', montant: 8900, dateDepense: new Date('2026-05-15'), facture: 'CAN-2026-2234' },
+      { projetId: proj1.id, categorie: 'SOUS_TRAITANT', description: 'Échangeur air + climatisation', fournisseur: 'Ventil. Express', montant: 5400, dateDepense: new Date('2026-02-28'), facture: 'VE-2026-0067' },
+    ],
+  });
+
+  // Projet 2
+  await prisma.depense.createMany({
+    data: [
+      { projetId: proj2.id, categorie: 'MATERIAUX', description: 'Matériaux structure et charpente', fournisseur: 'Bomat', montant: 89200, dateDepense: new Date('2025-12-10'), facture: 'BOF-2025-2103' },
+      { projetId: proj2.id, categorie: 'MATERIAUX', description: 'Matériaux isolation et fenêtres', fournisseur: 'Rona', montant: 31400, dateDepense: new Date('2026-01-22'), facture: 'RON-2026-0892' },
+      { projetId: proj2.id, categorie: 'SOUS_TRAITANT', description: 'Plomberie rough-in', fournisseur: 'Plomberie Côté', montant: 12600, dateDepense: new Date('2026-02-14'), facture: 'PC-2026-0312' },
+      { projetId: proj2.id, categorie: 'SOUS_TRAITANT', description: 'Électricité rough-in', fournisseur: 'Élec. Vachon', montant: 11200, dateDepense: new Date('2026-02-28'), facture: 'EV-2026-0134' },
+      { projetId: proj2.id, categorie: 'SOUS_TRAITANT', description: 'Pose gypse', fournisseur: 'Gypse Beauce', montant: 8400, dateDepense: new Date('2026-04-05'), facture: 'GB-2026-0198' },
+      { projetId: proj2.id, categorie: 'SOUS_TRAITANT', description: 'Échangeur d\'air rough', fournisseur: 'Ventil. Express', montant: 3800, dateDepense: new Date('2026-03-10'), facture: 'VE-2026-0089' },
+    ],
+  });
+
+  // Projet 3
+  await prisma.depense.createMany({
+    data: [
+      { projetId: proj3.id, categorie: 'MATERIAUX', description: 'Matériaux fondation et structure', fournisseur: 'Bomat', montant: 54600, dateDepense: new Date('2026-02-20'), facture: 'BOF-2026-0445' },
+      { projetId: proj3.id, categorie: 'SOUS_TRAITANT', description: 'Plomberie fond de cave', fournisseur: 'Plomberie Côté', montant: 4200, dateDepense: new Date('2026-03-08'), facture: 'PC-2026-0478' },
+      { projetId: proj3.id, categorie: 'MATERIAUX', description: 'Matériaux charpente', fournisseur: 'Canac', montant: 18900, dateDepense: new Date('2026-03-15'), facture: 'CAN-2026-3102' },
+    ],
+  });
+
+  // Projet 4
+  await prisma.depense.createMany({
+    data: [
+      { projetId: proj4.id, categorie: 'MATERIAUX', description: 'Matériaux excavation et fondation', fournisseur: 'Bomat', montant: 22400, dateDepense: new Date('2026-05-02'), facture: 'BOF-2026-0892' },
+    ],
+  });
+
+  console.log(`✅ Dépenses créées\n`);
+
+  // Créer les employés
+  console.log('👔 Création des employés...');
+  await prisma.employe.createMany({
+    data: [
+      { prenom: 'Jason', nom: 'Turmel', email: 'jason@sideways.media', telephone: '418-555-0001', tauxHoraire: 42, actif: true },
+      { prenom: 'Nicolas', nom: 'Savard', email: 'nicolas.savard@habitationsdg.com', telephone: '418-555-0002', tauxHoraire: 45, actif: true },
+      { prenom: 'Louis', nom: 'Bellavance', email: 'louis.bellavance@habitationsdg.com', telephone: '418-555-0003', tauxHoraire: 32, actif: true },
+      { prenom: 'Sophie-Rose', nom: 'Dion', email: 'sophie-rose.dion@habitationsdg.com', telephone: '418-555-0004', tauxHoraire: 38, actif: true },
+    ],
+  });
+  console.log(`✅ 4 employés créés\n`);
+
+  // Créer les feuilles de temps pour Jason (8 semaines)
+  console.log('📅 Création des feuilles de temps...');
+
+  const jason = (await prisma.employe.findMany()).find(e => e.nom === 'Turmel')!;
+
+  const createWeekEntries = async (weeksAgo: number, entries: any[]) => {
+    const today = new Date();
+    const semaineLundi = new Date(today);
+    const dayOfWeek = semaineLundi.getDay();
+    semaineLundi.setDate(semaineLundi.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    semaineLundi.setDate(semaineLundi.getDate() - (7 * weeksAgo));
+
+    const dates = ['lun', 'mar', 'mer', 'jeu', 'ven'].map((_, i) => {
+      const d = new Date(semaineLundi);
+      d.setDate(d.getDate() + i);
+      return d;
     });
 
-    // Calculer les dates pour les tâches
-    const datesTaches = calculerDatesProjet(projetData.dateLivraison, CEDULE_JUMELE);
-
-    // Créer les tâches
-    for (let i = 0; i < CEDULE_JUMELE.length; i++) {
-      const cedule = CEDULE_JUMELE[i];
-      const dates = datesTaches[i];
-
-      const statut =
-        i < projetData.etapesCompletes
-          ? 'COMPLETE'
-          : i === projetData.etapeCourante - 1
-          ? 'EN_COURS'
-          : 'NON_COMMENCE';
-
-      const fournisseur = assignerFournisseur(cedule.nom);
-
-      await prisma.tache.create({
-        data: {
-          projetId: projet.id,
-          nom: cedule.nom,
-          description: null,
-          ordre: cedule.ordre,
-          dateDebut: dates.debut,
-          dateFin: dates.fin,
-          dureeJours: cedule.duree,
-          statut,
-          visibleClient: cedule.visible,
-          interne: cedule.interne,
-          assigneA: fournisseur,
-        },
+    const feuillesData: any[] = [];
+    for (const entry of entries) {
+      const heures = [entry.lun || 0, entry.mar || 0, entry.mer || 0, entry.jeu || 0, entry.ven || 0];
+      heures.forEach((h, i) => {
+        if (h > 0) {
+          feuillesData.push({
+            employeId: jason.id,
+            projetId: entry.projetId,
+            date: dates[i],
+            heures: h,
+            tauxHoraire: 42,
+            approuve: true,
+          });
+        }
       });
     }
+    return prisma.feuilleTemps.createMany({ data: feuillesData });
+  };
 
-    // Créer les extras (2-3 par projet)
-    const isLivraison = projetData.phase === 'LIVRAISON';
-    const extras = [
-      { description: 'Mise à niveau électrique', montant: 1500, statut: isLivraison ? 'SIGNE' as const : 'EN_ATTENTE' as const },
-      { description: 'Fenêtres éco', montant: 3200, statut: 'EN_ATTENTE' as const },
-    ];
-    if (projetData.typeProjet === 'JUMELE') {
-      extras.push({ description: 'Clôture premium', montant: 2800, statut: 'EN_ATTENTE' as const });
-    }
-
-    for (const extra of extras) {
-      await prisma.extra.create({
-        data: {
-          projetId: projet.id,
-          description: extra.description,
-          montant: extra.montant,
-          fournisseur: null,
-          statut: extra.statut,
-          signeLe: extra.statut === 'SIGNE' ? new Date() : null,
-        },
-      });
-    }
-
-    // Créer les paiements selon le type de contrat
-    const montantTotal = projetData.montantTotal || 250000;
-    const isPrelim = projetData.typeContrat === 'PRELIMINAIRE';
-
-    if (isPrelim) {
-      // CONTRAT PRÉLIMINAIRE: acompte 15000$ (reçu) + balance
-      const acompte = 15000;
-      const balance = montantTotal - acompte;
-
-      // Acompte (reçu à la signature)
-      await prisma.paiement.create({
-        data: {
-          projetId: projet.id,
-          description: 'Acompte à la signature',
-          montant: acompte,
-          pourcentage: Math.round((acompte / montantTotal) * 100),
-          recu: true,
-          dateRecu: new Date(projetData.dateLivraison.getTime() - 90 * 24 * 60 * 60 * 1000),
-          datePrevu: new Date(projetData.dateLivraison.getTime() - 90 * 24 * 60 * 60 * 1000),
-        },
-      });
-
-      // Balance (via notaire, 2-3 semaines avant livraison)
-      await prisma.paiement.create({
-        data: {
-          projetId: projet.id,
-          description: 'Balance via notaire',
-          montant: balance,
-          pourcentage: Math.round((balance / montantTotal) * 100),
-          recu: isLivraison,
-          dateRecu: isLivraison ? new Date(projetData.dateLivraison.getTime() - 14 * 24 * 60 * 60 * 1000) : null,
-          datePrevu: new Date(projetData.dateLivraison.getTime() - 14 * 24 * 60 * 60 * 1000),
-        },
-      });
-    } else {
-      // CONTRAT ENTREPRISE: 3 tranches (50/35/15%)
-      const tranches = [
-        { label: 'Tranche 1 - À la signature', pct: 50 },
-        { label: 'Tranche 2 - À la pose gypse', pct: 35 },
-        { label: 'Tranche 3 - À la remise clés', pct: 15 },
-      ];
-
-      for (let i = 0; i < tranches.length; i++) {
-        const tranche = tranches[i];
-        const montant = (montantTotal * tranche.pct) / 100;
-        const recu = isLivraison;
-
-        await prisma.paiement.create({
-          data: {
-            projetId: projet.id,
-            description: tranche.label,
-            montant: montant,
-            pourcentage: tranche.pct,
-            recu: recu,
-            dateRecu: recu ? new Date() : null,
-            datePrevu: new Date(projetData.dateLivraison.getTime() - (3 - i) * 30 * 24 * 60 * 60 * 1000),
-          },
-        });
-      }
-    }
-  }
-
-  console.log('✅ 5 projets avec tâches, extras et paiements créés');
-
-  // Créer 3 employés de test
-  await Promise.all([
-    prisma.employe.create({
-      data: {
-        prenom: 'Nicolas',
-        nom: 'Savard',
-        email: 'nicolas.savard@habitationsdg.com',
-        telephone: '418-555-0001',
-        tauxHoraire: 45,
-        actif: true,
-      }
-    }),
-    prisma.employe.create({
-      data: {
-        prenom: 'Louis',
-        nom: 'Bellavance',
-        email: 'louis.bellavance@habitationsdg.com',
-        telephone: '418-555-0002',
-        tauxHoraire: 32,
-        actif: true,
-      }
-    }),
-    prisma.employe.create({
-      data: {
-        prenom: 'Sophie-Rose',
-        nom: 'Dion',
-        email: 'sophie-rose.dion@habitationsdg.com',
-        telephone: '418-555-0003',
-        tauxHoraire: 38,
-        actif: true,
-      }
-    }),
+  // 8 semaines de travail
+  await createWeekEntries(8, [
+    { projetId: proj1.id, lun: 8, mar: 8, mer: 7.5, jeu: 8, ven: 5 },
+    { projetId: proj2.id, lun: 0, mar: 0, mer: 0, jeu: 0, ven: 2.5 },
   ]);
 
-  console.log('✅ 3 employés de test créés');
-  console.log('🌱 Seed terminé avec succès!');
+  await createWeekEntries(7, [
+    { projetId: proj1.id, lun: 8, mar: 7, mer: 7, jeu: 8, ven: 0 },
+    { projetId: proj2.id, lun: 0, mar: 0.5, mer: 2, jeu: 2, ven: 4 },
+  ]);
+
+  await createWeekEntries(6, [
+    { projetId: proj1.id, lun: 7, mar: 6, mer: 5, jeu: 6, ven: 0 },
+    { projetId: proj2.id, lun: 3, mar: 3.5, mer: 3, jeu: 3.5, ven: 3 },
+  ]);
+
+  await createWeekEntries(5, [
+    { projetId: proj1.id, lun: 4, mar: 3, mer: 3, jeu: 0, ven: 0 },
+    { projetId: proj2.id, lun: 4, mar: 4, mer: 4, jeu: 4, ven: 2 },
+    { projetId: proj3.id, lun: 0, mar: 0.5, mer: 1, jeu: 1, ven: 3 },
+  ]);
+
+  await createWeekEntries(4, [
+    { projetId: proj1.id, lun: 2, mar: 2, mer: 1, jeu: 2, ven: 3 },
+    { projetId: proj2.id, lun: 5, mar: 4.5, mer: 4, jeu: 4.5, ven: 0 },
+    { projetId: proj3.id, lun: 1, mar: 2, mer: 2.5, jeu: 2, ven: 2 },
+  ]);
+
+  await createWeekEntries(3, [
+    { projetId: proj1.id, lun: 1, mar: 1, mer: 1, jeu: 1, ven: 0 },
+    { projetId: proj2.id, lun: 6, mar: 5, mer: 5, jeu: 6, ven: 0 },
+    { projetId: proj3.id, lun: 1, mar: 2, mer: 2, jeu: 2.5, ven: 3 },
+  ]);
+
+  await createWeekEntries(2, [
+    { projetId: proj2.id, lun: 4, mar: 4, mer: 4, jeu: 4, ven: 4 },
+    { projetId: proj3.id, lun: 2, mar: 2, mer: 2.5, jeu: 3.5, ven: 2 },
+    { projetId: proj4.id, lun: 0, mar: 0.5, mer: 1, jeu: 0.5, ven: 0 },
+  ]);
+
+  await createWeekEntries(1, [
+    { projetId: proj2.id, lun: 3, mar: 3, mer: 3, jeu: 3, ven: 4 },
+    { projetId: proj3.id, lun: 3, mar: 2.5, mer: 3, jeu: 3.5, ven: 2 },
+    { projetId: proj4.id, lun: 1, mar: 0.5, mer: 1.5, jeu: 1.5, ven: 2 },
+  ]);
+
+  console.log(`✅ Feuilles de temps créées\n`);
+
+  // RÉSUMÉ FINAL
+  console.log('📊 RÉSUMÉ DU SEED:');
+  console.log(`✅ 4 clients`);
+  console.log(`✅ 4 projets`);
+  console.log(`✅ 96 étapes`);
+  console.log(`✅ 12 paiements`);
+  console.log(`✅ 5 extras`);
+  console.log(`✅ 24 dépenses`);
+  console.log(`✅ 4 employés`);
+  console.log(`✅ 100+ feuilles de temps (8 semaines)`);
+  console.log('\n🌱 Seed réaliste complété avec succès!');
 }
 
 main()
