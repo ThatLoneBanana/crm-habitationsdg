@@ -55,6 +55,8 @@ export default function FeuillesDeTempsPage() {
   const [tauxEdits, setTauxEdits] = useState<{ [key: string]: number }>({})
   const [heuresmoisMap, setHeuresmoisMap] = useState<{ [key: string]: number }>({})
   const [newDepense, setNewDepense] = useState({ fournisseur: '', projetId: '', date: new Date().toISOString().split('T')[0], montant: '', facture: '', categorie: 'MATERIAUX', notes: '' })
+  const [showAjouterEmploye, setShowAjouterEmploye] = useState(false)
+  const [nouvelEmploye, setNouvelEmploye] = useState({ prenom: '', nom: '', email: '', telephone: '', tauxHoraire: 0 })
 
   useEffect(() => { loadAllData() }, [])
 
@@ -326,6 +328,64 @@ export default function FeuillesDeTempsPage() {
     }
   }
 
+  const handleAjouterEmploye = async () => {
+    if (!nouvelEmploye.prenom || !nouvelEmploye.nom) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/employes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nouvelEmploye)
+      })
+      if (res.ok) {
+        setShowAjouterEmploye(false)
+        setNouvelEmploye({ prenom: '', nom: '', email: '', telephone: '', tauxHoraire: 0 })
+        loadAllData()
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleEmploye = async (employeId: string, actif: boolean) => {
+    try {
+      const res = await fetch(`/api/employes/${employeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actif: !actif })
+      })
+      if (res.ok) {
+        setEmployes(employes.map(e => e.id === employeId ? { ...e, actif: !actif } : e))
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    }
+  }
+
+  const handleSauvegarderTauxEmploye = async (employeId: string) => {
+    const taux = tauxEdits[employeId]
+    if (taux === undefined) return
+    try {
+      const res = await fetch(`/api/employes/${employeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tauxHoraire: taux })
+      })
+      if (res.ok) {
+        setEmployes(employes.map(e => e.id === employeId ? { ...e, tauxHoraire: taux } : e))
+        setTauxEdits(prev => {
+          const newEdits = { ...prev }
+          delete newEdits[employeId]
+          return newEdits
+        })
+      }
+    } catch (err) {
+      console.error('Erreur:', err)
+    }
+  }
+
   const feuilles_filtrees = feuilles
   const totalHeures = feuilles.reduce((s, f) => s + f.heures, 0)
   const totalMontant = feuilles.reduce((s, f) => s + (f.heures * f.tauxHoraire), 0)
@@ -578,31 +638,74 @@ export default function FeuillesDeTempsPage() {
 
       {ongletActif === 'employes' && (
         <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600' }}>Employés ({employes.length})</h2>
+            <button onClick={() => setShowAjouterEmploye(true)} style={{ padding: '8px 14px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Ajouter un employé</button>
+          </div>
+
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 150px 120px', alignItems: 'center', padding: '12px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '12px', fontWeight: 500, color: '#6B7280' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 100px 120px 120px 80px', alignItems: 'center', padding: '12px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '11px', fontWeight: 600, color: '#6B7280' }}>
               <div>Employé</div>
-              <div>Ce mois</div>
+              <div textAlign='center'>Heures</div>
               <div>Taux/h</div>
-              <div></div>
+              <div>Statut</div>
+              <div>Actions</div>
             </div>
 
-            {users.filter(u => u.actif).map((user, i) => (
-              <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 150px 120px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
+            {employes.map((emp, i) => (
+              <div key={emp.id} style={{ display: 'grid', gridTemplateColumns: '2fr 100px 120px 120px 80px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? 'white' : '#F9FAFB', opacity: emp.actif ? 1 : 0.6 }}>
                 <div>
-                  <div style={{ fontWeight: 500, fontSize: '13px' }}>{user.prenom} {user.nom}</div>
-                  <div style={{ fontSize: '11px', color: '#6B7280' }}>{formatRole(user.role)}</div>
+                  <div style={{ fontWeight: 500, fontSize: '13px' }}>{emp.prenom} {emp.nom}</div>
+                  <div style={{ fontSize: '11px', color: '#6B7280' }}>{emp.email}</div>
                 </div>
-                <div style={{ fontSize: '13px', color: '#6B7280' }}>{heuresmoisMap[user.id] || 0}h</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input type="number" step="0.01" value={tauxEdits[user.id] !== undefined ? tauxEdits[user.id] : user.tauxHoraire} onChange={e => setTauxEdits(prev => ({ ...prev, [user.id]: parseFloat(e.target.value) }))} style={{ width: '70px', padding: '6px 8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px' }} />
-                  <span style={{ fontSize: '11px', color: '#6B7280' }}>$/h</span>
+                <div style={{ fontSize: '12px', textAlign: 'center', color: '#6B7280' }}>{heuresmoisMap[emp.id] || 0}h</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input type="number" step="0.01" value={tauxEdits[emp.id] !== undefined ? tauxEdits[emp.id] : emp.tauxHoraire} onChange={e => setTauxEdits(prev => ({ ...prev, [emp.id]: parseFloat(e.target.value) }))} style={{ width: '60px', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '11px' }} />
+                  <span style={{ fontSize: '10px', color: '#6B7280' }}>$/h</span>
                 </div>
-                <button onClick={() => handleSauvegarderTaux(user.id)} disabled={tauxEdits[user.id] === undefined} style={{ padding: '6px 12px', background: tauxEdits[user.id] !== undefined ? '#ea1c24' : '#D1D5DB', color: 'white', border: 'none', borderRadius: '4px', fontSize: '12px', cursor: tauxEdits[user.id] !== undefined ? 'pointer' : 'not-allowed', fontWeight: 500 }}>
-                  Sauvegarder
-                </button>
+                <div>
+                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '3px', background: emp.actif ? '#EAF3DE' : '#FCEBEB', color: emp.actif ? '#3B6D11' : '#A32D2D', fontWeight: 500 }}>
+                    {emp.actif ? 'Actif' : 'Inactif'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                  {tauxEdits[emp.id] !== undefined && (
+                    <button onClick={() => handleSauvegarderTauxEmploye(emp.id)} style={{ padding: '4px 8px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '3px', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}>
+                      Sauvegarder
+                    </button>
+                  )}
+                  <button onClick={() => handleToggleEmploye(emp.id, emp.actif)} style={{ padding: '4px 8px', background: emp.actif ? '#FCEBEB' : '#EAF3DE', color: emp.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '3px', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}>
+                    {emp.actif ? 'Désactiver' : 'Activer'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
+
+          {showAjouterEmploye && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+              <div style={{ background: 'white', borderRadius: '8px', padding: '24px', width: '90%', maxWidth: '400px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Ajouter un employé</h3>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <input type="text" placeholder="Prénom" value={nouvelEmploye.prenom} onChange={e => setNouvelEmploye({...nouvelEmploye, prenom: e.target.value})} style={{ padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                    <input type="text" placeholder="Nom" value={nouvelEmploye.nom} onChange={e => setNouvelEmploye({...nouvelEmploye, nom: e.target.value})} style={{ padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                  </div>
+                  <input type="email" placeholder="Email" value={nouvelEmploye.email} onChange={e => setNouvelEmploye({...nouvelEmploye, email: e.target.value})} style={{ padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                  <input type="tel" placeholder="Téléphone" value={nouvelEmploye.telephone} onChange={e => setNouvelEmploye({...nouvelEmploye, telephone: e.target.value})} style={{ padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                  <input type="number" step="0.01" placeholder="Taux horaire" value={nouvelEmploye.tauxHoraire} onChange={e => setNouvelEmploye({...nouvelEmploye, tauxHoraire: parseFloat(e.target.value)})} style={{ padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button onClick={handleAjouterEmploye} disabled={saving || !nouvelEmploye.prenom || !nouvelEmploye.nom} style={{ flex: 1, padding: '10px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving || !nouvelEmploye.prenom || !nouvelEmploye.nom ? 0.6 : 1 }}>
+                      {saving ? 'Ajout...' : 'Ajouter'}
+                    </button>
+                    <button onClick={() => setShowAjouterEmploye(false)} style={{ flex: 1, padding: '10px', background: '#E5E7EB', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
