@@ -2,22 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ETAPES_NOMS, DUREES_DEFAUT, ASSIGNATIONS_DEFAUT, ETAPES_INTERNES } from '@/lib/template-utils';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('Prisma instance:', typeof prisma);
-    console.log('Prisma models:', Object.keys(prisma).slice(0, 20));
-    console.log('Has template:', 'template' in prisma);
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+
+    console.log('GET templates - type:', type);
 
     // Vérifier que prisma.template existe
     if (!prisma || !prisma.template) {
-      console.error('Prisma template model not found:', {
-        prismaType: typeof prisma,
-        hasTemplate: 'template' in prisma,
-        keys: Object.keys(prisma || {}).slice(0, 30)
-      });
+      console.error('Prisma template model not found');
       return NextResponse.json({ error: 'Template model not initialized' }, { status: 500 });
     }
 
+    // Si type spécifié, retourner un seul template
+    if (type) {
+      const template = await prisma.template.findFirst({
+        where: {
+          type: type as any,
+          actif: true
+        },
+        include: {
+          etapes: {
+            orderBy: { ordre: 'asc' }
+          }
+        }
+      });
+      return NextResponse.json(template);
+    }
+
+    // Sinon retourner tous les templates
     let templates = await prisma.template.findMany({
       include: {
         etapes: { orderBy: { ordre: 'asc' } },

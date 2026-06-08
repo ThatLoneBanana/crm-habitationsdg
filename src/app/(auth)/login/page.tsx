@@ -1,117 +1,85 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { signInWithEmail } from '@/lib/auth';
-import { AlertCircle } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  const router = useRouter()
+  const supabase = createClient()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
     try {
-      console.log('🔐 Tentative de connexion avec:', { email, password: '***' });
-      const result = await signInWithEmail(email, password);
-      console.log('✅ Connexion réussie', result);
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
-      // Attendre un peu pour que les cookies soient bien sauvegardés
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (signInError) {
+        console.error('Erreur login:', signInError.message)
+        setError(signInError.message)
+        setLoading(false)
+        return
+      }
 
-      console.log('📍 Redirection vers /', { cookies: document.cookie });
-      router.push('/');
-
-      // Fallback si le router.push ne fonctionne pas
-      setTimeout(() => {
-        console.log('⚠️  Fallback: rechargement de la page');
-        window.location.href = '/';
-      }, 2000);
+      console.log('✅ Connexion réussie')
+      router.push('/')
+      router.refresh()
     } catch (err: any) {
-      console.error('❌ Erreur de connexion:', err);
-      const errorMsg = err.message || err.error_description || 'Erreur lors de la connexion. Vérifiez vos identifiants.';
-      setError(errorMsg);
-      setLoading(false);
+      console.error('Erreur:', err)
+      setError(err.message || 'Erreur de connexion')
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-xl">DG</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--color-background-secondary)' }}>
+      <div style={{ width: '360px', background: 'var(--color-background-primary)', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 'var(--border-radius-lg)', padding: '32px' }}>
+        <img src='/habitationsdg.svg' alt='Habitations DG' style={{ width: '120px', margin: '0 auto 24px', display: 'block' }} />
+
+        {error && (
+          <div style={{ background: '#FCEBEB', border: '0.5px solid #EAB8B4', borderRadius: 'var(--border-radius-md)', padding: '10px 12px', marginBottom: '12px', fontSize: '12px', color: '#A32D2D' }}>
+            {error}
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Habitations DG</h1>
-          <p className="text-gray-600 text-sm mt-1">Gestion de projets</p>
-        </div>
+        )}
 
-        {/* Formulaire */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          {/* Erreur */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          {/* Email */}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
-              disabled={loading}
+            <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label>
+            <input
+              name='email'
+              type='email'
               required
+              disabled={loading}
+              style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: 'var(--border-radius-md)', fontSize: '13px' }}
             />
           </div>
-
-          {/* Mot de passe */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Mot de passe
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              disabled={loading}
+            <label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Mot de passe</label>
+            <input
+              name='password'
+              type='password'
               required
+              disabled={loading}
+              style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: 'var(--border-radius-md)', fontSize: '13px' }}
             />
           </div>
-
-          {/* Bouton */}
-          <Button
-            type="submit"
+          <button
+            type='submit'
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2"
+            style={{ width: '100%', padding: '10px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: 'var(--border-radius-md)', fontSize: '13px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px', opacity: loading ? 0.6 : 1 }}
           >
-            {loading ? 'Connexion en cours...' : 'Se connecter'}
-          </Button>
+            {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
         </form>
-
-        {/* Aide */}
-        <div className="mt-6 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
-          <p>Pour l'assistance, contactez votre administrateur</p>
-        </div>
       </div>
     </div>
-  );
+  )
 }

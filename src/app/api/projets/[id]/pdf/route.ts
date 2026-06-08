@@ -50,7 +50,7 @@ export async function GET(
     const pdfBuffer = await renderToBuffer(generateCedulePDF(projet, logoBase64));
 
     // Retourner le PDF avec les headers appropriés
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="cedule-${projet.adresse.replace(/\s+/g, '-')}.pdf"`,

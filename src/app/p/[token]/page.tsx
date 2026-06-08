@@ -63,7 +63,7 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
 
         {tachesClient.length > 0 && (
           <div className="space-y-4"><h2 className="text-2xl font-bold">Cédule des travaux</h2>
-            <GanttChart taches={tachesClient.map((t: any) => ({id: t.id, nom: t.nom, start: t.dateDebut, end: t.dateFin, statut: t.statut, progress: t.statut === 'COMPLETE' ? 100 : 0, assigné: t.assigneA}))} projectId={projet.id} />
+            <GanttChart taches={tachesClient.map((t: any) => ({id: t.id, nom: t.nom, start: t.dateDebut, end: t.dateFin, statut: t.statut, progress: t.statut === 'COMPLETE' ? 100 : 0, assigné: t.assigneA}))} projectId={projet.id} toleranceJours={projet.toleranceJours} />
           </div>
         )}
 

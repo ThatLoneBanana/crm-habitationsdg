@@ -36,6 +36,7 @@ export function Sidebar() {
             height={80}
             priority
             className="object-contain"
+            style={{ width: 'auto', height: 'auto' }}
           />
         </Link>
       </div>
@@ -52,6 +53,9 @@ export function Sidebar() {
               {projetsCount}
             </Badge>
           )}
+        </Link>
+        <Link href="/map" className="block px-3 py-2 hover:bg-gray-100 rounded text-sm">
+          🗺️ Carte
         </Link>
         <Link href="/clients" className="block px-3 py-2 hover:bg-gray-100 rounded text-sm">
           Clients

@@ -6,7 +6,7 @@ interface DocumentsTabProps {
 }
 
 export function DocumentsTab({ projectId }: DocumentsTabProps) {
-  const documents = [
+  const documents: Array<{ id: number; name: string; uploadedAt: Date }> = [
     // Exemple de documents - à connecter avec une vraie DB
     // { id: 1, name: 'Contrat préliminaire.pdf', uploadedAt: new Date() },
   ];

@@ -11,6 +11,24 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Habitations DG - CRM",
   description: "Gestion de projets de construction",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HabitationsDG",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/favicon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  themeColor: "#ea1c24",
 };
 
 export default function RootLayout({
@@ -23,7 +41,9 @@ export default function RootLayout({
       lang="fr"
       className={`${inter.variable} h-full antialiased`}
     >
-      <body className={`${inter.className} min-h-full flex flex-col`}>{children}</body>
+      <body className={`${inter.className} min-h-full`}>
+        {children}
+      </body>
     </html>
   );
 }

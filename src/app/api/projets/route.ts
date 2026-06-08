@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { geocoderAdresse } from '@/lib/geocoding';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,9 +32,15 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         client: true,
-        vendeur: true,
-        chargeProjet: true,
-        taches: true,
+        vendeur: {
+          select: { id: true, prenom: true, nom: true }
+        },
+        chargeProjet: {
+          select: { id: true, prenom: true, nom: true }
+        },
+        taches: {
+          select: { dateDebut: true, dateFin: true }
+        },
         extras: true,
         paiements: true,
       },
@@ -129,10 +136,38 @@ function subtractWorkingDays(date: Date, daysToSubtract: number) {
   return new Date(current);
 }
 
+async function generateSlugUnique(prenom: string, nom: string, adresse: string): Promise<string> {
+  const normalize = (str: string) => str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+
+  const numAdresse = adresse.match(/^\d+/)?.[0] || '';
+  const premierMot = adresse.replace(/^\d+\s*/, '').split(/[\s-]/)[0];
+  const rueClean = normalize(premierMot);
+
+  const baseSlug = `${normalize(prenom)}${normalize(nom)}-${numAdresse}-${rueClean}`;
+
+  // Vérifie si le slug existe déjà
+  const existing = await prisma.projet.findUnique({ where: { slug: baseSlug } });
+
+  if (!existing) return baseSlug;
+
+  // Si existe, ajoute un suffixe numérique
+  let counter = 2;
+  while (true) {
+    const slugWithSuffix = `${baseSlug}-${counter}`;
+    const exists = await prisma.projet.findUnique({ where: { slug: slugWithSuffix } });
+    if (!exists) return slugWithSuffix;
+    counter++;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { clientId, adresse, ville, typeProjet, typeContrat, montantTotal, dateLivraison, vendeur } = body;
+    const { clientId, adresse, ville, typeProjet, typeContrat, montantTotal, dateContrat, dateLivraison, vendeurId, chargeProjetId, urlClient, etapes } = body;
 
     if (!clientId || !adresse || !ville || !dateLivraison || !montantTotal) {
       return NextResponse.json(
@@ -147,8 +182,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 });
     }
 
-    // Générer le slug et le numéro
-    const slug = generateSlug(client.prenom, client.nom, adresse);
+    // Générer le slug unique et le numéro
+    const slug = await generateSlugUnique(client.prenom, client.nom, adresse);
     const numero = `PRJ-${Date.now().toString().slice(-6)}`;
 
     // Créer le projet
@@ -162,42 +197,43 @@ export async function POST(request: NextRequest) {
         typeProjet,
         typeContrat,
         phase: 'SIGNE',
+        montantTotal: parseFloat(montantTotal),
+        dateContrat: dateContrat ? new Date(dateContrat) : null,
         dateLivraison: new Date(dateLivraison),
-        vendeurId: null,
+        urlClient: urlClient || null,
+        vendeurId: vendeurId || null,
+        chargeProjetId: chargeProjetId || null,
       },
     });
 
-    // Calculer les dates des étapes (à rebours)
-    const livraison = new Date(dateLivraison);
-    let currentDate = new Date(livraison);
-
-    // Ajouter les étapes en ordre inverse
-    const etapesToCreate = [];
-    for (let i = ETAPES_TEMPLATE.length - 1; i >= 0; i--) {
-      const template = ETAPES_TEMPLATE[i];
-      const debut = subtractWorkingDays(currentDate, template.dureeJours - 1);
-      const fin = new Date(currentDate);
-
-      etapesToCreate.unshift({
-        projetId: projet.id,
-        nom: template.nom,
-        ordre: i + 1,
-        dateDebut: debut,
-        dateFin: fin,
-        dureeJours: template.dureeJours,
-        statut: 'NON_COMMENCE',
-        visibleClient: false,
-        interne: false,
+    // Géocoder l'adresse
+    const coords = await geocoderAdresse(adresse, ville);
+    if (coords) {
+      await prisma.projet.update({
+        where: { id: projet.id },
+        data: { latitude: coords.lat, longitude: coords.lng }
       });
-
-      currentDate = new Date(debut);
-      currentDate.setDate(currentDate.getDate() - 1);
     }
 
-    // Créer les étapes
-    await prisma.tache.createMany({
-      data: etapesToCreate,
-    });
+    // Créer les étapes depuis le body
+    if (etapes && Array.isArray(etapes) && etapes.length > 0) {
+      const etapesToCreate = etapes.map((e: any, i: number) => ({
+        projetId: projet.id,
+        nom: e.nom,
+        ordre: e.ordre || i + 1,
+        dateDebut: new Date(e.dateDebut),
+        dateFin: new Date(e.dateFin),
+        dureeJours: e.jours || e.dureeJours || 1,
+        assigneA: e.assigneA || null,
+        visibleClient: e.visibleClient !== false,
+        interne: e.interne || false,
+        buffer: e.buffer || 0,
+      }));
+
+      await prisma.tache.createMany({
+        data: etapesToCreate,
+      });
+    }
 
     // Créer les paiements selon le type de contrat
     if (typeContrat === 'PRELIMINAIRE') {
@@ -249,7 +285,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ projet }, { status: 201 });
+    console.log('Projet créé:', { id: projet.id, slug: projet.slug });
+    return NextResponse.json({
+      success: true,
+      id: projet.id,
+      slug: projet.slug,
+      message: 'Projet créé avec succès'
+    }, { status: 201 });
   } catch (error: any) {
     console.error('Erreur création projet:', error);
     return NextResponse.json(

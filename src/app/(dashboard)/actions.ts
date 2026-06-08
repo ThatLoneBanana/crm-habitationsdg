@@ -24,6 +24,7 @@ export async function getProjetsData(phase?: string, search?: string) {
       include: {
         client: true,
         vendeur: true,
+        chargeProjet: true,
         taches: true,
         extras: { where: { statut: 'EN_ATTENTE' } },
         paiements: true,
@@ -53,7 +54,7 @@ export async function getMetrics() {
       prisma.projet.count({
         where: {
           phase: {
-            notIn: ['CLOTURE'],
+            notIn: ['TERMINE'],
           },
         },
       }),

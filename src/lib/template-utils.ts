@@ -139,3 +139,38 @@ export function countJoursOuvrables(dateDebut: Date, dateFin: Date): number {
   }
   return count;
 }
+
+export function genererSlug(prenom: string, nom: string, adresse: string): string {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const numAdresse = adresse.match(/^\d+/)?.[0] || '';
+  const rueClean = adresse
+    .replace(/^\d+\s*/, '')
+    .split(' ')[0]
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z]/g, '');
+
+  return `${normalize(prenom)}${normalize(nom)}-${numAdresse}-${rueClean}`;
+}
+
+export function detecterConflits(etapes: any[]): number[] {
+  const conflits: number[] = [];
+  for (let i = 0; i < etapes.length - 1; i++) {
+    const d1 = new Date(etapes[i].dateFin);
+    const d2 = new Date(etapes[i + 1].dateDebut);
+    d1.setHours(0, 0, 0, 0);
+    d2.setHours(0, 0, 0, 0);
+    if (d1 >= d2) {
+      conflits.push(i);
+      conflits.push(i + 1);
+    }
+  }
+  return [...new Set(conflits)];
+}

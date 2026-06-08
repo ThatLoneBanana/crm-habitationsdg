@@ -39,28 +39,39 @@ function getWorkingDayColumns(minDate: Date, maxDate: Date) {
   return columns;
 }
 
+// Convertis en date locale pour éviter le décalage UTC
+function toLocalDate(d: Date | string): Date {
+  const date = new Date(d)
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function getStatut(dateDebut: Date | string, dateFin: Date | string): 'termine' | 'encours' | 'preparation' | 'avenir' {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+
+  const debut = toLocalDate(dateDebut)
+  const fin = toLocalDate(dateFin)
+  fin.setHours(23, 59, 59, 999)
+
+  const demain = new Date(now)
+  demain.setDate(now.getDate() + 1)
+
+  if (fin < now) return 'termine'
+  if (debut <= now && fin >= now) return 'encours'
+  if (debut.getTime() === demain.getTime()) return 'preparation'
+  return 'avenir'
+}
+
+const couleurBarre: Record<string, string> = {
+  termine: '#639922',
+  encours: '#1D9E75',
+  preparation: '#378ADD',
+  avenir: '#B4B2A9',
+}
+
 function getStatusColor(dateDebut: Date, dateFin: Date): string {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-
-  const demain = new Date(now);
-  demain.setDate(demain.getDate() + 1);
-
-  const debut = new Date(dateDebut);
-  debut.setHours(0, 0, 0, 0);
-
-  const fin = new Date(dateFin);
-  fin.setHours(0, 0, 0, 0);
-
-  if (fin < now) {
-    return '#639922'; // vert — Terminé
-  } else if (debut.getTime() === demain.getTime()) {
-    return '#378ADD'; // bleu — En préparation
-  } else if (debut <= now && fin >= now) {
-    return '#1D9E75'; // teal — En cours
-  } else {
-    return '#B4B2A9'; // gris — À venir
-  }
+  const statut = getStatut(dateDebut, dateFin)
+  return couleurBarre[statut]
 }
 
 export default function GanttComponent({ tasks }: GanttComponentProps) {

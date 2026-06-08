@@ -34,6 +34,45 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const projet = await prisma.projet.update({
+      where: { id },
+      data: {
+        adresse: body.adresse,
+        ville: body.ville,
+        typeProjet: body.typeProjet,
+        typeContrat: body.typeContrat,
+        montantTotal: body.montantTotal,
+        dateContrat: body.dateContrat ? new Date(body.dateContrat) : undefined,
+        dateLivraison: body.dateLivraison ? new Date(body.dateLivraison) : undefined,
+        phase: body.phase,
+        vendeurId: body.vendeurId || null,
+        chargeProjetId: body.chargeProjetId || null,
+      },
+      include: {
+        client: true,
+        vendeur: true,
+        chargeProjet: true,
+        taches: true,
+        extras: true,
+        paiements: true,
+      }
+    });
+
+    return NextResponse.json({ success: true, projet });
+  } catch (error: any) {
+    console.error('Erreur modification projet:', error);
+    return NextResponse.json(
+      { error: error.message || 'Erreur serveur' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

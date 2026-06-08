@@ -4,8 +4,12 @@ import { useState, useEffect, use } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { MetricCard } from '@/components/shared/metric-card';
 import { CeduleTab } from '@/components/cedule/cedule-tab';
+import CedulaEditor from '@/components/cedule/CedulaEditor';
 import { ExtrasTab } from '@/components/projets/extras-tab';
 import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
@@ -24,7 +28,11 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
   const [projet, setProjet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [modifierOpen, setModifierOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [utilisateurs, setUtilisateurs] = useState<any[]>([]);
+  const [cedulaModalOpen, setCedulaModalOpen] = useState(false);
+  const [nouvellesEtapes, setNouvellesEtapes] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProjet = async () => {
@@ -41,6 +49,13 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
         if (!res.ok) throw new Error('Projet non trouvé');
         const data = await res.json();
         setProjet(data.projet);
+
+        // Charger les utilisateurs
+        const usersRes = await fetch('/api/users');
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setUtilisateurs(usersData.users || []);
+        }
       } catch (err) {
         console.error('Erreur:', err);
         setProjet(null);
@@ -89,6 +104,42 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
     }
   };
 
+  const handleModifierProjet = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    const vendeurIdValue = formData.get('vendeurId');
+    const chargeProjetIdValue = formData.get('chargeProjetId');
+
+    try {
+      const res = await fetch(`/api/projets/${projet.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adresse: formData.get('adresse'),
+          ville: formData.get('ville'),
+          typeProjet: formData.get('typeProjet'),
+          typeContrat: formData.get('typeContrat'),
+          montantTotal: parseFloat(formData.get('montantTotal') as string),
+          dateContrat: formData.get('dateContrat'),
+          dateLivraison: formData.get('dateLivraison'),
+          phase: formData.get('phase'),
+          vendeurId: vendeurIdValue === 'none' ? null : vendeurIdValue,
+          chargeProjetId: chargeProjetIdValue === 'none' ? null : chargeProjetIdValue,
+        })
+      });
+
+      if (res.ok) {
+        setModifierOpen(false);
+        router.refresh();
+      } else {
+        alert('Erreur lors de la modification');
+      }
+    } catch (err: any) {
+      alert('Erreur: ' + err.message);
+    }
+  };
+
   // Calculs
   const avancement = projet.taches.length > 0
     ? Math.round(
@@ -134,6 +185,10 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
     <div className="p-8 space-y-8">
       {/* Boutons d'action */}
       <div className="flex justify-end gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => setModifierOpen(true)}>
+          <i className='ti ti-edit' aria-hidden='true'></i>
+          Modifier
+        </Button>
         <Button variant="outline" className="gap-2" onClick={() => window.open(`/vueclient/${projet.slug}`, '_blank')}>
           <Eye className="w-4 h-4" />
           Vue client
@@ -236,11 +291,43 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
 
         <div className="p-6">
           <TabsContent value="cedule" className="m-0">
-            <CeduleTab
-              taches={projet.taches}
-              projectId={projet.id}
-              toleranceJours={projet.toleranceJours}
-            />
+            {projet.taches.length === 0 ? (
+              <div style={{
+                margin: '24px',
+                padding: '24px',
+                border: '2px dashed #E5E7EB',
+                borderRadius: '12px',
+                textAlign: 'center',
+                background: '#F9FAFB',
+              }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>📋</div>
+                <div style={{ fontSize: '15px', fontWeight: 500, marginBottom: '6px' }}>Aucune cédule créée</div>
+                <div style={{ fontSize: '13px', color: '#6B7280', marginBottom: '20px' }}>
+                  Créez la cédule de ce projet pour planifier les étapes de construction
+                </div>
+                <button
+                  onClick={() => setCedulaModalOpen(true)}
+                  style={{
+                    padding: '10px 24px',
+                    background: '#1D9E75',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                  }}
+                >
+                  + Créer la cédule
+                </button>
+              </div>
+            ) : (
+              <CeduleTab
+                taches={projet.taches}
+                projectId={projet.id}
+                toleranceJours={projet.toleranceJours}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="extras" className="m-0">
@@ -260,6 +347,162 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Dialog Modifier le projet */}
+      <Dialog open={modifierOpen} onOpenChange={setModifierOpen}>
+        <DialogContent className='max-w-2xl'>
+          <DialogHeader>
+            <DialogTitle>Modifier le projet</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleModifierProjet} className='space-y-4'>
+            <div className='grid grid-cols-2 gap-4'>
+              <div>
+                <label className='text-sm font-medium'>Adresse</label>
+                <Input defaultValue={projet.adresse} name='adresse' />
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Ville</label>
+                <Input defaultValue={projet.ville} name='ville' />
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Type de projet</label>
+                <Select name='typeProjet' defaultValue={projet.typeProjet}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='JUMELE'>Jumelé</SelectItem>
+                    <SelectItem value='MAISON'>Maison</SelectItem>
+                    <SelectItem value='MULTILOGEMENT'>Multilogement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Type de contrat</label>
+                <Select name='typeContrat' defaultValue={projet.typeContrat}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='PRELIMINAIRE'>Préliminaire</SelectItem>
+                    <SelectItem value='ENTREPRISE'>Entreprise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Montant du contrat ($)</label>
+                <Input type='number' defaultValue={projet.montantTotal} name='montantTotal' step='0.01' />
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Date du contrat</label>
+                <Input type='date' defaultValue={projet.dateContrat?.split('T')[0] || ''} name='dateContrat' />
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Date de livraison</label>
+                <Input type='date' defaultValue={projet.dateLivraison?.split('T')[0] || ''} name='dateLivraison' />
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Phase</label>
+                <Select name='phase' defaultValue={projet.phase || 'SIGNE'}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='SIGNE'>Signé</SelectItem>
+                    <SelectItem value='PREPARATION'>Préparation</SelectItem>
+                    <SelectItem value='CHANTIER'>Chantier</SelectItem>
+                    <SelectItem value='LIVRAISON'>Livraison</SelectItem>
+                    <SelectItem value='TERMINE'>Terminé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Vendeur</label>
+                <Select name='vendeurId' defaultValue={projet.vendeurId || 'none'}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='none'>Aucun</SelectItem>
+                    {utilisateurs.filter((u: any) => u.role === 'VENDEUR').map((v: any) => (
+                      <SelectItem key={v.id} value={v.id}>{v.prenom} {v.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className='text-sm font-medium'>Chargé de projet</label>
+                <Select name='chargeProjetId' defaultValue={projet.chargeProjetId || 'none'}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='none'>Aucun</SelectItem>
+                    {utilisateurs.filter((u: any) => u.role === 'CHARGE_PROJET').map((u: any) => (
+                      <SelectItem key={u.id} value={u.id}>{u.prenom} {u.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className='flex justify-end gap-3 pt-4'>
+              <Button type='button' variant='outline' onClick={() => setModifierOpen(false)}>Annuler</Button>
+              <Button type='submit'>Sauvegarder</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog créer la cédule */}
+      <Dialog open={cedulaModalOpen} onOpenChange={setCedulaModalOpen}>
+        <DialogContent className='!max-w-[95vw] !w-[95vw] !h-[95vh] flex flex-col p-0'>
+          <DialogHeader className='px-6 py-4 border-b flex-shrink-0'>
+            <DialogTitle>Créer la cédule — {projet?.adresse}, {projet?.ville}</DialogTitle>
+          </DialogHeader>
+
+          <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+            <CedulaEditor
+              mode='creation'
+              etapesInitiales={[]}
+              typeProjet={projet?.typeProjet}
+              dateLivraison={new Date(projet?.dateLivraison)}
+              fournisseurs={utilisateurs}
+              onChange={setNouvellesEtapes}
+            />
+          </div>
+
+          <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'flex-end', gap: '10px', flexShrink: 0 }}>
+            <button
+              onClick={() => setCedulaModalOpen(false)}
+              style={{ padding: '10px 20px', border: '1px solid #E5E7EB', borderRadius: '8px', background: 'white', cursor: 'pointer', fontSize: '13px' }}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/projets/${projet.id}/cedule`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      etapes: nouvellesEtapes.map((e: any) => ({
+                        nom: e.nom,
+                        ordre: e.ordre,
+                        dureeJours: e.jours,
+                        dateDebut: e.dateDebut instanceof Date ? e.dateDebut.toISOString() : e.dateDebut,
+                        dateFin: e.dateFin instanceof Date ? e.dateFin.toISOString() : e.dateFin,
+                        assigneA: e.assigneA,
+                        visibleClient: e.visibleClient,
+                        interne: e.interne,
+                        buffer: e.buffer || 0,
+                      }))
+                    })
+                  });
+                  if (res.ok) {
+                    setCedulaModalOpen(false);
+                    router.refresh();
+                  }
+                } catch (err) {
+                  console.error('Erreur:', err);
+                }
+              }}
+              style={{ padding: '10px 24px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
+            >
+              ✓ Valider et créer la cédule
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog impression PDF */}
       <CedulePDFDialog

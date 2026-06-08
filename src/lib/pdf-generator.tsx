@@ -113,8 +113,8 @@ export function generateCedulePDF(projet: any, logoBase64: string) {
   // Calculer la plage de dates
   const dates = tachesWithDates.map((t: any) => t.dateDebut);
   dates.push(new Date(projet.dateLivraison));
-  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  const minDate = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
 
   // Générer les colonnes de dates (sans weekends)
   const dateColumns: Date[] = [];
@@ -129,6 +129,7 @@ export function generateCedulePDF(projet: any, logoBase64: string) {
 
   const totalDays = dateColumns.length;
   const ganttWidth = 452;
+  const pixelPerDay = ganttWidth / totalDays;
 
   // Calculer les jours ouvrables entre deux dates
   const countWorkingDays = (debut: Date, fin: Date) => {

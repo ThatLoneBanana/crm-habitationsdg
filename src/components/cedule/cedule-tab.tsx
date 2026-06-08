@@ -128,14 +128,14 @@ export function CeduleTab({ taches, projectId, toleranceJours }: CeduleTabProps)
             <div style={{ minWidth: 'min-content' }}>
               {taches.map((tache, idx) => {
                 const status = calculateTaskStatus(tache.dateDebut, tache.dateFin);
-                const debutFr = new Date(tache.dateDebut).toLocaleDateString('fr-FR', {
+                const debutFr = tache.dateDebut ? new Date(tache.dateDebut as string | Date).toLocaleDateString('fr-FR', {
                   day: 'numeric',
                   month: 'short',
-                }).replace('.', '').replace(' ', ' ');
-                const finFr = new Date(tache.dateFin).toLocaleDateString('fr-FR', {
+                }).replace('.', '').replace(' ', ' ') : '—';
+                const finFr = tache.dateFin ? new Date(tache.dateFin as string | Date).toLocaleDateString('fr-FR', {
                   day: 'numeric',
                   month: 'short',
-                }).replace('.', '').replace(' ', ' ');
+                }).replace('.', '').replace(' ', ' ') : '—';
 
                 return (
                   <div key={tache.id}>

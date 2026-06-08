@@ -1,49 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Permettre l'accès à la vue client publique sans authentification
-  if (request.nextUrl.pathname.startsWith('/p/')) {
-    return NextResponse.next();
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Routes publiques — pas de redirect
+  const isPublic = request.nextUrl.pathname.startsWith('/login') ||
+                   request.nextUrl.pathname.startsWith('/p/') ||
+                   request.nextUrl.pathname.startsWith('/api/restore-taches')
+
+  if (!user && !isPublic) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Permettre l'accès à la page de login et routes auth
-  if (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/(auth)')) {
-    return NextResponse.next();
-  }
-
-  // Permettre les assets et APIs publiques
-  if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname === '/favicon.ico'
-  ) {
-    return NextResponse.next();
-  }
-
-  // Vérifier les cookies Supabase (il y a plusieurs variantes possibles)
-  const supabaseCookies = [
-    request.cookies.get('sb-luzqndarimdwkogjurxm-auth-token'),
-    request.cookies.get('sb-auth-token'),
-    request.cookies.get('sb-access-token'),
-  ];
-
-  const hasAuth = supabaseCookies.some((cookie) => cookie?.value);
-
-  // Si pas d'authentification et on accède au dashboard, rediriger vers login
-  if (!hasAuth && request.nextUrl.pathname !== '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // Si pas d'auth et accès à / (dashboard), rediriger au login
-  if (!hasAuth && request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  return NextResponse.next();
+  return supabaseResponse
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|habitationsdg|leaflet|.*\\.png$|.*\\.svg$).*)'],
+}

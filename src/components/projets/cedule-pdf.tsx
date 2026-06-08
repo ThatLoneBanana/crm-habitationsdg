@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
 
 Font.register({
@@ -12,7 +13,42 @@ interface CedulePDFProps {
   logoBase64?: string;
 }
 
-export function CedulePDF({ projet, logoBase64 }: CedulePDFProps) {
+export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
+  const [logoBase64, setLogoBase64] = useState<string | undefined>(initialLogo);
+  const [dateImpression, setDateImpression] = useState<string>('');
+
+  useEffect(() => {
+    // Charger le logo PNG si disponible
+    if (!logoBase64) {
+      fetch('/habitationsdg.png')
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setLogoBase64(reader.result as string);
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(() => {
+          // Si le PNG n'existe pas, continuer sans logo
+          console.log('Logo PNG non trouvé');
+        });
+    }
+
+    // Définir la date d'impression
+    const now = new Date();
+    const dateFormatee = now.toLocaleDateString('fr-CA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const heureFormatee = now.toLocaleTimeString('fr-CA', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    setDateImpression(`Imprimé le ${dateFormatee} à ${heureFormatee}`);
+  }, [logoBase64]);
+
   const typeLabel = projet.typeProjet === 'JUMELE' ? 'JUMELÉ' : 'MAISON';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -27,8 +63,8 @@ export function CedulePDF({ projet, logoBase64 }: CedulePDFProps) {
   // Calculer la plage de dates
   const dates = tachesWithDates.map((t: any) => t.dateDebut);
   dates.push(new Date(projet.dateLivraison));
-  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  const minDate = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
 
   // Générer les colonnes de dates (sans weekends)
   const dateColumns: Date[] = [];
@@ -222,13 +258,59 @@ export function CedulePDF({ projet, logoBase64 }: CedulePDFProps) {
 
         {/* Tableau */}
         <View style={styles.table}>
-          {/* Entête */}
+          {/* Entête avec dates */}
           <View style={[styles.tableRow, styles.tableHeader]}>
             <Text style={styles.colTache}>Étape</Text>
             <Text style={styles.colDuree}>J</Text>
             <Text style={styles.colAssigne}>Assigné</Text>
             <View style={{ width: ganttWidth + 20, padding: 2 }}>
               <Text>Échéancier</Text>
+            </View>
+          </View>
+
+          {/* Ligne des mois */}
+          <View style={[styles.tableRow, { backgroundColor: '#f9f9f9', minHeight: 8 }]}>
+            <View style={[styles.colTache, { borderRightWidth: 0 }]} />
+            <View style={[styles.colDuree, { borderRightWidth: 0 }]} />
+            <View style={[styles.colAssigne, { borderRightWidth: 0 }]} />
+            <View style={{ width: ganttWidth + 20, padding: 1, flexDirection: 'row' }}>
+              {(() => {
+                const moisGroupes: any[] = [];
+                let currentMois = '';
+                let startIdx = 0;
+                dateColumns.forEach((date, idx) => {
+                  const mois = date.toLocaleString('fr-CA', { month: 'short' });
+                  if (mois !== currentMois) {
+                    if (currentMois) {
+                      moisGroupes.push({ nom: currentMois, start: startIdx, count: idx - startIdx });
+                    }
+                    currentMois = mois;
+                    startIdx = idx;
+                  }
+                });
+                if (currentMois) {
+                  moisGroupes.push({ nom: currentMois, start: startIdx, count: dateColumns.length - startIdx });
+                }
+                return moisGroupes.map((m, i) => (
+                  <Text key={i} style={{ width: m.count * pixelPerDay, fontSize: 5, textAlign: 'center', paddingRight: 1 }}>
+                    {m.nom}
+                  </Text>
+                ));
+              })()}
+            </View>
+          </View>
+
+          {/* Ligne des jours */}
+          <View style={[styles.tableRow, { backgroundColor: '#fafafa', minHeight: 8 }]}>
+            <View style={[styles.colTache, { borderRightWidth: 0 }]} />
+            <View style={[styles.colDuree, { borderRightWidth: 0 }]} />
+            <View style={[styles.colAssigne, { borderRightWidth: 0 }]} />
+            <View style={{ width: ganttWidth + 20, padding: 1, flexDirection: 'row' }}>
+              {dateColumns.map((date, i) => (
+                <Text key={i} style={{ width: pixelPerDay, fontSize: 4, textAlign: 'center' }}>
+                  {date.getDate()}
+                </Text>
+              ))}
             </View>
           </View>
 
@@ -292,7 +374,7 @@ export function CedulePDF({ projet, logoBase64 }: CedulePDFProps) {
         {/* Pied de page */}
         <View style={styles.footer}>
           <Text>Habitations DG — RBQ: 5856-1036-01 — habitations-dg.com</Text>
-          <Text>Imprimé: {today.toLocaleDateString('fr-CA')} à {today.toLocaleTimeString('fr-CA')}</Text>
+          <Text>{dateImpression || 'Imprimé...'}</Text>
         </View>
       </Page>
     </Document>

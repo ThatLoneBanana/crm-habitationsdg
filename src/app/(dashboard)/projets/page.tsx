@@ -57,7 +57,7 @@ export default function ProjetListPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
           title="Projets actifs"
-          value={projets.filter((p) => p.phase !== 'CLOTURE').length}
+          value={projets.filter((p) => p.phase !== 'TERMINE').length}
           icon={FolderOpen}
         />
         <MetricCard

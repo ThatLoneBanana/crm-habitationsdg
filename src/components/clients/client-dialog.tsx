@@ -53,7 +53,7 @@ export function ClientDialog({ open, onOpenChange, onClientCreated }: ClientDial
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
-        err.errors.forEach(e => {
+        err.issues.forEach(e => {
           newErrors[e.path[0] as string] = e.message;
         });
         setErrors(newErrors);
