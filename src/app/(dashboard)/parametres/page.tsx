@@ -7,8 +7,9 @@ interface User { id: string; email: string; prenom: string; nom: string; role: R
 
 export default function ParametresPage() {
   const supabase = createClient()
-  const [activeTab, setActiveTab] = useState<'general' | 'compte' | 'utilisateurs'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'compte' | 'utilisateurs'>('compte')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [estAdminOuComptabilite, setEstAdminOuComptabilite] = useState(false)
   const [editUser, setEditUser] = useState({ prenom: '', nom: '' })
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,8 +40,18 @@ export default function ParametresPage() {
           setCurrentUser(userData)
           setEditUser({ prenom: userData.prenom, nom: userData.nom })
 
+          // Détermine si admin/comptabilité
+          const estAdmin = userData.role === 'ADMIN'
+          const estComptabilite = userData.role === 'COMPTABILITE'
+          setEstAdminOuComptabilite(estAdmin || estComptabilite)
+
+          // Défaut à 'general' pour admin, 'compte' pour autres
+          if (estAdmin || estComptabilite) {
+            setActiveTab('general')
+          }
+
           // Load users if admin
-          if (userData.role === 'ADMIN') {
+          if (estAdmin) {
             try {
               const usersRes = await fetch('/api/users', { signal: controller.signal })
               if (usersRes.ok) setUsers(await usersRes.json())
@@ -166,9 +177,13 @@ export default function ParametresPage() {
       <h1 style={{ fontSize: '24px', fontWeight: 500, marginBottom: '24px' }}>Paramètres</h1>
 
       <div style={{ display: 'flex', gap: '2px', marginBottom: '24px', borderBottom: '0.5px solid var(--color-border-tertiary)' }}>
-        <button onClick={() => setActiveTab('general')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'general' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'general' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'general' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Général</button>
+        {estAdminOuComptabilite && (
+          <button onClick={() => setActiveTab('general')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'general' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'general' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'general' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Général</button>
+        )}
         <button onClick={() => setActiveTab('compte')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'compte' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'compte' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'compte' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Mon compte</button>
-        {currentUser?.role === 'ADMIN' && <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>}
+        {currentUser?.role === 'ADMIN' && (
+          <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>
+        )}
       </div>
 
       {error && <div style={{ background: '#FCEBEB', color: '#A32D2D', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '12px' }}>{error}</div>}
