@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { TrendingUp } from 'lucide-react'
-import { formatMontant } from '@/lib/utils'
+import { formatMontant, formatMontantCourt } from '@/lib/utils'
 
 interface ProjetCosting {
   id: string

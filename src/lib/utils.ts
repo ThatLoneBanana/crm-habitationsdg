@@ -20,3 +20,16 @@ export const formatCurrency = (amount: number) => {
     currency: 'CAD',
   }).format(amount);
 };
+
+export function formatMontant(montant: number, decimales = 2): string {
+  return new Intl.NumberFormat('fr-CA', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  }).format(montant) + ' $'
+}
+
+export function formatMontantCourt(n: number): string {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)} M$`
+  if (n >= 1000) return `${Math.round(n / 1000)} k$`
+  return formatMontant(n, 0)
+}
