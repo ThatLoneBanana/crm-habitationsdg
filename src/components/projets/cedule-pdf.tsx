@@ -80,9 +80,15 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
   const totalDays = dateColumns.length;
 
   // Calculer la largeur par jour (4-12px)
-  // Largeur disponible: 792 (LETTER landscape) - 20*2 (marges) - 180 (étapes) - 35 (durée) - 80 (assigné) = 397px
-  const availableWidth = 397;
-  let pixelPerDay = availableWidth / totalDays;
+  // Largeur disponible: 792 (LETTER landscape) - 30*2 (marges) - 200 (étapes) - 25 (durée) - 80 (assigné) = 427px
+  const PAGE_WIDTH = 792;
+  const MARGINS = 30;
+  const COL_ETAPE = 200;
+  const COL_JOURS = 25;
+  const COL_ASSIGNE = 80;
+  const GANTT_WIDTH = PAGE_WIDTH - MARGINS * 2 - COL_ETAPE - COL_JOURS - COL_ASSIGNE;
+
+  let pixelPerDay = GANTT_WIDTH / totalDays;
   if (pixelPerDay > 12) pixelPerDay = 12;
   if (pixelPerDay < 4) pixelPerDay = 4;
 
@@ -143,7 +149,7 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
       gap: 8,
     },
     headerLeft: {
-      width: 60,
+      width: 160,
     },
     headerCenter: {
       flex: 1,
@@ -151,20 +157,23 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
       justifyContent: 'center',
     },
     headerRight: {
-      width: 120,
-      fontSize: 5,
-      lineHeight: 1.3,
+      width: 200,
+      fontSize: 7,
+      lineHeight: 1.4,
     },
     logo: {
-      width: 50,
-      height: 25,
+      width: 130,
+      height: 35,
+      marginBottom: 6,
     },
     title: {
-      fontSize: 8,
+      fontSize: 13,
       fontWeight: 'bold',
+      textAlign: 'center',
     },
     rqb: {
-      fontSize: 5,
+      fontSize: 9,
+      fontWeight: 'bold',
       marginTop: 2,
     },
     table: {
@@ -183,20 +192,20 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
       fontSize: 6,
     },
     colTache: {
-      width: 150,
+      width: 200,
       padding: 2,
       borderRightWidth: 0.5,
       borderRightColor: '#ccc',
     },
     colDuree: {
-      width: 30,
+      width: 25,
       padding: 2,
       borderRightWidth: 0.5,
       borderRightColor: '#ccc',
       textAlign: 'center',
     },
     colAssigne: {
-      width: 70,
+      width: 80,
       padding: 2,
       borderRightWidth: 0.5,
       borderRightColor: '#ccc',
@@ -229,8 +238,9 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
         orientation="landscape"
         style={styles.page}
       >
-        {/* Entête */}
-        <View style={styles.header}>
+        {/* ENTÊTE — 3 zones sur une ligne */}
+        <View style={{ flexDirection: 'row', marginBottom: 12, alignItems: 'flex-start' }}>
+          {/* GAUCHE — Logo + RBQ */}
           <View style={styles.headerLeft}>
             {logoBase64 && (
               <Image
@@ -241,18 +251,53 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
             <Text style={styles.rqb}>RBQ: 5856-1036-01</Text>
           </View>
 
+          {/* CENTRE — Titre */}
           <View style={styles.headerCenter}>
-            <Text style={styles.title}>ÉCHÉANCIER DES TRAVAUX — {typeLabel}</Text>
+            <Text style={styles.title}>
+              ÉCHÉANCIER DES TRAVAUX — {typeLabel}
+            </Text>
           </View>
 
+          {/* DROITE — Infos client sur 2 lignes */}
           <View style={styles.headerRight}>
-            <Text>{projet.client.prenom} {projet.client.nom}</Text>
-            <Text>{projet.adresse}</Text>
-            <Text>{projet.ville}</Text>
-            <Text>{projet.client.telephone}</Text>
-            <Text>{projet.client.email}</Text>
-            <Text>Livraison: {new Date(projet.dateLivraison).toLocaleDateString('fr-CA')}</Text>
-            <Text>MAJ: {today.toLocaleDateString('fr-CA')}</Text>
+            {/* Ligne 1 */}
+            <View style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize: 6, color: '#666' }}>Client</Text>
+              <Text style={{ fontSize: 8, fontWeight: 'bold' }}>{projet.client.prenom} {projet.client.nom}</Text>
+            </View>
+            {/* Ligne 2 */}
+            <View style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize: 6, color: '#666' }}>Adresse</Text>
+              <Text style={{ fontSize: 7 }}>{projet.adresse}</Text>
+              <Text style={{ fontSize: 7 }}>{projet.ville}</Text>
+            </View>
+            {/* Ligne 3 */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 6, color: '#666' }}>Téléphone</Text>
+                <Text style={{ fontSize: 7 }}>{projet.client.telephone || '—'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 6, color: '#666' }}>Courriel</Text>
+                <Text style={{ fontSize: 7 }}>{projet.client.email}</Text>
+              </View>
+            </View>
+            {/* Livraison — en gras et plus visible */}
+            <View style={{ marginTop: 4, padding: 6, backgroundColor: '#F3F4F6', borderRadius: 3 }}>
+              <Text style={{ fontSize: 6, color: '#666' }}>Livraison prévue</Text>
+              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
+                {new Date(projet.dateLivraison).toLocaleDateString('fr-CA', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </Text>
+            </View>
+            {/* MAJ */}
+            <Text style={{ fontSize: 6, color: '#666', marginTop: 3 }}>
+              MAJ: {today.toLocaleDateString('fr-CA')}
+            </Text>
           </View>
         </View>
 
