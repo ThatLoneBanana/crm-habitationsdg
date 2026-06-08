@@ -11,15 +11,15 @@ export async function POST(request: NextRequest) {
     vendrediSemaine.setDate(lundiSemaine.getDate() + 4)
     vendrediSemaine.setHours(23, 59, 59, 999)
 
-    // Identifie les paires userId-projetId à supprimer
-    const userProjetPairs = [...new Set(entries.map((e: any) => `${e.userId}-${e.projetId}`))]
+    // Identifie les paires employeId-projetId à supprimer
+    const employeProjetPairs = [...new Set(entries.map((e: any) => `${e.employeId}-${e.projetId}`))]
 
     // Supprime les entrées existantes pour cette semaine
-    for (const pair of userProjetPairs) {
-      const [userId, projetId] = pair.split('-')
+    for (const pair of employeProjetPairs) {
+      const [employeId, projetId] = pair.split('-')
       await prisma.feuilleTemps.deleteMany({
         where: {
-          userId,
+          employeId,
           projetId,
           date: { gte: lundiSemaine, lte: vendrediSemaine }
         }
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Crée toutes les nouvelles entrées
     await prisma.feuilleTemps.createMany({
       data: entries.map((e: any) => ({
-        userId: e.userId,
+        employeId: e.employeId,
         projetId: e.projetId,
         date: new Date(e.date),
         heures: parseFloat(e.heures),

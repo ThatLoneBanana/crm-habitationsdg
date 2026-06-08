@@ -10,12 +10,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const projetId = searchParams.get('projetId')
-    const userId = searchParams.get('userId')
+    const employeId = searchParams.get('employeId')
     const semaine = searchParams.get('semaine')
 
     const where: any = {}
     if (projetId) where.projetId = projetId
-    if (userId) where.userId = userId
+    if (employeId) where.employeId = employeId
     if (semaine) {
       const debut = new Date(semaine)
       const fin = new Date(debut)
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         projet: { select: { id: true, adresse: true, numero: true } },
-        user: { select: { id: true, prenom: true, nom: true } },
+        employe: { select: { id: true, prenom: true, nom: true } },
       },
       orderBy: { date: 'desc' },
     })
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const feuille = await prisma.feuilleTemps.create({
       data: {
         projetId: body.projetId,
-        userId: body.userId,
+        employeId: body.employeId,
         date: new Date(body.date),
         heures: parseFloat(body.heures),
         tauxHoraire: parseFloat(body.tauxHoraire),
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         projet: true,
-        user: true,
+        employe: true,
       },
     })
 
