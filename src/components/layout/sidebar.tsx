@@ -1,7 +1,7 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, Building2, Map, Users, Truck, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Building2, Map, Users, Truck, Clock, Settings, LogOut } from 'lucide-react'
 import { useState } from 'react'
 
 const settingsIcon = Settings
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/map', label: 'Carte', Icon: Map },
   { href: '/clients', label: 'Clients', Icon: Users },
   { href: '/fournisseurs', label: 'Fournisseurs', Icon: Truck },
+  { href: '/feuilles-de-temps', label: 'Feuilles de temps', Icon: Clock },
 ]
 
 export default function Sidebar({ projetsCount, userPrenom, userEmail }: {

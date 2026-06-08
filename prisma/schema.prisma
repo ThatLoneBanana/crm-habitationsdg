@@ -48,6 +48,14 @@ enum StatutExtra {
   REFUSE
 }
 
+enum CategorieDepense {
+  MATERIAUX
+  SOUS_TRAITANT
+  MAIN_OEUVRE
+  EQUIPEMENT
+  AUTRE
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -107,6 +115,7 @@ model Projet {
   paiements     Paiement[]
   fournisseurs  ProjetFournisseur[]
   feuillesTemps FeuilleTemps[]
+  depenses      Depense[]
 }
 
 model Tache {
@@ -236,4 +245,22 @@ model FeuilleTemps {
 
   @@index([projetId])
   @@index([userId])
+}
+
+model Depense {
+  id          String           @id @default(uuid())
+  projetId    String
+  categorie   CategorieDepense
+  description String
+  fournisseur String?
+  montant     Float
+  dateDepense DateTime
+  facture     String?
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+
+  @@index([projetId])
 }
