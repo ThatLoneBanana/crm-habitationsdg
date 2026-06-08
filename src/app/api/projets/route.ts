@@ -49,9 +49,9 @@ export async function GET(request: NextRequest) {
       orderBy: { dateLivraison: 'asc' },
     });
 
-    // Mettre à jour les phases automatiquement pour chaque projet
+    // Mettre à jour les phases automatiquement et calculer avancement
     const projetsAvecPhasesMaj = await Promise.all(
-      projets.map(async (projet) => {
+      projets.map(async (projet: any) => {
         const nouvellePhase = calculerPhaseAutomatique(projet);
         if (nouvellePhase !== projet.phase) {
           await prisma.projet.update({
@@ -60,7 +60,19 @@ export async function GET(request: NextRequest) {
           });
           projet.phase = nouvellePhase;
         }
-        return projet;
+
+        // Calcul avancement réel
+        const avancement = projet.taches.length > 0
+          ? Math.round(
+              projet.taches.filter((t: any) => {
+                const fin = new Date(t.dateFin)
+                fin.setHours(23, 59, 59, 999)
+                return fin < new Date()
+              }).length / projet.taches.length * 100
+            )
+          : 0
+
+        return { ...projet, avancement }
       })
     );
 

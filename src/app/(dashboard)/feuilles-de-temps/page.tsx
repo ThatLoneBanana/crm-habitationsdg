@@ -410,7 +410,7 @@ export default function FeuillesDeTempsPage() {
                   fontSize: '12px',
                   fontWeight: 500,
                   background: depasse ? '#FEF2F2' : proche ? '#FAEEDA' : '#F0FDF7',
-                  color: depasse ? '#EF4444' : proche ? '#854F0B' : '#1D9E75',
+                  color: depasse ? '#EF4444' : proche ? '#854F0B' : '#DC2626',
                   border: `1px solid ${depasse ? '#FCA5A5' : proche ? '#FCD34D' : '#86EFAC'}`,
                 }}>
                   {emp?.prenom} {emp?.nom} — {heures.toFixed(1)}h / {max}h {depasse && '⚠️'}
@@ -421,7 +421,7 @@ export default function FeuillesDeTempsPage() {
 
           <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600' }}>Saisie hebdomadaire</h3>
-            <button onClick={ajouterLigne} style={{ padding: '8px 14px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Ajouter une ligne</button>
+            <button onClick={ajouterLigne} style={{ padding: '8px 14px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Ajouter une ligne</button>
           </div>
 
           {lignes.length === 0 ? (
@@ -519,7 +519,7 @@ export default function FeuillesDeTempsPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <button onClick={handleAjouterDepense} style={{ padding: '8px 20px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>+ Enregistrer la dépense</button>
+                <button onClick={handleAjouterDepense} style={{ padding: '8px 20px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>+ Enregistrer la dépense</button>
               </div>
             </div>
 
@@ -563,7 +563,7 @@ export default function FeuillesDeTempsPage() {
               {unsavedChanges ? (
                 <span style={{ color: '#EF9F27', fontWeight: 500 }}>⚠ Modifications non sauvegardées</span>
               ) : (
-                <span style={{ color: '#1D9E75' }}>✓ Tout est sauvegardé</span>
+                <span style={{ color: '#DC2626' }}>✓ Tout est sauvegardé</span>
               )}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>

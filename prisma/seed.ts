@@ -445,6 +445,42 @@ async function main() {
   }
 
   console.log('✅ 5 projets avec tâches, extras et paiements créés');
+
+  // Créer 3 employés de test
+  await Promise.all([
+    prisma.employe.create({
+      data: {
+        prenom: 'Nicolas',
+        nom: 'Savard',
+        email: 'nicolas.savard@habitationsdg.com',
+        telephone: '418-555-0001',
+        tauxHoraire: 45,
+        actif: true,
+      }
+    }),
+    prisma.employe.create({
+      data: {
+        prenom: 'Louis',
+        nom: 'Bellavance',
+        email: 'louis.bellavance@habitationsdg.com',
+        telephone: '418-555-0002',
+        tauxHoraire: 32,
+        actif: true,
+      }
+    }),
+    prisma.employe.create({
+      data: {
+        prenom: 'Sophie-Rose',
+        nom: 'Dion',
+        email: 'sophie-rose.dion@habitationsdg.com',
+        telephone: '418-555-0003',
+        tauxHoraire: 38,
+        actif: true,
+      }
+    }),
+  ]);
+
+  console.log('✅ 3 employés de test créés');
   console.log('🌱 Seed terminé avec succès!');
 }
 
