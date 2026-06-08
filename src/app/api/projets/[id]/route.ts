@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { calculerPhaseAutomatique } from '@/lib/phase-calculator';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -22,6 +23,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         { error: 'Projet non trouvé' },
         { status: 404 }
       );
+    }
+
+    // Calculer la phase automatiquement
+    const nouvellePhase = calculerPhaseAutomatique(projet);
+
+    // Si la phase a changé, mettre à jour en DB
+    if (nouvellePhase !== projet.phase) {
+      await prisma.projet.update({
+        where: { id },
+        data: { phase: nouvellePhase }
+      });
+      projet.phase = nouvellePhase;
     }
 
     return NextResponse.json({ projet });

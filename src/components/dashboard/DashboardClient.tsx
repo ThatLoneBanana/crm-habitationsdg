@@ -7,7 +7,8 @@ function formatMontant(n: number): string {
   return `${n}$`
 }
 
-function phaseConfig(phase: string) {
+function phaseConfig(phase: string | null | undefined) {
+  if (!phase) return { label: 'Signé', bg: '#E6F1FB', text: '#185FA5', bar: '#378ADD' }
   const config: Record<string, { label: string; bg: string; text: string; bar: string }> = {
     SIGNE: { label: 'Signé', bg: '#E6F1FB', text: '#185FA5', bar: '#378ADD' },
     PREPARATION: { label: 'Préparation', bg: '#EEEDFE', text: '#3C3489', bar: '#7F77DD' },
@@ -31,13 +32,12 @@ export default function DashboardClient({
   const moisLabels = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
   return (
-    <div style={{ padding: '0 24px' }}>
+    <div style={{ padding: '24px 24px 0' }}>
       {/* En-tête */}
       <div style={{ marginBottom: '20px' }}>
         <h1 style={{ fontSize: '18px', fontWeight: 500 }}>Bonjour {prenomUser} 👋</h1>
         <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
           {joursLabels[now.getDay()]} {now.getDate()} {moisLabels[now.getMonth()]} {now.getFullYear()}
-          {' — '}{projetsActifs} projets actifs en cours
         </p>
       </div>
 

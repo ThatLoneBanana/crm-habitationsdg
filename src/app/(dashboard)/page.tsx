@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/dashboard/DashboardClient'
+import { calculerPhaseAutomatique } from '@/lib/phase-calculator'
 
 export default async function DashboardPage() {
   try {
@@ -25,6 +26,18 @@ export default async function DashboardPage() {
     ])
 
     const prenomUser = userPrisma?.prenom || user?.email?.split('@')[0] || 'Utilisateur'
+
+    // Mettre à jour les phases automatiquement
+    for (const projet of projets) {
+      const nouvellePhase = calculerPhaseAutomatique(projet);
+      if (nouvellePhase !== projet.phase) {
+        await prisma.projet.update({
+          where: { id: projet.id },
+          data: { phase: nouvellePhase }
+        });
+        projet.phase = nouvellePhase;
+      }
+    }
 
     const data = JSON.parse(JSON.stringify(projets))
 

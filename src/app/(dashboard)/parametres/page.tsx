@@ -175,45 +175,50 @@ export default function ParametresPage() {
 
       {activeTab === 'general' && (
         <div style={{ maxWidth: '600px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Paramètres généraux</h2>
-          <div style={{ display: 'grid', gap: '16px' }}>
-            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom de la compagnie</label><input value={parametres.nomCompagnie} onChange={(e) => setParametres({ ...parametres, nomCompagnie: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
+          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Paramètres généraux</h2>
+            <div style={{ display: 'grid', gap: '16px' }}>
+            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom de la compagnie</label><input value={parametres.nomCompagnie} onChange={(e) => setParametres({ ...parametres, nomCompagnie: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>RBQ</label><input value={parametres.rbq} onChange={(e) => setParametres({ ...parametres, rbq: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={parametres.email} onChange={(e) => setParametres({ ...parametres, email: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>RBQ</label><input value={parametres.rbq} onChange={(e) => setParametres({ ...parametres, rbq: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={parametres.email} onChange={(e) => setParametres({ ...parametres, email: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
             </div>
-            <button onClick={handleSaveParametres} disabled={saving} style={{ padding: '10px 16px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+            <button onClick={handleSaveParametres} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+            </div>
           </div>
         </div>
       )}
 
       {activeTab === 'compte' && currentUser && (
         <div style={{ maxWidth: '600px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Mon compte</h2>
-          <div style={{ display: 'grid', gap: '16px' }}>
+          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Mon compte</h2>
+            <div style={{ display: 'grid', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label><input value={editUser.prenom} onChange={(e) => setEditUser({ ...editUser, prenom: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={editUser.nom} onChange={(e) => setEditUser({ ...editUser, nom: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label><input value={editUser.prenom} onChange={(e) => setEditUser({ ...editUser, prenom: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={editUser.nom} onChange={(e) => setEditUser({ ...editUser, nom: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
             </div>
-            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={currentUser.email} disabled style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px', background: 'var(--color-background-secondary)' }} /></div>
-            <button onClick={handleSaveUser} disabled={saving} style={{ padding: '10px 16px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
-            <hr style={{ borderColor: 'var(--color-border-tertiary)', margin: '16px 0' }} />
+            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={currentUser.email} disabled style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px', background: 'var(--color-background-secondary)' }} /></div>
+            <button onClick={handleSaveUser} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+            <hr style={{ borderColor: '#E5E7EB', margin: '16px 0' }} />
             <h3 style={{ fontSize: '14px', fontWeight: 500 }}>Changer le mot de passe</h3>
             <form onSubmit={handleChangePassword} style={{ display: 'grid', gap: '12px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nouveau mot de passe</label><input type="password" value={passwordForm.nouveau} onChange={(e) => setPasswordForm({ ...passwordForm, nouveau: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Confirmer le mot de passe</label><input type="password" value={passwordForm.confirmer} onChange={(e) => setPasswordForm({ ...passwordForm, confirmer: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <button type="submit" disabled={saving || !passwordForm.nouveau} style={{ padding: '10px 16px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving || !passwordForm.nouveau ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Mise à jour...' : 'Sauvegarder'}</button>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nouveau mot de passe</label><input type="password" value={passwordForm.nouveau} onChange={(e) => setPasswordForm({ ...passwordForm, nouveau: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Confirmer le mot de passe</label><input type="password" value={passwordForm.confirmer} onChange={(e) => setPasswordForm({ ...passwordForm, confirmer: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+              <button type="submit" disabled={saving || !passwordForm.nouveau} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving || !passwordForm.nouveau ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Mise à jour...' : 'Sauvegarder'}</button>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {activeTab === 'utilisateurs' && currentUser?.role === 'ADMIN' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 500 }}>Utilisateurs ({users.length})</h2>
-            <button onClick={() => setInviteOpen(true)} style={{ padding: '8px 12px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Inviter</button>
-          </div>
+          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Utilisateurs ({users.length})</h2>
+              <button onClick={() => setInviteOpen(true)} style={{ padding: '8px 12px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Inviter</button>
+            </div>
 
           {inviteOpen && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
@@ -221,29 +226,30 @@ export default function ParametresPage() {
                 <h3 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Inviter un utilisateur</h3>
                 <form onSubmit={handleInvite} style={{ display: 'grid', gap: '12px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label><input value={inviteForm.prenom} onChange={(e) => setInviteForm({ ...inviteForm, prenom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
-                    <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={inviteForm.nom} onChange={(e) => setInviteForm({ ...inviteForm, nom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
+                    <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label><input value={inviteForm.prenom} onChange={(e) => setInviteForm({ ...inviteForm, prenom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+                    <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={inviteForm.nom} onChange={(e) => setInviteForm({ ...inviteForm, nom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
                   </div>
-                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }} /></div>
-                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Rôle</label><select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as Role })} style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: '6px', fontSize: '13px' }}><option value="ADMIN">Admin</option><option value="COMPTABILITE">Comptabilité</option><option value="VENDEUR">Vendeur</option><option value="CHARGE_PROJET">Chargé de projet</option></select></div>
+                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Rôle</label><select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as Role })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}><option value="ADMIN">Admin</option><option value="COMPTABILITE">Comptabilité</option><option value="VENDEUR">Vendeur</option><option value="CHARGE_PROJET">Chargé de projet</option></select></div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Invitation...' : 'Inviter'}</button>
-                    <button type="button" onClick={() => setInviteOpen(false)} style={{ flex: 1, padding: '10px', background: 'var(--color-background-secondary)', color: 'var(--color-text-primary)', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
+                    <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Invitation...' : 'Inviter'}</button>
+                    <button type="button" onClick={() => setInviteOpen(false)} style={{ flex: 1, padding: '10px', background: '#E5E7EB', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          <div style={{ border: '0.5px solid var(--color-border-tertiary)', borderRadius: '6px', overflow: 'hidden' }}>
-            {users.map((user, i) => (
-              <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 80px', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: i < users.length - 1 ? '0.5px solid var(--color-border-tertiary)' : 'none' }}>
-                <div><p style={{ fontSize: '13px', fontWeight: 500 }}>{user.prenom} {user.nom}</p><p style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{user.email}</p></div>
-                <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: roleColor(user.role) + '20', color: roleColor(user.role), fontWeight: 500, textAlign: 'center' }}>{roleLabel(user.role)}</span>
-                <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: user.actif ? '#EAF3DE' : '#FCEBEB', color: user.actif ? '#3B6D11' : '#A32D2D', fontWeight: 500, textAlign: 'center' }}>{user.actif ? 'Actif' : 'Inactif'}</span>
-                <button onClick={() => handleToggleUser(user.id, user.actif)} style={{ padding: '6px 10px', background: user.actif ? '#FCEBEB' : '#EAF3DE', color: user.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>{user.actif ? 'Désactiver' : 'Activer'}</button>
-              </div>
-            ))}
+            <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', overflow: 'hidden', marginTop: '12px' }}>
+              {users.map((user, i) => (
+                <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 80px', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: i < users.length - 1 ? '1px solid #E5E7EB' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
+                  <div><p style={{ fontSize: '13px', fontWeight: 500 }}>{user.prenom} {user.nom}</p><p style={{ fontSize: '11px', color: '#6B7280' }}>{user.email}</p></div>
+                  <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: roleColor(user.role) + '20', color: roleColor(user.role), fontWeight: 500, textAlign: 'center' }}>{roleLabel(user.role)}</span>
+                  <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: user.actif ? '#EAF3DE' : '#FCEBEB', color: user.actif ? '#3B6D11' : '#A32D2D', fontWeight: 500, textAlign: 'center' }}>{user.actif ? 'Actif' : 'Inactif'}</span>
+                  <button onClick={() => handleToggleUser(user.id, user.actif)} style={{ padding: '6px 10px', background: user.actif ? '#FCEBEB' : '#EAF3DE', color: user.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>{user.actif ? 'Désactiver' : 'Activer'}</button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

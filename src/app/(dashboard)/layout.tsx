@@ -1,39 +1,33 @@
-'use client';
+import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
+import Sidebar from '@/components/layout/sidebar'
 
-import React, { useEffect, useState } from 'react';
-import { Sidebar } from '@/components/layout/sidebar';
-import { UserMenu } from '@/components/layout/user-menu';
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    // Récupérer l'utilisateur du côté client si nécessaire
-    // Pour l'instant, on laisse vide - l'utilisateur sera null
-    setLoading(false);
-  }, []);
+  const [projetsCount, userPrisma] = await Promise.all([
+    prisma.projet.count({ where: { phase: { not: 'TERMINE' } } }),
+    user?.email ? prisma.user.findUnique({
+      where: { email: user.email },
+      select: { prenom: true, nom: true }
+    }) : Promise.resolve(null)
+  ])
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <Sidebar />
-
-        {/* User Menu */}
-        <UserMenu user={user} />
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="min-h-screen">
-          {children}
-        </div>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
+      <Sidebar
+        projetsCount={projetsCount}
+        userPrenom={userPrisma?.prenom}
+        userEmail={user?.email}
+      />
+      <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        {children}
       </main>
     </div>
-  );
+  )
 }

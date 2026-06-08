@@ -1,147 +1,227 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit2, Mail, Phone, Zap } from 'lucide-react';
+'use client'
+import { useState, useEffect } from 'react'
 
 interface Fournisseur {
-  id: string;
-  nom: string;
-  metier?: string;
-  email?: string;
-  telephone?: string;
-  actif: boolean;
+  id: string
+  nom: string
+  metier: string
+  email: string
+  telephone?: string
+  actif: boolean
 }
 
 export default function FournisseursPage() {
-  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ nom: '', metier: '', email: '', telephone: '', actif: true });
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([])
+  const [loading, setLoading] = useState(true)
+  const [vue, setVue] = useState<'cartes' | 'liste'>('cartes')
+  const [tri, setTri] = useState<'nom' | 'metier'>('nom')
+  const [recherche, setRecherche] = useState('')
+  const [nouveauOpen, setNouveauOpen] = useState(false)
+  const [modifierOpen, setModifierOpen] = useState(false)
+  const [supprimerOpen, setSupprimerOpen] = useState(false)
+  const [selectedFournisseur, setSelectedFournisseur] = useState<Fournisseur | null>(null)
+  const [formData, setFormData] = useState({ nom: '', metier: '', email: '', telephone: '', actif: true })
 
+  // Charger les fournisseurs
   useEffect(() => {
-    fetchFournisseurs();
-  }, []);
-
-  const fetchFournisseurs = async () => {
-    try {
-      const res = await fetch('/api/fournisseurs');
-      if (!res.ok) throw new Error('Erreur');
-      const data = await res.json();
-      setFournisseurs(data.fournisseurs);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    const loadFournisseurs = async () => {
+      try {
+        const res = await fetch('/api/fournisseurs')
+        if (res.ok) {
+          const data = await res.json()
+          setFournisseurs(data.fournisseurs || [])
+        }
+      } catch (err) {
+        console.error('Erreur:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  };
+    loadFournisseurs()
+  }, [])
 
-  const handleSave = async () => {
+  // Filtrer et trier
+  const fournisseursFiltres = fournisseurs
+    .filter(f => f.nom.toLowerCase().includes(recherche.toLowerCase()) || f.metier.toLowerCase().includes(recherche.toLowerCase()))
+    .sort((a, b) => {
+      const valA = tri === 'nom' ? a.nom : a.metier
+      const valB = tri === 'nom' ? b.nom : b.metier
+      return valA.localeCompare(valB)
+    })
+
+  // Sauvegarder fournisseur
+  const handleSauvegarder = async () => {
     try {
-      const method = editingId ? 'PUT' : 'POST';
-      const url = editingId ? `/api/fournisseurs/${editingId}` : '/api/fournisseurs';
+      const method = selectedFournisseur ? 'PUT' : 'POST'
+      const url = selectedFournisseur ? `/api/fournisseurs/${selectedFournisseur.id}` : '/api/fournisseurs'
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error('Erreur');
-      setDialogOpen(false);
-      setEditingId(null);
-      setFormData({ nom: '', metier: '', email: '', telephone: '', actif: true });
-      fetchFournisseurs();
+      })
+      if (res.ok) {
+        setNouveauOpen(false)
+        setModifierOpen(false)
+        setFormData({ nom: '', metier: '', email: '', telephone: '', actif: true })
+        setSelectedFournisseur(null)
+        location.reload()
+      }
     } catch (err) {
-      alert('Erreur: ' + (err as Error).message);
+      console.error('Erreur:', err)
     }
-  };
+  }
 
-  const handleEdit = (f: Fournisseur) => {
-    setFormData({ nom: f.nom, metier: f.metier || '', email: f.email || '', telephone: f.telephone || '', actif: f.actif });
-    setEditingId(f.id);
-    setDialogOpen(true);
-  };
-
-  const handleToggle = async (f: Fournisseur) => {
+  // Supprimer fournisseur
+  const handleSupprimer = async () => {
+    if (!selectedFournisseur) return
     try {
-      const res = await fetch(`/api/fournisseurs/${f.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...f, actif: !f.actif }),
-      });
-      if (!res.ok) throw new Error('Erreur');
-      fetchFournisseurs();
+      const res = await fetch(`/api/fournisseurs/${selectedFournisseur.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setSupprimerOpen(false)
+        setSelectedFournisseur(null)
+        location.reload()
+      }
     } catch (err) {
-      alert('Erreur');
+      console.error('Erreur:', err)
     }
-  };
+  }
 
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setEditingId(null);
-    setFormData({ nom: '', metier: '', email: '', telephone: '', actif: true });
-  };
+  const openModifier = (f: Fournisseur) => {
+    setSelectedFournisseur(f)
+    setFormData({ nom: f.nom, metier: f.metier, email: f.email, telephone: f.telephone || '', actif: f.actif })
+    setModifierOpen(true)
+  }
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Chargement...</div>;
+  const openSupprimer = (f: Fournisseur) => {
+    setSelectedFournisseur(f)
+    setSupprimerOpen(true)
+  }
 
-  const actifs = fournisseurs.filter(f => f.actif).length;
+  if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
-          <p className="text-gray-600 mt-2">{actifs} actifs sur {fournisseurs.length}</p>
+    <div style={{ padding: '24px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Fournisseurs</h1>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={() => setVue('cartes')} style={{ padding: '8px 12px', border: vue === 'cartes' ? 'none' : '1px solid #E5E7EB', background: vue === 'cartes' ? '#1D9E75' : 'white', color: vue === 'cartes' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>⊞ Cartes</button>
+          <button onClick={() => setVue('liste')} style={{ padding: '8px 12px', border: vue === 'liste' ? 'none' : '1px solid #E5E7EB', background: vue === 'liste' ? '#1D9E75' : 'white', color: vue === 'liste' ? 'white' : 'black', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>☰ Liste</button>
+          <select value={tri} onChange={e => setTri(e.target.value as any)} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+            <option value='nom'>Trier par nom</option>
+            <option value='metier'>Trier par métier</option>
+          </select>
+          <button onClick={() => { setNouveauOpen(true); setSelectedFournisseur(null); setFormData({ nom: '', metier: '', email: '', telephone: '', actif: true }); }} style={{ padding: '8px 12px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>+ Nouveau</button>
         </div>
-        <Button className="gap-2 bg-blue-600 hover:bg-blue-700" onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4" />
-          Ajouter fournisseur
-        </Button>
       </div>
 
-      <div className="space-y-3">
-        {fournisseurs.map((f) => (
-          <div key={f.id} className="border rounded-lg p-4 bg-white flex justify-between items-start">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{f.nom}</h3>
-              <p className="text-sm text-gray-600 mt-1">{f.metier}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
-                {f.email && <div className="flex items-center gap-1"><Mail className="w-3 h-3" />{f.email}</div>}
-                {f.telephone && <div className="flex items-center gap-1"><Phone className="w-3 h-3" />{f.telephone}</div>}
+      {/* Barre de recherche */}
+      <input
+        placeholder='Rechercher...'
+        value={recherche}
+        onChange={e => setRecherche(e.target.value)}
+        style={{ width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '24px', fontSize: '13px' }}
+      />
+
+      {/* VUE CARTES */}
+      {vue === 'cartes' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+          {fournisseursFiltres.map(f => (
+            <div key={f.id} style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: 'white' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '14px' }}>{f.nom}</div>
+                  <div style={{ fontSize: '12px', color: '#6B7280' }}>{f.metier}</div>
+                </div>
+                <span style={{ padding: '4px 8px', borderRadius: '4px', background: f.actif ? '#EAF3DE' : '#F3F4F6', color: f.actif ? '#3B6D11' : '#6B7280', fontSize: '11px', fontWeight: 500 }}>
+                  {f.actif ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '8px' }}>{f.email}</div>
+              <div style={{ fontSize: '12px', color: '#6B7280' }}>{f.telephone}</div>
+
+              <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
+                <button onClick={() => openModifier(f)} style={{ flex: 1, padding: '6px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>✏️ Modifier</button>
+                <button onClick={() => openSupprimer(f)} style={{ padding: '6px 10px', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', color: '#EF4444' }}>🗑</button>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => handleToggle(f)} className={`p-2 rounded ${f.actif ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
-                <Zap className="w-4 h-4" />
-              </button>
-              <Button variant="outline" size="sm" onClick={() => handleEdit(f)}>
-                <Edit2 className="w-4 h-4" />
-              </Button>
+          ))}
+        </div>
+      )}
+
+      {/* VUE LISTE */}
+      {vue === 'liste' && (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead style={{ background: '#F9FAFB' }}>
+            <tr>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', color: '#6B7280', fontWeight: 500, borderBottom: '1px solid #E5E7EB' }}>Nom</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', color: '#6B7280', fontWeight: 500, borderBottom: '1px solid #E5E7EB' }}>Métier</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', color: '#6B7280', fontWeight: 500, borderBottom: '1px solid #E5E7EB' }}>Courriel</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', color: '#6B7280', fontWeight: 500, borderBottom: '1px solid #E5E7EB' }}>Téléphone</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', color: '#6B7280', fontWeight: 500, borderBottom: '1px solid #E5E7EB' }}>Statut</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', color: '#6B7280', fontWeight: 500, borderBottom: '1px solid #E5E7EB' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fournisseursFiltres.map(f => (
+              <tr key={f.id} style={{ borderBottom: '1px solid #F3F4F6', background: 'white' }} onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'} onMouseLeave={e => e.currentTarget.style.background = 'white'}>
+                <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 500 }}>{f.nom}</td>
+                <td style={{ padding: '10px 12px', fontSize: '12px', color: '#6B7280' }}>{f.metier}</td>
+                <td style={{ padding: '10px 12px', fontSize: '12px', color: '#6B7280' }}>{f.email}</td>
+                <td style={{ padding: '10px 12px', fontSize: '12px', color: '#6B7280' }}>{f.telephone || '—'}</td>
+                <td style={{ padding: '10px 12px', fontSize: '12px' }}>
+                  <span style={{ padding: '2px 6px', borderRadius: '3px', background: f.actif ? '#EAF3DE' : '#F3F4F6', color: f.actif ? '#3B6D11' : '#6B7280' }}>
+                    {f.actif ? 'Actif' : 'Inactif'}
+                  </span>
+                </td>
+                <td style={{ padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => openModifier(f)} style={{ padding: '4px 8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '11px', cursor: 'pointer' }}>Modifier</button>
+                    <button onClick={() => openSupprimer(f)} style={{ padding: '4px 8px', border: '1px solid #FCA5A5', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', color: '#EF4444' }}>Supprimer</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Dialog Nouveau/Modifier */}
+      {(nouveauOpen || modifierOpen) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '8px', padding: '24px', maxWidth: '400px', width: '90%' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>{selectedFournisseur ? 'Modifier' : 'Nouveau'} fournisseur</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+              <input placeholder='Nom' value={formData.nom} onChange={e => setFormData({...formData, nom: e.target.value})} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
+              <input placeholder='Métier' value={formData.metier} onChange={e => setFormData({...formData, metier: e.target.value})} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
+              <input placeholder='Email' value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
+              <input placeholder='Téléphone' value={formData.telephone} onChange={e => setFormData({...formData, telephone: e.target.value})} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                <input type='checkbox' checked={formData.actif} onChange={e => setFormData({...formData, actif: e.target.checked})} />
+                Actif
+              </label>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => { setNouveauOpen(false); setModifierOpen(false); setSelectedFournisseur(null); }} style={{ flex: 1, padding: '8px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>Annuler</button>
+              <button onClick={handleSauvegarder} style={{ flex: 1, padding: '8px', background: '#1D9E75', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Sauvegarder</button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      <Dialog open={dialogOpen} onOpenChange={closeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'Éditer fournisseur' : 'Ajouter fournisseur'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div><Label htmlFor="nom">Nom *</Label><Input id="nom" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} /></div>
-            <div><Label htmlFor="metier">Métier</Label><Input id="metier" value={formData.metier} onChange={(e) => setFormData({ ...formData, metier: e.target.value })} /></div>
-            <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
-            <div><Label htmlFor="telephone">Téléphone</Label><Input id="telephone" value={formData.telephone} onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} /></div>
+      {/* Dialog Supprimer */}
+      {supprimerOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: '8px', padding: '24px', maxWidth: '400px', width: '90%' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Supprimer le fournisseur ?</h2>
+            <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '16px' }}>Êtes-vous sûr de vouloir supprimer {selectedFournisseur?.nom} ?</p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setSupprimerOpen(false)} style={{ flex: 1, padding: '8px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>Annuler</button>
+              <button onClick={handleSupprimer} style={{ flex: 1, padding: '8px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>Supprimer</button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Annuler</Button>
-            <Button onClick={handleSave} disabled={!formData.nom} className="bg-blue-600 hover:bg-blue-700">Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
-  );
+  )
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { geocoderAdresse } from '@/lib/geocoding';
+import { calculerPhaseAutomatique } from '@/lib/phase-calculator';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,8 @@ export async function GET(request: NextRequest) {
           select: { id: true, prenom: true, nom: true }
         },
         taches: {
-          select: { dateDebut: true, dateFin: true }
+          select: { nom: true, dateDebut: true, dateFin: true },
+          orderBy: { ordre: 'asc' }
         },
         extras: true,
         paiements: true,
@@ -47,7 +49,22 @@ export async function GET(request: NextRequest) {
       orderBy: { dateLivraison: 'asc' },
     });
 
-    return NextResponse.json({ projets });
+    // Mettre à jour les phases automatiquement pour chaque projet
+    const projetsAvecPhasesMaj = await Promise.all(
+      projets.map(async (projet) => {
+        const nouvellePhase = calculerPhaseAutomatique(projet);
+        if (nouvellePhase !== projet.phase) {
+          await prisma.projet.update({
+            where: { id: projet.id },
+            data: { phase: nouvellePhase }
+          });
+          projet.phase = nouvellePhase;
+        }
+        return projet;
+      })
+    );
+
+    return NextResponse.json({ projets: projetsAvecPhasesMaj });
   } catch (error: any) {
     console.error('Erreur API projets:', error);
     return NextResponse.json(

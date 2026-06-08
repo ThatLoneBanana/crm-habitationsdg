@@ -161,6 +161,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
     .reduce((sum: number, e: any) => sum + e.montant, 0);
 
   const phaseColors: Record<string, string> = {
+    SIGNE: 'bg-blue-100 text-blue-800',
     VENTE: 'bg-blue-100 text-blue-800',
     ADMIN: 'bg-purple-100 text-purple-800',
     PREPARATION: 'bg-yellow-100 text-yellow-800',
@@ -170,6 +171,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
   };
 
   const phaseLabels: Record<string, string> = {
+    SIGNE: 'Signé',
     VENTE: 'Vente',
     ADMIN: 'Admin',
     PREPARATION: 'Préparation',
@@ -177,6 +179,9 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
     LIVRAISON: 'Livraison',
     CLOTURE: 'Clôturé',
   };
+
+  const getPhaseColor = (phase: string | null | undefined) => phaseColors[phase || 'SIGNE'] || phaseColors['SIGNE'];
+  const getPhaseLabel = (phase: string | null | undefined) => phaseLabels[phase || 'SIGNE'] || phaseLabels['SIGNE'];
 
   const isUrgent = joursRestants !== null && joursRestants < 30;
   const isOverdue = joursRestants !== null && joursRestants < 0;
@@ -223,8 +228,8 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
             </div>
           </div>
           <div className="text-right space-y-2">
-            <Badge className={phaseColors[projet.phase]}>
-              {phaseLabels[projet.phase]}
+            <Badge className={getPhaseColor(projet.phase)}>
+              {getPhaseLabel(projet.phase)}
             </Badge>
             {isOverdue && <Badge className="bg-red-100 text-red-800">EN RETARD</Badge>}
             {isUrgent && !isOverdue && <Badge className="bg-orange-100 text-orange-800">URGENT</Badge>}

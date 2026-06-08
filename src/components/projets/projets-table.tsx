@@ -19,6 +19,7 @@ interface ProjetsTableProps {
 }
 
 const phaseColors: Record<string, string> = {
+  SIGNE: 'bg-blue-100 text-blue-800',
   VENTE: 'bg-blue-100 text-blue-800',
   ADMIN: 'bg-purple-100 text-purple-800',
   PREPARATION: 'bg-yellow-100 text-yellow-800',
@@ -28,6 +29,7 @@ const phaseColors: Record<string, string> = {
 };
 
 const phaseLabels: Record<string, string> = {
+  SIGNE: 'Signé',
   VENTE: 'Vente',
   ADMIN: 'Admin',
   PREPARATION: 'Préparation',
@@ -35,6 +37,9 @@ const phaseLabels: Record<string, string> = {
   LIVRAISON: 'Livraison',
   CLOTURE: 'Clôturé',
 };
+
+const getPhaseColor = (phase: string | null | undefined) => phaseColors[phase || 'SIGNE'] || phaseColors['SIGNE'];
+const getPhaseLabel = (phase: string | null | undefined) => phaseLabels[phase || 'SIGNE'] || phaseLabels['SIGNE'];
 
 export function ProjetsTable({ projets }: ProjetsTableProps) {
   const getJoursRestants = (dateLivraison: Date | string | null) => {
@@ -106,8 +111,8 @@ export function ProjetsTable({ projets }: ProjetsTableProps) {
 
                   {/* Phase */}
                   <TableCell>
-                    <Badge className={phaseColors[projet.phase]}>
-                      {phaseLabels[projet.phase]}
+                    <Badge className={getPhaseColor(projet.phase)}>
+                      {getPhaseLabel(projet.phase)}
                     </Badge>
                   </TableCell>
 

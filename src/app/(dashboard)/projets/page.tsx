@@ -1,17 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MetricCard } from '@/components/shared/metric-card';
 import { ProjetsTable } from '@/components/projets/projets-table';
 import { ProjetsFilters } from '@/components/projets/projets-filters';
 import { ProjetWithRelations } from '@/types';
-import {
-  FolderOpen,
-  TrendingUp,
-  AlertCircle,
-  FileText,
-  Calendar,
-} from 'lucide-react';
 
 export default function ProjetListPage() {
   const [projets, setProjets] = useState<ProjetWithRelations[]>([]);
@@ -51,43 +43,6 @@ export default function ProjetListPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Projets</h1>
         <p className="text-gray-600 mt-2">Gestion de tous les projets</p>
-      </div>
-
-      {/* Métriques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <MetricCard
-          title="Projets actifs"
-          value={projets.filter((p) => p.phase !== 'TERMINE').length}
-          icon={FolderOpen}
-        />
-        <MetricCard
-          title="Livraisons ce mois"
-          value={projets.filter((p) => {
-            if (!p.dateLivraison) return false;
-            const now = new Date();
-            const d = new Date(p.dateLivraison);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          }).length}
-          icon={Calendar}
-        />
-        <MetricCard
-          title="Alertes"
-          value={0}
-          icon={AlertCircle}
-          variant="danger"
-        />
-        <MetricCard
-          title="Extras"
-          value={0}
-          icon={FileText}
-          variant="warning"
-        />
-        <MetricCard
-          title="À faire"
-          value={0}
-          icon={TrendingUp}
-          variant="warning"
-        />
       </div>
 
       {/* Filtres */}
