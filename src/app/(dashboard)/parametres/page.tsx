@@ -243,7 +243,7 @@ export default function ParametresPage() {
         </div>
       )}
 
-      {activeTab === 'utilisateurs' && currentUser?.role === 'ADMIN' && (
+      {activeTab === 'utilisateurs' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
         <div>
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
