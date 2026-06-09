@@ -36,6 +36,9 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
   const [nouvellesEtapes, setNouvellesEtapes] = useState<any[]>([]);
   const [costing, setCosting] = useState<any>(null);
   const [costingLoading, setCostingLoading] = useState(false);
+  const [modifierCedulaOpen, setModifierCedulaOpen] = useState(false);
+  const [etapesModifiees, setEtapesModifiees] = useState<any[]>([]);
+  const [savingCedule, setSavingCedule] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     const fetchProjet = async () => {
@@ -78,6 +81,27 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
 
     fetchProjet();
   }, [params.id]);
+
+  // Initialiser les étapes quand le dialog s'ouvre
+  useEffect(() => {
+    if (modifierCedulaOpen && projet?.taches) {
+      const etapesProjet = projet.taches
+        .sort((a: any, b: any) => a.ordre - b.ordre)
+        .map((t: any) => ({
+          id: t.id,
+          nom: t.nom,
+          ordre: t.ordre,
+          jours: t.dureeJours,
+          dateDebut: new Date(t.dateDebut),
+          dateFin: new Date(t.dateFin),
+          buffer: t.buffer || 0,
+          assigneA: t.assigneA || 'Interne',
+          visibleClient: t.visibleClient,
+          interne: t.interne,
+        }));
+      setEtapesModifiees(etapesProjet);
+    }
+  }, [modifierCedulaOpen]);
 
   if (loading) {
     return (
@@ -149,6 +173,40 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
       }
     } catch (err: any) {
       alert('Erreur: ' + err.message);
+    }
+  };
+
+  const handleSauvegarderCedule = async () => {
+    setSavingCedule('loading');
+    try {
+      const res = await fetch(`/api/projets/${projet.id}/cedule`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          etapes: etapesModifiees.map((e: any) => ({
+            id: e.id || null,
+            nom: e.nom,
+            ordre: e.ordre,
+            dureeJours: e.jours,
+            dateDebut: e.dateDebut instanceof Date ? e.dateDebut.toISOString() : e.dateDebut,
+            dateFin: e.dateFin instanceof Date ? e.dateFin.toISOString() : e.dateFin,
+            assigneA: e.assigneA,
+            visibleClient: e.visibleClient,
+            interne: e.interne,
+            buffer: e.buffer || 0,
+          }))
+        })
+      });
+
+      if (res.ok) {
+        setSavingCedule('success');
+        setModifierCedulaOpen(false);
+        router.refresh();
+      } else {
+        setSavingCedule('error');
+      }
+    } catch (err) {
+      setSavingCedule('error');
     }
   };
 
