@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
-import Sidebar from '@/components/layout/sidebar'
+import Sidebar from '@/components/layout/Sidebar'
 
 export default async function DashboardLayout({
   children,
