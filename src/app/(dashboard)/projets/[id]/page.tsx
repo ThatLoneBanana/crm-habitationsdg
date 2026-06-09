@@ -403,6 +403,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
                 taches={projet.taches}
                 projectId={projet.id}
                 toleranceJours={projet.toleranceJours}
+                onModifierClick={() => setModifierCedulaOpen(true)}
               />
             )}
           </TabsContent>
@@ -620,6 +621,52 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
             >
               ✓ Valider et créer la cédule
             </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Modifier Cédule */}
+      <Dialog open={modifierCedulaOpen} onOpenChange={setModifierCedulaOpen}>
+        <DialogContent className='!max-w-[98vw] !w-[98vw] !h-[96vh] !p-0 flex flex-col'>
+          {/* Entête du dialog */}
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div>
+              <h2 style={{ fontSize: '15px', fontWeight: 600 }}>Modifier la cédule</h2>
+              {projet && (
+                <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                  {projet.adresse}, {projet.ville} — Livraison le {formatDate(projet.dateLivraison)}
+                </p>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setModifierCedulaOpen(false)}
+                style={{ padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', background: 'white' }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSauvegarderCedule}
+                disabled={savingCedule === 'loading'}
+                style={{ padding: '8px 16px', background: savingCedule === 'loading' ? '#999' : '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: savingCedule === 'loading' ? 'not-allowed' : 'pointer', fontWeight: 500 }}
+              >
+                {savingCedule === 'loading' ? '⏳ Sauvegarde...' : '✓ Sauvegarder les modifications'}
+              </button>
+            </div>
+          </div>
+
+          {/* CedulaEditor en mode projet */}
+          <div style={{ flex: 1, overflow: 'auto', padding: '0' }}>
+            {etapesModifiees.length > 0 && (
+              <CedulaEditor
+                mode='projet'
+                etapesInitiales={etapesModifiees}
+                dateLivraison={projet ? new Date(projet.dateLivraison) : new Date()}
+                fournisseurs={[]}
+                toleranceJours={projet?.toleranceJours || 3}
+                onChange={setEtapesModifiees}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
