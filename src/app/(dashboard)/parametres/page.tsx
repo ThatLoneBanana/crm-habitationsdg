@@ -64,8 +64,8 @@ export default function ParametresPage() {
             }
           }
 
-          // Load permissions if admin
-          if (estAdmin) {
+          // Load permissions if admin or développeur
+          if (estAdmin || estDeveloppeur) {
             try {
               const permRes = await fetch('/api/permissions', { signal: controller.signal })
               if (permRes.ok) {
@@ -235,7 +235,7 @@ export default function ParametresPage() {
         {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
           <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>
         )}
-        {currentUser?.role === 'ADMIN' && (
+        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
           <button onClick={() => setActiveTab('permissions')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'permissions' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'permissions' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'permissions' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Permissions</button>
         )}
       </div>
@@ -338,7 +338,7 @@ export default function ParametresPage() {
         </div>
       )}
 
-      {activeTab === 'permissions' && currentUser?.role === 'ADMIN' && (
+      {activeTab === 'permissions' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
         <div>
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>

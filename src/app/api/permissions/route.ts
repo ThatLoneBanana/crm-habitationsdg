@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     })
 
-    if (currentUser?.role !== 'ADMIN') {
+    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'DEVELOPPEUR') {
       return NextResponse.json(
         { error: 'Accès refusé' },
         { status: 403 }
@@ -112,7 +112,7 @@ export async function PUT(request: NextRequest) {
       select: { role: true }
     })
 
-    if (currentUser?.role !== 'ADMIN') {
+    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'DEVELOPPEUR') {
       return NextResponse.json(
         { error: 'Accès refusé' },
         { status: 403 }
