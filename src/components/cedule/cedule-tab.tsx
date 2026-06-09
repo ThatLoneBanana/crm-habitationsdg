@@ -22,6 +22,7 @@ export function CeduleTab({ taches, projectId, toleranceJours }: CeduleTabProps)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<any>(null);
+  const [modeEdition, setModeEdition] = useState(false);
 
   const handleAddTache = () => {
     setSelectedTache(null);
@@ -107,7 +108,40 @@ export function CeduleTab({ taches, projectId, toleranceJours }: CeduleTabProps)
 
       {/* Tableau Détail des étapes */}
       <div className="space-y-3">
-        <h3 className="font-semibold text-gray-900">Détail des étapes</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Détail des étapes</h3>
+          <button
+            onClick={() => setModeEdition(!modeEdition)}
+            style={{
+              padding: '8px 14px',
+              background: modeEdition ? '#DC2626' : '#1D9E75',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            {modeEdition ? '✓ Mode édition ACTIF' : '✎ Activer mode édition'}
+          </button>
+        </div>
+        {modeEdition && (
+          <div style={{
+            padding: '10px 12px',
+            background: '#FEF3C7',
+            border: '1px solid #FBBF24',
+            borderRadius: '6px',
+            fontSize: '12px',
+            color: '#92400E'
+          }}>
+            💡 <strong>Mode édition:</strong> Double-cliquez sur les dates pour les modifier. Appuyez sur Entrée pour sauvegarder ou Échap pour annuler.
+          </div>
+        )}
+      </div>
         {taches.length === 0 ? (
           <p className="text-gray-500 text-sm py-4">Aucune étape définie</p>
         ) : (
