@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json(userPrisma)
+    return NextResponse.json({ user: userPrisma })
   } catch (error: any) {
     console.error('Erreur API me:', error)
     return NextResponse.json(
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(userPrisma)
+    return NextResponse.json({ user: userPrisma })
   } catch (error: any) {
     console.error('Erreur API me PUT:', error)
     return NextResponse.json(

@@ -36,7 +36,7 @@ export default function ParametresPage() {
         clearTimeout(timeout)
 
         if (meRes?.ok) {
-          const userData = await meRes.json()
+          const { user: userData } = await meRes.json()
           setCurrentUser(userData)
           setEditUser({ prenom: userData.prenom, nom: userData.nom })
 
