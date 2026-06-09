@@ -14,9 +14,11 @@ export default async function DashboardLayout({
     prisma.projet.count({ where: { phase: { not: 'TERMINE' } } }),
     user?.email ? prisma.user.findUnique({
       where: { email: user.email },
-      select: { prenom: true, nom: true }
+      select: { prenom: true, nom: true, role: true }
     }) : Promise.resolve(null)
   ])
+
+  const estAdminOuDev = ['ADMIN', 'DEVELOPPEUR'].includes(userPrisma?.role || '')
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
@@ -24,6 +26,7 @@ export default async function DashboardLayout({
         projetsCount={projetsCount}
         userPrenom={userPrisma?.prenom}
         userEmail={user?.email}
+        estAdminOuDev={estAdminOuDev}
       />
       <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
         {children}

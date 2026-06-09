@@ -17,10 +17,11 @@ const navItems = [
   { href: '/feuilles-de-temps', label: 'Feuilles de temps', Icon: Clock },
 ]
 
-export default function Sidebar({ projetsCount, userPrenom, userEmail }: {
+export default function Sidebar({ projetsCount, userPrenom, userEmail, estAdminOuDev }: {
   projetsCount?: number
   userPrenom?: string
   userEmail?: string
+  estAdminOuDev?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -106,8 +107,33 @@ export default function Sidebar({ projetsCount, userPrenom, userEmail }: {
         })}
       </nav>
 
-      {/* PARAMÈTRES */}
+      {/* JOURNAL + PARAMÈTRES */}
       <div style={{ padding: '8px', borderTop: '1px solid #F3F4F6' }}>
+        {/* Journal d'activité — visible ADMIN/DEV seulement */}
+        {estAdminOuDev && (
+          <a
+            href='/parametres/logs'
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 10px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: pathname.startsWith('/parametres/logs') ? '#ea1c24' : '#374151',
+              background: pathname.startsWith('/parametres/logs') ? '#fff0f0' : 'transparent',
+              textDecoration: 'none',
+              marginBottom: '2px',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = pathname.startsWith('/parametres/logs') ? '#fff0f0' : '#ffe8e8'}
+            onMouseLeave={e => e.currentTarget.style.background = pathname.startsWith('/parametres/logs') ? '#fff0f0' : 'transparent'}
+          >
+            <i className='ti ti-history' style={{ fontSize: '16px', color: pathname.startsWith('/parametres/logs') ? '#ea1c24' : '#6B7280', flexShrink: 0 }} />
+            <span>Journal d'activité</span>
+          </a>
+        )}
+
+        {/* Paramètres */}
         <a
           href='/parametres'
           style={{
@@ -117,14 +143,14 @@ export default function Sidebar({ projetsCount, userPrenom, userEmail }: {
             padding: '8px 10px',
             borderRadius: '6px',
             fontSize: '13px',
-            color: pathname.startsWith('/parametres') ? '#ea1c24' : '#374151',
-            background: pathname.startsWith('/parametres') ? '#fff0f0' : 'transparent',
+            color: pathname === '/parametres' ? '#ea1c24' : '#374151',
+            background: pathname === '/parametres' ? '#fff0f0' : 'transparent',
             textDecoration: 'none',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = pathname.startsWith('/parametres') ? '#fff0f0' : '#ffe8e8'}
-          onMouseLeave={e => e.currentTarget.style.background = pathname.startsWith('/parametres') ? '#fff0f0' : 'transparent'}
+          onMouseEnter={e => e.currentTarget.style.background = pathname === '/parametres' ? '#fff0f0' : '#ffe8e8'}
+          onMouseLeave={e => e.currentTarget.style.background = pathname === '/parametres' ? '#fff0f0' : 'transparent'}
         >
-          <settingsIcon size={18} style={{ color: pathname.startsWith('/parametres') ? '#ea1c24' : '#6B7280' }} />
+          <settingsIcon size={18} style={{ color: pathname === '/parametres' ? '#ea1c24' : '#6B7280' }} />
           <span>Paramètres</span>
         </a>
       </div>
