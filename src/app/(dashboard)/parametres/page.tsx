@@ -191,6 +191,15 @@ export default function ParametresPage() {
 
       {activeTab === 'general' && (
         <div style={{ maxWidth: '600px' }}>
+          {currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR' ? (
+            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#EFF6FF', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>📊 Journal d'activité</h3>
+                <p style={{ fontSize: '12px', color: '#6B7280' }}>Voir l'historique complet des actions dans l'application</p>
+              </div>
+              <a href='/parametres/logs' style={{ padding: '8px 16px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>Ouvrir</a>
+            </div>
+          ) : null}
           <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Paramètres généraux</h2>
             <div style={{ display: 'grid', gap: '16px' }}>
