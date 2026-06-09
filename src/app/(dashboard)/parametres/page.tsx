@@ -40,13 +40,14 @@ export default function ParametresPage() {
           setCurrentUser(userData)
           setEditUser({ prenom: userData.prenom, nom: userData.nom })
 
-          // Détermine si admin/comptabilité
+          // Détermine si admin/comptabilité/développeur
           const estAdmin = userData.role === 'ADMIN'
           const estComptabilite = userData.role === 'COMPTABILITE'
-          setEstAdminOuComptabilite(estAdmin || estComptabilite)
+          const estDeveloppeur = userData.role === 'DEVELOPPEUR'
+          setEstAdminOuComptabilite(estAdmin || estComptabilite || estDeveloppeur)
 
-          // Défaut à 'general' pour admin, 'compte' pour autres
-          if (estAdmin || estComptabilite) {
+          // Défaut à 'general' pour admin/compta/dev, 'compte' pour autres
+          if (estAdmin || estComptabilite || estDeveloppeur) {
             setActiveTab('general')
           }
 
