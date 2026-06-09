@@ -12,8 +12,8 @@ const DEFAULT_PERMISSIONS: Record<string, string[]> = {
   DEVELOPPEUR: [
     'view_dashboard', 'view_projets', 'view_costing', 'edit_costing',
     'view_feuilles_de_temps', 'edit_feuilles_de_temps',
-    'view_parametres', 'view_gcr', 'edit_gcr',
-    'view_logs', 'export_logs'
+    'view_parametres', 'edit_parametres', 'view_gcr', 'edit_gcr',
+    'view_logs', 'export_logs', 'manage_users'
   ],
   COMPTABILITE: [
     'view_dashboard', 'view_projets', 'view_costing',

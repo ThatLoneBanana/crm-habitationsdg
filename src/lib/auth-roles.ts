@@ -45,10 +45,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'view_feuilles_de_temps',
     'edit_feuilles_de_temps',
     'view_parametres',
+    'edit_parametres',
     'view_gcr',
     'edit_gcr',
     'view_logs',
     'export_logs',
+    'manage_users',
   ],
   [UserRole.COMPTABILITE]: [
     'view_dashboard',
