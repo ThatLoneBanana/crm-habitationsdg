@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, VisuallyHidden } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { MetricCard } from '@/components/shared/metric-card';
@@ -628,6 +628,9 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
       {/* Dialog Modifier Cédule */}
       <Dialog open={modifierCedulaOpen} onOpenChange={setModifierCedulaOpen}>
         <DialogContent className='!max-w-[98vw] !w-[98vw] !h-[96vh] !p-0 flex flex-col'>
+          <VisuallyHidden>
+            <DialogTitle>Modifier la cédule du projet</DialogTitle>
+          </VisuallyHidden>
           {/* Entête du dialog */}
           <div style={{ padding: '16px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <div>
