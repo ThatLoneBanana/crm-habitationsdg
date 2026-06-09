@@ -293,7 +293,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
 
       {/* Onglets */}
       <Tabs defaultValue="cedule" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="cedule">
             Cédule ({projet.taches.length})
           </TabsTrigger>
