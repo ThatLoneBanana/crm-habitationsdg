@@ -51,8 +51,8 @@ export default function ParametresPage() {
             setActiveTab('general')
           }
 
-          // Load users if admin
-          if (estAdmin) {
+          // Load users if admin or développeur
+          if (estAdmin || estDeveloppeur) {
             try {
               const usersRes = await fetch('/api/users', { signal: controller.signal })
               if (usersRes.ok) setUsers(await usersRes.json())
@@ -182,7 +182,7 @@ export default function ParametresPage() {
           <button onClick={() => setActiveTab('general')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'general' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'general' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'general' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Général</button>
         )}
         <button onClick={() => setActiveTab('compte')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'compte' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'compte' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'compte' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Mon compte</button>
-        {currentUser?.role === 'ADMIN' && (
+        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
           <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>
         )}
       </div>
