@@ -14,6 +14,7 @@ import { ExtrasTab } from '@/components/projets/extras-tab';
 import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
 import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
+import { GCRTab } from '@/components/projets/gcr-tab';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { Printer, Send, Eye, MapPin, FileText, Calendar, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -304,6 +305,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           </TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="costing">Costing</TabsTrigger>
+          <TabsTrigger value="gcr">GCR</TabsTrigger>
         </TabsList>
 
         <div className="p-6">
@@ -400,6 +402,10 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
             ) : (
               <div className="p-8 text-center text-gray-500">Données costing non disponibles</div>
             )}
+          </TabsContent>
+
+          <TabsContent value="gcr" className="m-0">
+            <GCRTab projectId={projet.id} />
           </TabsContent>
         </div>
       </Tabs>
