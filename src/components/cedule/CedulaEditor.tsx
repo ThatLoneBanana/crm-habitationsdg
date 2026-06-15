@@ -13,7 +13,6 @@ import {
   cascadeVersHaut,
   detecterConflits,
 } from '@/lib/cedula-utils';
-import { TEMPLATE_JUMELE, TEMPLATE_MAISON } from '@/lib/template-defaut';
 
 export interface CedulaEditorProps {
   typeProjet: 'MAISON' | 'JUMELE';
@@ -57,39 +56,51 @@ export default function CedulaEditor({
       return;
     }
 
-    // Sinon, charger le template par défaut
-    const templateEtapes = typeProjet === 'MAISON' ? TEMPLATE_MAISON : TEMPLATE_JUMELE;
+    // Sinon, charger le template par défaut DEPUIS LA DB (jamais un fichier au runtime).
+    let annule = false;
+    const chargerTemplateDB = async () => {
+      try {
+        const res = await fetch(`/api/templates?type=${typeProjet}`);
+        const template = res.ok ? await res.json() : null;
+        const dbEtapes: any[] = template?.etapes ?? [];
 
-    const newEtapes: EtapeEditable[] = templateEtapes.map((e, i) => ({
-      id: undefined,
-      nom: e.nom,
-      ordre: i + 1,
-      jours: e.jours,
-      dateDebut: new Date(),
-      dateFin: new Date(),
-      buffer: 0,
-      assigneA: e.assigneA || 'Interne',
-      visibleClient: e.visibleClient,
-      interne: e.interne,
-    }));
+        const newEtapes: EtapeEditable[] = dbEtapes.map((e: any, i: number) => ({
+          id: undefined,
+          nom: e.nom,
+          ordre: i + 1,
+          jours: e.joursDefaut,
+          dateDebut: new Date(),
+          dateFin: new Date(),
+          buffer: 0,
+          assigneA: e.assigneA || 'Interne',
+          visibleClient: e.visibleClient,
+          interne: e.interne,
+        }));
 
-    // Calcul dates à rebours depuis dateLivraison - 5 jours ouvrables
-    const ancre = subJoursOuvrables(dateLivraison, margeCeduleJours);
-    let cursor = new Date(ancre);
+        // Calcul dates à rebours depuis dateLivraison - margeCeduleJours
+        const ancre = subJoursOuvrables(dateLivraison, margeCeduleJours);
+        let cursor = new Date(ancre);
+        for (let i = newEtapes.length - 1; i >= 0; i--) {
+          const e = newEtapes[i];
+          e.dateFin = new Date(cursor);
+          e.dateDebut = e.jours <= 1
+            ? new Date(cursor)
+            : subJoursOuvrables(cursor, e.jours - 1);
+          const bufferPrec = i > 0 ? newEtapes[i - 1].buffer : 0;
+          cursor = subJoursOuvrables(e.dateDebut, 1 + bufferPrec);
+        }
 
-    for (let i = newEtapes.length - 1; i >= 0; i--) {
-      const e = newEtapes[i];
-      e.dateFin = new Date(cursor);
-      e.dateDebut = e.jours <= 1
-        ? new Date(cursor)
-        : subJoursOuvrables(cursor, e.jours - 1);
-      const bufferPrec = i > 0 ? newEtapes[i - 1].buffer : 0;
-      cursor = subJoursOuvrables(e.dateDebut, 1 + bufferPrec);
-    }
-
-    setEtapes(newEtapes);
-    onChange(newEtapes);
-  }, []); // ← tableau vide = s'exécute UNE SEULE FOIS au montage
+        if (!annule) {
+          setEtapes(newEtapes);
+          onChange(newEtapes);
+        }
+      } catch (err) {
+        console.error('Erreur chargement template (DB):', err);
+      }
+    };
+    chargerTemplateDB();
+    return () => { annule = true; };
+  }, []); // ← s'exécute UNE SEULE FOIS au montage
 
   // Détecter conflits
   useEffect(() => {
@@ -219,38 +230,45 @@ export default function CedulaEditor({
     onChange(newEtapes);
   };
 
-  const reinitialiserDates = () => {
+  const reinitialiserDates = async () => {
     if (!confirm('Réinitialiser toutes les dates ? Les modifications seront perdues.')) return;
 
-    const templateEtapes = typeProjet === 'MAISON' ? TEMPLATE_MAISON : TEMPLATE_JUMELE;
-    const etapesInitiales: EtapeEditable[] = templateEtapes.map((e, i) => ({
-      id: undefined,
-      nom: e.nom,
-      ordre: i + 1,
-      jours: e.jours,
-      dateDebut: new Date(),
-      dateFin: new Date(),
-      buffer: 0,
-      assigneA: e.assigneA || 'Interne',
-      visibleClient: e.visibleClient,
-      interne: e.interne,
-    }));
+    try {
+      // Recharge le template par défaut DEPUIS LA DB (jamais un fichier au runtime).
+      const res = await fetch(`/api/templates?type=${typeProjet}`);
+      const template = res.ok ? await res.json() : null;
+      const dbEtapes: any[] = template?.etapes ?? [];
 
-    const ancre = subJoursOuvrables(dateLivraison, margeCeduleJours);
-    let cursor = new Date(ancre);
+      const nouvellesEtapes: EtapeEditable[] = dbEtapes.map((e: any, i: number) => ({
+        id: undefined,
+        nom: e.nom,
+        ordre: i + 1,
+        jours: e.joursDefaut,
+        dateDebut: new Date(),
+        dateFin: new Date(),
+        buffer: 0,
+        assigneA: e.assigneA || 'Interne',
+        visibleClient: e.visibleClient,
+        interne: e.interne,
+      }));
 
-    for (let i = etapesInitiales.length - 1; i >= 0; i--) {
-      const e = etapesInitiales[i];
-      e.dateFin = new Date(cursor);
-      e.dateDebut = e.jours <= 1
-        ? new Date(cursor)
-        : subJoursOuvrables(cursor, e.jours - 1);
-      const bufferPrec = i > 0 ? etapesInitiales[i - 1].buffer : 0;
-      cursor = subJoursOuvrables(e.dateDebut, 1 + bufferPrec);
+      const ancre = subJoursOuvrables(dateLivraison, margeCeduleJours);
+      let cursor = new Date(ancre);
+      for (let i = nouvellesEtapes.length - 1; i >= 0; i--) {
+        const e = nouvellesEtapes[i];
+        e.dateFin = new Date(cursor);
+        e.dateDebut = e.jours <= 1
+          ? new Date(cursor)
+          : subJoursOuvrables(cursor, e.jours - 1);
+        const bufferPrec = i > 0 ? nouvellesEtapes[i - 1].buffer : 0;
+        cursor = subJoursOuvrables(e.dateDebut, 1 + bufferPrec);
+      }
+
+      setEtapes(nouvellesEtapes);
+      onChange(nouvellesEtapes);
+    } catch (err) {
+      console.error('Erreur réinitialisation template (DB):', err);
     }
-
-    setEtapes(etapesInitiales);
-    onChange(etapesInitiales);
   };
 
   return (

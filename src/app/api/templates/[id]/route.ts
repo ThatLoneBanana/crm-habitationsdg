@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireApiRole, ROLES_MANAGE_USERS } from '@/lib/auth-guard';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,6 +24,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const guard = await requireApiRole(ROLES_MANAGE_USERS);
+    if (guard.response) return guard.response;
+
     const { id } = await params;
     const body = await request.json();
     const { etapes } = body;
@@ -57,6 +61,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const guard = await requireApiRole(ROLES_MANAGE_USERS);
+    if (guard.response) return guard.response;
+
     const { id } = await params;
 
     await prisma.template.delete({ where: { id } });

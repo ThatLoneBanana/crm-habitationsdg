@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ETAPES_NOMS, DUREES_DEFAUT, ASSIGNATIONS_DEFAUT, ETAPES_INTERNES } from '@/lib/template-utils';
+import { requireApiRole, ROLES_MANAGE_USERS } from '@/lib/auth-guard';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,30 +40,32 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'asc' },
     });
 
-    // Créer les templates par défaut s'il n'en existe pas
-    if (templates.length === 0) {
-      for (const type of ['JUMELE', 'MAISON']) {
-        const template = await prisma.template.create({
-          data: {
-            nom: type === 'JUMELE' ? 'Jumelé' : 'Maison',
-            type: type as any,
-            etapes: {
-              createMany: {
-                data: ETAPES_NOMS.map((nom, idx) => ({
-                  ordre: idx + 1,
-                  nom,
-                  joursDefaut: DUREES_DEFAUT[nom] || 1,
-                  assigneA: ASSIGNATIONS_DEFAUT[nom] || null,
-                  visibleClient: !ETAPES_INTERNES.includes(nom),
-                  interne: ETAPES_INTERNES.includes(nom),
-                })),
-              },
+    // Crée les templates par défaut MANQUANTS (idempotent, couvre les 3 types).
+    // template-utils ne sert que de seed initial ici — jamais lu au runtime ailleurs.
+    const typesRequis: Array<'JUMELE' | 'MAISON' | 'MULTILOGEMENT'> = ['JUMELE', 'MAISON', 'MULTILOGEMENT'];
+    const typesExistants = new Set(templates.map(t => t.type));
+    for (const type of typesRequis) {
+      if (typesExistants.has(type as any)) continue;
+      const template = await prisma.template.create({
+        data: {
+          nom: type === 'JUMELE' ? 'Jumelé' : type === 'MAISON' ? 'Maison' : 'Multilogement',
+          type: type as any,
+          etapes: {
+            createMany: {
+              data: ETAPES_NOMS.map((nom, idx) => ({
+                ordre: idx + 1,
+                nom,
+                joursDefaut: DUREES_DEFAUT[nom] || 1,
+                assigneA: ASSIGNATIONS_DEFAUT[nom] || null,
+                visibleClient: !ETAPES_INTERNES.includes(nom),
+                interne: ETAPES_INTERNES.includes(nom),
+              })),
             },
           },
-          include: { etapes: { orderBy: { ordre: 'asc' } } },
-        });
-        templates.push(template);
-      }
+        },
+        include: { etapes: { orderBy: { ordre: 'asc' } } },
+      });
+      templates.push(template);
     }
 
     return NextResponse.json({ templates });
@@ -77,6 +80,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireApiRole(ROLES_MANAGE_USERS);
+    if (guard.response) return guard.response;
+
     const body = await request.json();
     const { nom, type, etapes } = body;
 
