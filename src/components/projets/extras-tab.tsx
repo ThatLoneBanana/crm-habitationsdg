@@ -2,34 +2,38 @@
 
 import { useState } from 'react';
 import { Extra } from '@prisma/client';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExtraDialog } from './extra-dialog';
 import { formatMontant } from '@/lib/utils';
-import { Plus, Check, Clock, CheckCircle, Edit2 } from 'lucide-react';
+import { Plus, Edit2, CheckCircle } from 'lucide-react';
 
 interface ExtrasTabProps {
   extras: Extra[];
   projectId: string;
 }
 
-const statutColors: Record<string, { bg: string; text: string; icon: any }> = {
-  EN_ATTENTE: {
-    bg: 'bg-yellow-50',
-    text: 'text-yellow-800',
-    icon: Clock,
-  },
-  SIGNE: {
-    bg: 'bg-green-50',
-    text: 'text-green-800',
-    icon: Check,
-  },
-  REFUSE: {
-    bg: 'bg-red-50',
-    text: 'text-red-800',
-    icon: null,
-  },
+const TH: React.CSSProperties = {
+  textAlign: 'left', padding: '9px 14px', fontSize: 10, fontWeight: 600,
+  textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', whiteSpace: 'nowrap',
 };
+
+function StatutBadge({ statut }: { statut: string }) {
+  const base: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-2xs)', fontWeight: 600,
+    lineHeight: 1, padding: '3px 8px', borderRadius: 'var(--radius-full)', whiteSpace: 'nowrap',
+  };
+  if (statut === 'SIGNE') {
+    return (
+      <span style={{ ...base, background: 'var(--success-tint)', color: 'var(--success-text)' }}>
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />Signé
+      </span>
+    );
+  }
+  if (statut === 'REFUSE') {
+    return <span style={{ ...base, background: 'var(--danger-tint)', color: 'var(--danger-text)' }}>Refusé</span>;
+  }
+  return <span style={{ ...base, background: 'var(--warning-tint)', color: 'var(--warning-text)' }}>En attente</span>;
+}
 
 export function ExtrasTab({ extras, projectId }: ExtrasTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,118 +59,62 @@ export function ExtrasTab({ extras, projectId }: ExtrasTabProps) {
     // TODO: Implémenter l'API pour créer/mettre à jour un extra
     setDialogOpen(false);
   };
-  const totalSignes = extras
-    .filter((e) => e.statut === 'SIGNE')
-    .reduce((sum, e) => sum + e.montant, 0);
 
-  const totalEnAttente = extras
-    .filter((e) => e.statut === 'EN_ATTENTE')
-    .reduce((sum, e) => sum + e.montant, 0);
+  const formatDateFr = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString('fr-CA') : '—');
 
   return (
-    <div className="space-y-6">
-      {/* Résumé */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-xs text-green-700 mb-1">Extras signés</p>
-          <p className="text-2xl font-bold text-green-900">
-            {formatMontant(totalSignes)}
-          </p>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-xs text-yellow-700 mb-1">En attente</p>
-          <p className="text-2xl font-bold text-yellow-900">
-            {formatMontant(totalEnAttente)}
-          </p>
-        </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-xs text-blue-700 mb-1">Total potentiel</p>
-          <p className="text-2xl font-bold text-blue-900">
-            {formatMontant(totalSignes + totalEnAttente)}
-          </p>
-        </div>
-      </div>
-
-      {/* Bouton Ajouter */}
+    <div className="space-y-4">
+      {/* Un seul bouton primaire (rouge DG par défaut) */}
       <div className="flex justify-end">
-        <Button onClick={handleAddExtra} className="gap-2 bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleAddExtra} className="gap-2">
           <Plus className="w-4 h-4" />
           Ajouter un extra
         </Button>
       </div>
 
-      {/* Liste des extras */}
-      <div className="space-y-3">
-        {extras.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Aucun extra défini</p>
-          </div>
-        ) : (
-          extras.map((extra) => {
-            const config = statutColors[extra.statut];
-            return (
-              <div
-                key={extra.id}
-                className={`p-4 border rounded-lg ${config.bg}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-medium text-gray-900">
-                        {extra.description}
-                      </h4>
-                      <Badge className={`${config.text} bg-white border`}>
-                        {extra.statut === 'EN_ATTENTE'
-                          ? 'En attente'
-                          : extra.statut === 'SIGNE'
-                            ? 'Signé'
-                            : 'Refusé'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      {extra.fournisseur && (
-                        <span>Fournisseur: {extra.fournisseur}</span>
-                      )}
-                      {extra.signeLe && (
-                        <span>
-                          Signé le:{' '}
-                          {new Date(extra.signeLe).toLocaleDateString('fr-CA')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right space-y-2">
-                    <p className="text-lg font-bold text-gray-900">
-                      {formatMontant(extra.montant)}
-                    </p>
-                    <div className="flex gap-2 justify-end">
-                      {extra.statut === 'EN_ATTENTE' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleSignExtra(extra)}
-                          className="gap-2 bg-green-600 hover:bg-green-700"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Signer
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditExtra(extra)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+      {/* Tableau sobre dans une card bordée (REF ExtrasTab) */}
+      <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+          <thead>
+            <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+              <th style={TH}>Description</th>
+              <th style={{ ...TH, textAlign: 'right' }}>Montant</th>
+              <th style={TH}>Statut</th>
+              <th style={TH}>Signé le</th>
+              <th style={{ ...TH, textAlign: 'center' }} />
+            </tr>
+          </thead>
+          <tbody>
+            {extras.length === 0 ? (
+              <tr><td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Aucun extra</td></tr>
+            ) : (
+              extras.map((extra, i) => (
+                <tr key={extra.id} style={{ borderBottom: i === extras.length - 1 ? 'none' : '1px solid var(--divider)' }}>
+                  <td style={{ padding: '10px 14px', fontWeight: 500 }}>
+                    {extra.description}
+                    {extra.fournisseur ? <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}> · {extra.fournisseur}</span> : null}
+                  </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>{formatMontant(extra.montant)}</td>
+                  <td style={{ padding: '10px 14px' }}><StatutBadge statut={extra.statut} /></td>
+                  <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatDateFr(extra.signeLe)}</td>
+                  <td style={{ padding: '10px 14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    {extra.statut === 'EN_ATTENTE' && (
+                      <button onClick={() => handleSignExtra(extra)} title="Signer" style={{ padding: 6, color: 'var(--success)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button onClick={() => handleEditExtra(extra)} title="Modifier" style={{ padding: 6, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Dialog Ajouter/Éditer extra */}
+      {/* Dialog Ajouter/Éditer extra — logique inchangée */}
       <ExtraDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
