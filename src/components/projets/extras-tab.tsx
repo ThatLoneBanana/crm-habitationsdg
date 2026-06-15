@@ -5,7 +5,7 @@ import { Extra } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExtraDialog } from './extra-dialog';
-import { formatCurrency } from '@/lib/utils';
+import { formatMontant } from '@/lib/utils';
 import { Plus, Check, Clock, CheckCircle, Edit2 } from 'lucide-react';
 
 interface ExtrasTabProps {
@@ -70,19 +70,19 @@ export function ExtrasTab({ extras, projectId }: ExtrasTabProps) {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-xs text-green-700 mb-1">Extras signés</p>
           <p className="text-2xl font-bold text-green-900">
-            {formatCurrency(totalSignes)}
+            {formatMontant(totalSignes)}
           </p>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-xs text-yellow-700 mb-1">En attente</p>
           <p className="text-2xl font-bold text-yellow-900">
-            {formatCurrency(totalEnAttente)}
+            {formatMontant(totalEnAttente)}
           </p>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-xs text-blue-700 mb-1">Total potentiel</p>
           <p className="text-2xl font-bold text-blue-900">
-            {formatCurrency(totalSignes + totalEnAttente)}
+            {formatMontant(totalSignes + totalEnAttente)}
           </p>
         </div>
       </div>
@@ -137,7 +137,7 @@ export function ExtrasTab({ extras, projectId }: ExtrasTabProps) {
                   </div>
                   <div className="text-right space-y-2">
                     <p className="text-lg font-bold text-gray-900">
-                      {formatCurrency(extra.montant)}
+                      {formatMontant(extra.montant)}
                     </p>
                     <div className="flex gap-2 justify-end">
                       {extra.statut === 'EN_ATTENTE' && (

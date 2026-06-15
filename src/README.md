@@ -22,7 +22,7 @@
 ### `lib/`
 - **supabase/** - Clients Supabase (browser & server)
 - **prisma.ts** - Instance Prisma singleton
-- **utils.ts** - Fonctions utilitaires (cn, formatDate, formatCurrency)
+- **utils.ts** - Fonctions utilitaires (cn, formatDate, formatMontant)
 
 ### `types/`
 - **index.ts** - Types TypeScript globaux et interfaces

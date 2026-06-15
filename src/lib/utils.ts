@@ -14,13 +14,6 @@ export const formatDate = (date: Date | null) => {
   });
 };
 
-export const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('fr-CA', {
-    style: 'currency',
-    currency: 'CAD',
-  }).format(amount);
-};
-
 export function formatMontant(montant: number, decimales = 2): string {
   return new Intl.NumberFormat('fr-CA', {
     minimumFractionDigits: decimales,

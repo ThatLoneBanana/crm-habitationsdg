@@ -42,3 +42,6 @@ next-env.d.ts
 
 /src/generated/prisma
 .claude/
+
+# dev server log (généré localement)
+dev-server.log

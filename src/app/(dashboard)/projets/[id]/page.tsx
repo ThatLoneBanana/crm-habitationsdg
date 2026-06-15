@@ -15,7 +15,7 @@ import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
 import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
 import { GCRTab } from '@/components/projets/gcr-tab';
-import { formatDate, formatCurrency } from '@/lib/utils';
+import { formatDate, formatMontant } from '@/lib/utils';
 import { Printer, Send, Eye, MapPin, FileText, Calendar, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -264,7 +264,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           <i className='ti ti-edit' aria-hidden='true'></i>
           Modifier
         </Button>
-        <Button variant="outline" className="gap-2" onClick={() => window.open(`/vueclient/${projet.slug}`, '_blank')}>
+        <Button variant="outline" className="gap-2" onClick={() => window.open(`/p/${projet.slug}`, '_blank')}>
           <Eye className="w-4 h-4" />
           Vue client
         </Button>
@@ -345,7 +345,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
         <MetricCard title="Avancement" value={`${avancement}%`} />
         <MetricCard title="Étapes" value={projet.taches.length} />
         <MetricCard title="Extras" value={projet.extras.length} />
-        <MetricCard title="Extras signés" value={`$${formatCurrency(totalExtrasSignes)}`} />
+        <MetricCard title="Extras signés" value={formatMontant(totalExtrasSignes)} />
         <MetricCard title="Paiements" value={projet.paiements.length} />
       </div>
 
