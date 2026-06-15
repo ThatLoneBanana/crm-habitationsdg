@@ -26,8 +26,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Routes publiques — pas de redirect
+  // /api/projets-by-slug est l'API que la vue client publique (/p/) consomme :
+  // elle est filtrée pour ne renvoyer que des données destinées au client.
   const isPublic = request.nextUrl.pathname.startsWith('/login') ||
                    request.nextUrl.pathname.startsWith('/p/') ||
+                   request.nextUrl.pathname.startsWith('/api/projets-by-slug') ||
                    request.nextUrl.pathname.startsWith('/api/restore-taches')
 
   if (!user && !isPublic) {
