@@ -50,14 +50,44 @@ export function ExtrasTab({ extras, projectId }: ExtrasTabProps) {
   };
 
   const handleSignExtra = async (extra: Extra) => {
-    console.log('Signer extra:', extra.id);
-    // TODO: Implémenter l'API pour signer l'extra
+    try {
+      const res = await fetch('/api/extras', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: extra.id, description: extra.description, montant: extra.montant, fournisseur: extra.fournisseur, statut: 'SIGNE' }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Erreur lors de la signature');
+      }
+      window.location.reload();
+    } catch (err: any) {
+      alert('Erreur: ' + err.message);
+    }
   };
 
+  // Câblé à l'API réelle /api/extras (POST = nouveau, PUT = édition).
   const handleSaveExtra = async (data: any) => {
-    console.log('Sauvegarder extra:', data);
-    // TODO: Implémenter l'API pour créer/mettre à jour un extra
-    setDialogOpen(false);
+    const isEdit = !!selectedExtra?.id;
+    try {
+      const res = await fetch('/api/extras', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          isEdit
+            ? { id: selectedExtra.id, description: data.description, montant: data.montant, fournisseur: data.fournisseur, statut: selectedExtra.statut }
+            : { projetId: projectId, description: data.description, montant: data.montant, fournisseur: data.fournisseur }
+        ),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Erreur lors de la sauvegarde');
+      }
+      setDialogOpen(false);
+      window.location.reload();
+    } catch (err: any) {
+      alert('Erreur: ' + err.message);
+    }
   };
 
   const formatDateFr = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString('fr-CA') : '—');
