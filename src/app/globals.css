@@ -2,6 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Design system Habitations DG — tokens (warm-neutral + rouge DG) */
+@import "../styles/tokens/colors.css";
+@import "../styles/tokens/typography.css";
+@import "../styles/tokens/spacing.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -49,38 +54,44 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* shadcn → tokens DG (remplace les valeurs OKLCH grises) */
+  --background: var(--n-25);
+  --foreground: var(--n-900);
+  --card: var(--n-0);
+  --card-foreground: var(--n-900);
+  --popover: var(--n-0);
+  --popover-foreground: var(--n-900);
+  --primary: var(--dg-red);          /* rouge DG au lieu du gris */
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--n-100);
+  --secondary-foreground: var(--n-900);
+  --muted: var(--n-50);
+  --muted-foreground: var(--n-600);
+  --accent: var(--n-100);
+  --accent-foreground: var(--n-900);
+  --destructive: var(--danger);
+  --border: var(--n-200);            /* bordure chaude au lieu du gris froid */
+  --input: var(--n-200);
+  --ring: var(--dg-red);
+
+  /* Charts — laissés en gris neutre (aucun graphique ne les consomme encore) */
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  --radius: 8px;
+
+  /* Sidebar — blanche, hairline chaude, actif rouge (cohérence DG) */
+  --sidebar: var(--n-0);
+  --sidebar-foreground: var(--n-900);
+  --sidebar-primary: var(--dg-red);
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: var(--n-100);
+  --sidebar-accent-foreground: var(--n-900);
+  --sidebar-border: var(--n-200);
+  --sidebar-ring: var(--dg-red);
 }
 
 .dark {
