@@ -80,6 +80,9 @@ export default function FournisseursPage() {
         setSupprimerOpen(false)
         setSelectedFournisseur(null)
         location.reload()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Erreur lors de la suppression')
       }
     } catch (err) {
       console.error('Erreur:', err)

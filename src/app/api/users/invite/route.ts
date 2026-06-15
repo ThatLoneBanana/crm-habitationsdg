@@ -33,17 +33,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Crée le user dans la table Prisma
-    const user = await prisma.user.create({
-      data: {
-        id: authUser.user.id,
-        email,
-        prenom,
-        nom,
-        role: role as any,
-        actif: true,
-      }
-    })
+    // Crée le user dans la table Prisma. Si ça échoue, on supprime le user
+    // Auth pour éviter un orphelin (créé dans Supabase mais absent de Prisma).
+    let user
+    try {
+      user = await prisma.user.create({
+        data: {
+          id: authUser.user.id,
+          email,
+          prenom,
+          nom,
+          role: role as any,
+          actif: true,
+        }
+      })
+    } catch (prismaError: any) {
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id).catch(() => {})
+      return NextResponse.json(
+        { error: 'Profil non créé (Supabase Auth annulé): ' + (prismaError.message || 'erreur Prisma') },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       success: true,

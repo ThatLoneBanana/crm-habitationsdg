@@ -135,6 +135,21 @@ export default function ParametresPage() {
     }
   }
 
+  const handleChangeRole = async (userId: string, role: Role) => {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      })
+      if (!res.ok) throw new Error('Erreur lors du changement de rôle')
+      setUsers(users.map(u => u.id === userId ? { ...u, role } : u))
+      setSuccess('Rôle mis à jour')
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
   const handleToggleUser = async (userId: string, actif: boolean) => {
     try {
       await fetch(`/api/users/${userId}`, {
@@ -330,9 +345,13 @@ export default function ParametresPage() {
 
             <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', overflow: 'hidden', marginTop: '12px' }}>
               {users.map((user, i) => (
-                <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 80px', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: i < users.length - 1 ? '1px solid #E5E7EB' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
+                <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 150px 100px 80px', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: i < users.length - 1 ? '1px solid #E5E7EB' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
                   <div><p style={{ fontSize: '13px', fontWeight: 500 }}>{user.prenom} {user.nom}</p><p style={{ fontSize: '11px', color: '#6B7280' }}>{user.email}</p></div>
-                  <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: roleColor(user.role) + '20', color: roleColor(user.role), fontWeight: 500, textAlign: 'center' }}>{roleLabel(user.role)}</span>
+                  <select value={user.role} onChange={(e) => handleChangeRole(user.id, e.target.value as Role)} style={{ fontSize: '11px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #E5E7EB', color: roleColor(user.role), fontWeight: 500, cursor: 'pointer', background: 'white' }}>
+                    {(['ADMIN', 'COMPTABILITE', 'VENDEUR', 'CHARGE_PROJET', 'DEVELOPPEUR'] as Role[]).map(r => (
+                      <option key={r} value={r}>{roleLabel(r)}</option>
+                    ))}
+                  </select>
                   <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: user.actif ? '#EAF3DE' : '#FCEBEB', color: user.actif ? '#3B6D11' : '#A32D2D', fontWeight: 500, textAlign: 'center' }}>{user.actif ? 'Actif' : 'Inactif'}</span>
                   <button onClick={() => handleToggleUser(user.id, user.actif)} style={{ padding: '6px 10px', background: user.actif ? '#FCEBEB' : '#EAF3DE', color: user.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>{user.actif ? 'Désactiver' : 'Activer'}</button>
                 </div>

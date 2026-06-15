@@ -517,7 +517,7 @@ export default function FeuillesDeTempsPage() {
                         <td style={{ padding: '4px' }}>
                           <select value={ligne.employeId} onChange={e => onEmployeChange(ligne.id, e.target.value)} style={{ width: '100%', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px' }}>
                             <option value=''>Choisir...</option>
-                            {employes.map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
+                            {employes.filter(e => e.actif || e.id === ligne.employeId).map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
                           </select>
                         </td>
                         <td style={{ padding: '4px' }}>

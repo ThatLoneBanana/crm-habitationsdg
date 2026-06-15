@@ -58,11 +58,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const { id } = await params
-    const { actif } = await request.json()
+    const { actif, role } = await request.json()
+
+    const data: any = {}
+    if (actif !== undefined) data.actif = actif
+    if (role !== undefined) {
+      const rolesValides = ['ADMIN', 'COMPTABILITE', 'VENDEUR', 'CHARGE_PROJET', 'DEVELOPPEUR']
+      if (!rolesValides.includes(role)) {
+        return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 })
+      }
+      data.role = role
+    }
 
     const user = await prisma.user.update({
       where: { id },
-      data: { actif },
+      data,
       select: {
         id: true,
         email: true,

@@ -6,18 +6,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const body = await request.json()
 
-    const employe = await prisma.employe.update({
-      where: { id },
-      data: {
-        prenom: body.prenom,
-        nom: body.nom,
-        email: body.email || null,
-        telephone: body.telephone || null,
-        tauxHoraire: parseFloat(body.tauxHoraire || 0),
-        metier: body.metier || null,
-        actif: body.actif !== false,
-      }
-    })
+    // Mise à jour partielle : ne touche qu'aux champs réellement fournis.
+    // (L'UI envoie parfois { actif } seul ou { tauxHoraire } seul — on ne doit
+    //  pas écraser le reste, sinon un toggle remettrait le taux à 0.)
+    const data: any = {}
+    if (body.prenom !== undefined) data.prenom = body.prenom
+    if (body.nom !== undefined) data.nom = body.nom
+    if (body.email !== undefined) data.email = body.email || null
+    if (body.telephone !== undefined) data.telephone = body.telephone || null
+    if (body.tauxHoraire !== undefined) data.tauxHoraire = parseFloat(body.tauxHoraire)
+    if (body.metier !== undefined) data.metier = body.metier || null
+    if (body.actif !== undefined) data.actif = body.actif
+
+    const employe = await prisma.employe.update({ where: { id }, data })
 
     return NextResponse.json({ employe })
   } catch (error: any) {
