@@ -44,14 +44,14 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
   useEffect(() => {
     const fetchProjet = async () => {
       try {
-        // Le paramètre 'id' peut être un slug OU un UUID (ancien)
-        // D'abord essayer par slug
-        let res = await fetch(`/api/projets-by-slug?slug=${params.id}`);
-
-        // Si pas trouvé, essayer par ID (fallback pour anciennes URLs)
-        if (!res.ok) {
-          res = await fetch(`/api/projets/${params.id}`);
-        }
+        // Page interne authentifiée → données COMPLÈTES (id, slug, vendeur,
+        // finances, étapes internes...). Le paramètre peut être un slug ou un
+        // UUID, l'API /api/projets/[id] résout les deux.
+        // NE PAS utiliser /api/projets-by-slug ici : c'est la route PUBLIQUE
+        // filtrée pour la vue client, qui ne renvoie ni l'id ni le slug ni les
+        // champs internes (sinon id/slug seraient undefined ⇒ /p/undefined,
+        // extras sans projetId, modification sur /api/projets/undefined).
+        const res = await fetch(`/api/projets/${params.id}`);
 
         if (!res.ok) throw new Error('Projet non trouvé');
         const data = await res.json();

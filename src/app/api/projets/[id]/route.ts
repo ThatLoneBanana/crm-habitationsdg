@@ -6,8 +6,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
 
-    const projet = await prisma.projet.findUnique({
-      where: { id },
+    // Le paramètre peut être un id (UUID) OU un slug : route interne
+    // authentifiée qui renvoie les données COMPLÈTES du projet.
+    const projet = await prisma.projet.findFirst({
+      where: { OR: [{ id }, { slug: id }] },
       include: {
         client: true,
         vendeur: true,
@@ -28,10 +30,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Calculer la phase automatiquement
     const nouvellePhase = calculerPhaseAutomatique(projet);
 
-    // Si la phase a changé, mettre à jour en DB
+    // Si la phase a changé, mettre à jour en DB (via l'id réel résolu)
     if (nouvellePhase !== projet.phase) {
       await prisma.projet.update({
-        where: { id },
+        where: { id: projet.id },
         data: { phase: nouvellePhase }
       });
       projet.phase = nouvellePhase;
