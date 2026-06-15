@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
+import { requireApiRole, ROLES_MANAGE_USERS } from '@/lib/auth-guard'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -47,15 +48,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const supabase = await createClient()
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-
-    if (!authUser) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      )
-    }
+    const guard = await requireApiRole(ROLES_MANAGE_USERS)
+    if (guard.response) return guard.response
 
     const { id } = await params
     const { actif, role } = await request.json()

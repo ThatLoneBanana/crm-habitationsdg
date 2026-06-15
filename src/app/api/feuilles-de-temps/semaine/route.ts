@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireApiRole, ROLES_EDIT_FEUILLES } from '@/lib/auth-guard'
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireApiRole(ROLES_EDIT_FEUILLES)
+    if (guard.response) return guard.response
+
     const { semaine, entries } = await request.json()
 
     const lundiSemaine = new Date(semaine)
@@ -16,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Supprime les entrées existantes pour cette semaine
     for (const pair of employeProjetPairs) {
-      const [employeId, projetId] = pair.split('-')
+      const [employeId, projetId] = (pair as string).split('-')
       await prisma.feuilleTemps.deleteMany({
         where: {
           employeId,

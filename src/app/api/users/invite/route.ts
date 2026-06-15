@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireApiRole, ROLES_MANAGE_USERS } from '@/lib/auth-guard'
 
 export async function POST(request: NextRequest) {
   try {
+    const guard = await requireApiRole(ROLES_MANAGE_USERS)
+    if (guard.response) return guard.response
+
     const { prenom, nom, email, role } = await request.json()
 
     // Validation
