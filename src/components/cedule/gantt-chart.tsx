@@ -19,17 +19,17 @@ interface GanttChartProps {
 }
 
 export function GanttChart({ taches, projectId, toleranceJours }: GanttChartProps) {
-  // Formater les tâches pour le GanttComponent
+  // Formater les tâches pour le GanttComponent (colonne de labels + barres REF)
   const tasksData = taches
     .filter(t => t.dateDebut && t.dateFin)
     .map((tache) => ({
       id: tache.id,
-      name: `${tache.ordre}. ${tache.nom}`,
+      ordre: tache.ordre,
+      nom: tache.nom,
+      assigneA: tache.assigneA || 'Interne',
+      jours: tache.dureeJours,
       start: new Date(tache.dateDebut!).toISOString().split('T')[0],
       end: new Date(tache.dateFin!).toISOString().split('T')[0],
-      progress: 0,
-      assigné: tache.assigneA || '',
-      workingDays: tache.dureeJours,
     }));
 
   return <GanttComponent tasks={tasksData} />;
