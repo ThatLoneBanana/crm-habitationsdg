@@ -1,9 +1,9 @@
-import { requirePageRole, ROLES_VIEW_COSTING } from '@/lib/auth-guard'
+import { requirePageCapability } from '@/lib/auth-guard'
 import CostingClient from './CostingClient'
 
-// Garde serveur : refuse réellement les rôles non autorisés (ex. VENDEUR),
+// Garde serveur : refuse réellement selon la capacité configurable (voirCosting),
 // pas seulement le masquage du lien dans la sidebar.
 export default async function CostingPage() {
-  await requirePageRole(ROLES_VIEW_COSTING)
+  await requirePageCapability('voirCosting')
   return <CostingClient />
 }

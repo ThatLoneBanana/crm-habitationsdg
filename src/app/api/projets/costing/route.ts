@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireApiRole, ROLES_VIEW_COSTING } from '@/lib/auth-guard'
+import { requireApiCapability } from '@/lib/auth-guard'
 
 export async function GET(request: NextRequest) {
   try {
-    const guard = await requireApiRole(ROLES_VIEW_COSTING)
+    const guard = await requireApiCapability('voirCosting')
     if (guard.response) return guard.response
 
     const { searchParams } = new URL(request.url)

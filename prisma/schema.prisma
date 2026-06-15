@@ -281,3 +281,17 @@ model Depense {
 
   @@index([projetId])
 }
+
+// Permissions configurables (grain grossier) par rôle.
+// Une ligne par rôle CONFIGURABLE (COMPTABILITE, VENDEUR, CHARGE_PROJET).
+// ADMIN et DEVELOPPEUR ne sont jamais dans cette table : accès total en dur
+// dans auth-guard.ts (ne peuvent pas être enfermés dehors par une config).
+model RolePermission {
+  role         Role     @id
+  voirCosting  Boolean  @default(false)
+  voirFeuilles Boolean  @default(false)
+  editFeuilles Boolean  @default(false)
+  voirGCR      Boolean  @default(false)
+  editCedule   Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}

@@ -5,9 +5,19 @@ import { createClient } from '@/lib/supabase/client'
 type Role = 'ADMIN' | 'COMPTABILITE' | 'VENDEUR' | 'CHARGE_PROJET' | 'DEVELOPPEUR'
 interface User { id: string; email: string; prenom: string; nom: string; role: Role; actif: boolean }
 
+// Rôles configurables (ADMIN/DEVELOPPEUR = accès total non configurable)
+const CONFIG_ROLES: Role[] = ['COMPTABILITE', 'CHARGE_PROJET', 'VENDEUR']
+const CAPS: { key: string; label: string }[] = [
+  { key: 'voirCosting', label: 'Voir costing' },
+  { key: 'voirFeuilles', label: 'Voir feuilles' },
+  { key: 'editFeuilles', label: 'Éditer feuilles' },
+  { key: 'voirGCR', label: 'Voir GCR' },
+  { key: 'editCedule', label: 'Éditer cédule' },
+]
+
 export default function ParametresPage() {
   const supabase = createClient()
-  const [activeTab, setActiveTab] = useState<'general' | 'compte' | 'utilisateurs'>('compte')
+  const [activeTab, setActiveTab] = useState<'general' | 'compte' | 'utilisateurs' | 'acces'>('compte')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [estAdminOuComptabilite, setEstAdminOuComptabilite] = useState(false)
   const [editUser, setEditUser] = useState({ prenom: '', nom: '' })
@@ -20,6 +30,7 @@ export default function ParametresPage() {
   const [inviteForm, setInviteForm] = useState({ prenom: '', nom: '', email: '', role: 'VENDEUR' as Role })
   const [passwordForm, setPasswordForm] = useState({ nouveau: '', confirmer: '' })
   const [parametres, setParametres] = useState({ nomCompagnie: 'Habitations DG', rbq: '5856-1036-01', email: 'info@habitations-dg.com', telephone: '', siteWeb: 'habitations-dg.com', maxHeuresParSemaine: 36.5, margeCeduleJours: 5, toleranceDefautJours: 3 })
+  const [accessPerms, setAccessPerms] = useState<Record<string, Record<string, boolean>>>({})
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,13 +62,19 @@ export default function ParametresPage() {
             setActiveTab('general')
           }
 
-          // Load users if admin or développeur
+          // Load users + permissions configurables si admin ou développeur
           if (estAdmin || estDeveloppeur) {
             try {
               const usersRes = await fetch('/api/users', { signal: controller.signal })
               if (usersRes.ok) setUsers(await usersRes.json())
             } catch (e) {
               console.error('Erreur chargement users:', e)
+            }
+            try {
+              const accRes = await fetch('/api/role-permissions', { signal: controller.signal })
+              if (accRes.ok) setAccessPerms((await accRes.json()).permissions || {})
+            } catch (e) {
+              console.error('Erreur chargement accès:', e)
             }
           }
 
@@ -184,6 +201,30 @@ export default function ParametresPage() {
     }
   }
 
+  const toggleAccessCap = (role: string, cap: string) => {
+    setAccessPerms(prev => ({
+      ...prev,
+      [role]: { ...prev[role], [cap]: !prev[role]?.[cap] },
+    }))
+  }
+
+  const handleSaveAccess = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/role-permissions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions: accessPerms }),
+      })
+      if (!res.ok) throw new Error('Erreur lors de la sauvegarde des accès')
+      setSuccess('Accès mis à jour')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
 
   const roleLabel = (r: Role) => ({ ADMIN: 'Admin', COMPTABILITE: 'Comptabilité', VENDEUR: 'Vendeur', CHARGE_PROJET: 'Chargé de projet', DEVELOPPEUR: 'Développeur' }[r])
@@ -200,6 +241,9 @@ export default function ParametresPage() {
         <button onClick={() => setActiveTab('compte')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'compte' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'compte' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'compte' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Mon compte</button>
         {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
           <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>
+        )}
+        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
+          <button onClick={() => setActiveTab('acces')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'acces' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'acces' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'acces' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Accès</button>
         )}
       </div>
 
@@ -304,6 +348,48 @@ export default function ParametresPage() {
                   <button onClick={() => handleToggleUser(user.id, user.actif)} style={{ padding: '6px 10px', background: user.actif ? '#FCEBEB' : '#EAF3DE', color: user.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>{user.actif ? 'Désactiver' : 'Activer'}</button>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'acces' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
+        <div>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '20px', background: 'var(--surface)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Accès par rôle</h2>
+              <button onClick={handleSaveAccess} disabled={saving} style={{ padding: '10px 16px', background: 'var(--dg-red)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              Admin et Développeur ont l'accès total (non configurable). Un changement prend effet au prochain chargement de page de l'utilisateur visé.
+            </p>
+            <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-subtle)' }}>
+                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>Rôle</th>
+                    {CAPS.map(c => (
+                      <th key={c.key} style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>{c.label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {CONFIG_ROLES.map((role, i) => (
+                    <tr key={role} style={{ borderBottom: '1px solid var(--divider)' }}>
+                      <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-primary)' }}>{roleLabel(role)}</td>
+                      {CAPS.map(c => (
+                        <td key={c.key} style={{ padding: '10px 14px', textAlign: 'center' }}>
+                          <input type="checkbox" checked={!!accessPerms[role]?.[c.key]} onChange={() => toggleAccessCap(role, c.key)} style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: 'var(--dg-red)' }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr style={{ background: 'var(--surface-subtle)' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-tertiary)' }}>Admin · Développeur</td>
+                    <td colSpan={CAPS.length} style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>Accès total (verrouillé)</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
