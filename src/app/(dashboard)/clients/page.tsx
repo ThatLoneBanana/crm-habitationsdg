@@ -79,6 +79,9 @@ export default function ClientsPage() {
         setFormData({ prenom: '', nom: '', email: '', telephone: '' })
         setSelectedClient(null)
         location.reload()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Erreur lors de la sauvegarde')
       }
     } catch (err) {
       console.error('Erreur:', err)
@@ -94,6 +97,9 @@ export default function ClientsPage() {
         setSupprimerOpen(false)
         setSelectedClient(null)
         location.reload()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        alert(data.error || 'Erreur lors de la suppression')
       }
     } catch (err) {
       console.error('Erreur:', err)
