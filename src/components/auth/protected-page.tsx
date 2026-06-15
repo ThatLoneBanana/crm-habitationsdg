@@ -6,14 +6,12 @@ import { useRouter } from 'next/navigation';
 interface ProtectedPageProps {
   children: React.ReactNode;
   requiredRoles?: string[];
-  requiredPermissions?: string[];
   fallback?: React.ReactNode;
 }
 
 export function ProtectedPage({
   children,
   requiredRoles = [],
-  requiredPermissions = [],
   fallback,
 }: ProtectedPageProps) {
   const router = useRouter();
@@ -57,7 +55,7 @@ export function ProtectedPage({
     };
 
     checkAuth();
-  }, [router, requiredRoles, requiredPermissions, fallback]);
+  }, [router, requiredRoles, fallback]);
 
   if (isLoading) {
     return (

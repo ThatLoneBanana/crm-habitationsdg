@@ -64,7 +64,6 @@ model User {
   prenom        String
   role          Role
   actif         Boolean  @default(true)
-  tauxHoraire   Float    @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -281,12 +280,4 @@ model Depense {
   projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
 
   @@index([projetId])
-}
-
-model RolePermission {
-  id        String   @id @default(uuid())
-  role      Role     @unique
-  permissions String  // JSON string: ["view_dashboard", "view_projets", ...]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

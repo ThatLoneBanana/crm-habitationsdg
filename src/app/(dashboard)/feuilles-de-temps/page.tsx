@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { Clock, Trash2 } from 'lucide-react'
 
 interface Employe { id: string; prenom: string; nom: string; email?: string; telephone?: string; tauxHoraire: number; actif: boolean }
-interface User { id: string; prenom: string; nom: string; role: string; tauxHoraire: number; actif: boolean }
 interface FeuilleTemps { id: string; employeId: string; projetId: string; date: string; heures: number; tauxHoraire: number; employe: { prenom: string; nom: string }; projet: { numero: string; adresse: string } }
 interface Depense { id: string; projetId: string; categorie: string; description: string; montant: number; dateDepense: string; facture?: string; projet: { numero: string; adresse: string } }
 interface LigneGrille { id: string; employeId: string; projetId: string; heures: { lun: number | null; mar: number | null; mer: number | null; jeu: number | null; ven: number | null }; tauxHoraire: number }
@@ -22,21 +21,9 @@ const categoriesLabels: { [key: string]: string } = {
   'AUTRE': 'Autre',
 }
 
-const formatRole = (role: string) => {
-  const roles: { [key: string]: string } = {
-    'ADMIN': 'Administrateur',
-    'COMPTABILITE': 'Comptabilité',
-    'VENDEUR': 'Vendeur',
-    'CHARGE_PROJET': 'Chargé de projet',
-    'DEVELOPPEUR': 'Développeur',
-  }
-  return roles[role] || role
-}
-
 export default function FeuillesDeTempsPage() {
   const [ongletActif, setOngletActif] = useState<Onglet>('consultation')
   const [employes, setEmployes] = useState<Employe[]>([])
-  const [users, setUsers] = useState<User[]>([])
   const [projets, setProjets] = useState<any[]>([])
   const [feuilles, setFeuilles] = useState<FeuilleTemps[]>([])
   const [depenses, setDepenses] = useState<Depense[]>([])
@@ -74,19 +61,14 @@ export default function FeuillesDeTempsPage() {
 
   const loadAllData = async () => {
     try {
-      const [empRes, userRes, projRes, fRes, depRes, paramRes] = await Promise.all([
+      const [empRes, projRes, fRes, depRes, paramRes] = await Promise.all([
         fetch('/api/employes'),
-        fetch('/api/users'),
         fetch('/api/projets'),
         fetch('/api/feuilles-de-temps'),
         fetch('/api/depenses'),
         fetch('/api/parametres')
       ])
       if (empRes.ok) setEmployes((await empRes.json()).employes || [])
-      if (userRes.ok) {
-        const data = await userRes.json()
-        setUsers(Array.isArray(data) ? data : data.users || [])
-      }
       if (projRes.ok) setProjets((await projRes.json()).projets || [])
       if (fRes.ok) setFeuilles((await fRes.json()).feuilles || [])
       if (depRes.ok) setDepenses((await depRes.json()).depenses || [])
@@ -303,30 +285,6 @@ export default function FeuillesDeTempsPage() {
     try {
       await fetch(`/api/projets/${projetId}/depenses/${depenseId}`, { method: 'DELETE' })
       loadDerniesDepenses()
-    } catch (err) {
-      console.error('Erreur:', err)
-    }
-  }
-
-  const handleSauvegarderTaux = async (userId: string) => {
-    const taux = tauxEdits[userId]
-    if (taux === undefined) return
-
-    try {
-      const res = await fetch(`/api/users/${userId}/taux`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tauxHoraire: taux })
-      })
-
-      if (res.ok) {
-        setUsers(users.map(u => u.id === userId ? { ...u, tauxHoraire: taux } : u))
-        setTauxEdits(prev => {
-          const newEdits = { ...prev }
-          delete newEdits[userId]
-          return newEdits
-        })
-      }
     } catch (err) {
       console.error('Erreur:', err)
     }

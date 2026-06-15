@@ -7,7 +7,7 @@ interface User { id: string; email: string; prenom: string; nom: string; role: R
 
 export default function ParametresPage() {
   const supabase = createClient()
-  const [activeTab, setActiveTab] = useState<'general' | 'compte' | 'utilisateurs' | 'permissions'>('compte')
+  const [activeTab, setActiveTab] = useState<'general' | 'compte' | 'utilisateurs'>('compte')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [estAdminOuComptabilite, setEstAdminOuComptabilite] = useState(false)
   const [editUser, setEditUser] = useState({ prenom: '', nom: '' })
@@ -20,9 +20,6 @@ export default function ParametresPage() {
   const [inviteForm, setInviteForm] = useState({ prenom: '', nom: '', email: '', role: 'VENDEUR' as Role })
   const [passwordForm, setPasswordForm] = useState({ nouveau: '', confirmer: '' })
   const [parametres, setParametres] = useState({ nomCompagnie: 'Habitations DG', rbq: '5856-1036-01', email: 'info@habitations-dg.com', telephone: '', siteWeb: 'habitations-dg.com', maxHeuresParSemaine: 36.5, margeCeduleJours: 5, toleranceDefautJours: 3 })
-  const [permissions, setPermissions] = useState<Record<string, string[]>>({})
-  const [allPermissions, setAllPermissions] = useState<string[]>([])
-  const [roles, setRoles] = useState<Role[]>([])
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,20 +61,6 @@ export default function ParametresPage() {
             }
           }
 
-          // Load permissions if admin or développeur
-          if (estAdmin || estDeveloppeur) {
-            try {
-              const permRes = await fetch('/api/permissions', { signal: controller.signal })
-              if (permRes.ok) {
-                const data = await permRes.json()
-                setPermissions(data.permissions)
-                setAllPermissions(data.allPermissions)
-                setRoles(data.roles)
-              }
-            } catch (e) {
-              console.error('Erreur chargement permissions:', e)
-            }
-          }
         }
 
         if (paramRes?.ok) {
@@ -201,38 +184,6 @@ export default function ParametresPage() {
     }
   }
 
-  const handleSavePermissions = async () => {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/permissions', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ permissions })
-      })
-      if (!res.ok) throw new Error('Erreur')
-      setSuccess('Permissions sauvegardées')
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const togglePermission = (role: string, permission: string) => {
-    const currentPerms = permissions[role] || []
-    if (currentPerms.includes(permission)) {
-      setPermissions({
-        ...permissions,
-        [role]: currentPerms.filter(p => p !== permission)
-      })
-    } else {
-      setPermissions({
-        ...permissions,
-        [role]: [...currentPerms, permission]
-      })
-    }
-  }
-
   if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
 
   const roleLabel = (r: Role) => ({ ADMIN: 'Admin', COMPTABILITE: 'Comptabilité', VENDEUR: 'Vendeur', CHARGE_PROJET: 'Chargé de projet', DEVELOPPEUR: 'Développeur' }[r])
@@ -249,9 +200,6 @@ export default function ParametresPage() {
         <button onClick={() => setActiveTab('compte')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'compte' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'compte' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'compte' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Mon compte</button>
         {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
           <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>
-        )}
-        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
-          <button onClick={() => setActiveTab('permissions')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'permissions' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'permissions' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'permissions' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Permissions</button>
         )}
       </div>
 
@@ -361,41 +309,6 @@ export default function ParametresPage() {
         </div>
       )}
 
-      {activeTab === 'permissions' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
-        <div>
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Rôles et Permissions</h2>
-              <button onClick={handleSavePermissions} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
-            </div>
-
-            <div style={{ display: 'grid', gap: '24px' }}>
-              {roles.map((role) => (
-                <div key={role} style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: 'white' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: roleColor(role) }}></span>
-                    {roleLabel(role)}
-                  </h3>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    {allPermissions.map((perm) => (
-                      <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
-                        <input
-                          type='checkbox'
-                          checked={(permissions[role] || []).includes(perm)}
-                          onChange={() => togglePermission(role, perm)}
-                          style={{ cursor: 'pointer' }}
-                        />
-                        <span>{perm.replace(/_/g, ' ').toLowerCase()}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
