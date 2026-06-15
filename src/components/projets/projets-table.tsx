@@ -198,10 +198,15 @@ export function ProjetsTable({ projets }: ProjetsTableProps) {
                         size="sm"
                         className="h-8 w-8 p-0 hover:text-red-600"
                         title="Supprimer"
-                        onClick={() => {
+                        onClick={async () => {
                           if (confirm(`Êtes-vous sûr de vouloir supprimer le projet ${projet.adresse}?`)) {
-                            console.log('Supprimer projet:', projet.id);
-                            // TODO: Appeler API de suppression
+                            const res = await fetch(`/api/projets/${projet.id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                              location.reload();
+                            } else {
+                              const d = await res.json().catch(() => ({}));
+                              alert(d.error || 'Erreur lors de la suppression');
+                            }
                           }
                         }}
                       >

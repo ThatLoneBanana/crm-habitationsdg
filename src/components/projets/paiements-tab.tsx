@@ -70,9 +70,9 @@ export function PaiementsTab({ paiements: initialPaiements, typeContrat, project
 
   return (
     <div className="space-y-4">
-      {/* Un seul bouton primaire (rouge DG par défaut) */}
+      {/* Fonctionnalité voulue mais pas encore bâtie -> désactivée */}
       <div className="flex justify-end">
-        <Button className="gap-2">
+        <Button className="gap-2" disabled title="Bientôt disponible">
           <Plus className="w-4 h-4" />
           Ajouter un paiement
         </Button>

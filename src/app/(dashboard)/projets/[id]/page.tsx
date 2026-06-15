@@ -282,7 +282,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           <Printer className="w-4 h-4" />
           Imprimer
         </Button>
-        <Button variant="outline" className="gap-2" onClick={() => alert('Envoi au client en implémentation')}>
+        <Button variant="outline" className="gap-2" disabled title="Bientôt disponible">
           <Send className="w-4 h-4" />
           Envoyer au client
         </Button>

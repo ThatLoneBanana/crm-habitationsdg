@@ -366,8 +366,9 @@ export function CeduleTab({ taches, projectId, toleranceJours, onModifierClick }
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => alert('Supprimer non implémenté')}
-                          className="p-1 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          disabled
+                          title="Bientôt disponible"
+                          className="p-1 text-gray-300 cursor-not-allowed rounded"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
