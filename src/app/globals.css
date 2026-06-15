@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Police d'icônes Tabler (ti ti-*) — source unique du design system, auto-hébergée */
+@import "@tabler/icons-webfont/dist/tabler-icons.min.css";
+
 /* Design system Habitations DG — tokens (warm-neutral + rouge DG) */
 @import "../styles/tokens/colors.css";
 @import "../styles/tokens/typography.css";
