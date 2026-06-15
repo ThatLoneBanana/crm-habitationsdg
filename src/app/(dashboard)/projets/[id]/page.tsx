@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { MetricCard } from '@/components/shared/metric-card';
 import { CeduleTab } from '@/components/cedule/cedule-tab';
 import CedulaEditor from '@/components/cedule/CedulaEditor';
 import { ExtrasTab } from '@/components/projets/extras-tab';
@@ -317,47 +316,47 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border">
-            <p className="text-xs text-gray-500">Client</p>
-            <p className="font-semibold text-gray-900">
-              {projet.client.prenom} {projet.client.nom}
-            </p>
-            <p className="text-xs text-gray-500">{projet.client.email}</p>
+        {/* Vue d'ensemble — 4 stats (style REF : hairlines, eyebrow + valeur) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Client</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{projet.client.prenom} {projet.client.nom}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{projet.client.email}</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border">
-            <p className="text-xs text-gray-500">Vendeur</p>
-            <p className="font-semibold text-gray-900">
-              {projet.vendeur ? `${projet.vendeur.prenom} ${projet.vendeur.nom}` : 'Non assigné'}
-            </p>
+          <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Vendeur</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{projet.vendeur ? `${projet.vendeur.prenom} ${projet.vendeur.nom}` : 'Non assigné'}</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border">
-            <p className="text-xs text-gray-500">Chargé de projet</p>
-            <p className="font-semibold text-gray-900">
-              {projet.chargeProjet ? `${projet.chargeProjet.prenom} ${projet.chargeProjet.nom}` : 'Non assigné'}
-            </p>
+          <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Chargé de projet</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{projet.chargeProjet ? `${projet.chargeProjet.prenom} ${projet.chargeProjet.nom}` : 'Non assigné'}</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border">
-            <p className="text-xs text-gray-500">Livraison</p>
-            <p className="font-semibold text-gray-900">
-              {formatDate(projet.dateLivraison)}
-            </p>
+          <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Livraison</div>
+            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: joursRestants !== null && joursRestants < 14 ? 'var(--danger)' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatDate(projet.dateLivraison)}</div>
             {joursRestants !== null && (
-              <p className={`text-xs font-semibold ${joursRestants < 0 ? 'text-red-600' : joursRestants < 14 ? 'text-orange-600' : 'text-green-600'}`}>
+              <div style={{ fontSize: 11, marginTop: 1, color: joursRestants < 0 ? 'var(--danger)' : 'var(--text-tertiary)' }}>
                 {joursRestants < 0 ? `${Math.abs(joursRestants)} j. en retard` : `${joursRestants} j. restants`}
-              </p>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Métriques */}
-      <div className="grid grid-cols-5 gap-4">
-        <MetricCard title="Avancement" value={`${avancement}%`} />
-        <MetricCard title="Étapes" value={projet.taches.length} />
-        <MetricCard title="Extras" value={projet.extras.length} />
-        <MetricCard title="Extras signés" value={formatMontant(totalExtrasSignes)} />
-        <MetricCard title="Paiements" value={projet.paiements.length} />
+      {/* Métriques — cards sobres (tokens DG, plus de bleu plein) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
+        {[
+          { label: 'Avancement', value: `${avancement}%` },
+          { label: 'Étapes', value: projet.taches.length },
+          { label: 'Extras', value: projet.extras.length },
+          { label: 'Extras signés', value: formatMontant(totalExtrasSignes) },
+          { label: 'Paiements', value: projet.paiements.length },
+        ].map((m, i) => (
+          <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '13px 15px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 7 }}>{m.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.018em', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{m.value}</div>
+          </div>
+        ))}
       </div>
 
       {/* Onglets */}
