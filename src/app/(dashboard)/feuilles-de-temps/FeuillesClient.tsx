@@ -618,7 +618,7 @@ export default function FeuillesDeTempsPage() {
               <div key={emp.id} style={{ display: 'grid', gridTemplateColumns: '2fr 100px 120px 120px 80px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? 'white' : '#F9FAFB', opacity: emp.actif ? 1 : 0.6 }}>
                 <div>
                   <div style={{ fontWeight: 500, fontSize: '13px' }}>{emp.prenom} {emp.nom}</div>
-                  <div style={{ fontSize: '11px', color: '#6B7280' }}>{emp.email}</div>
+                  <div style={{ fontSize: '11px', color: '#6B7280' }}>{emp.email || '—'}</div>
                 </div>
                 <div style={{ fontSize: '12px', textAlign: 'center', color: '#6B7280' }}>{heuresmoisMap[emp.id] || 0}h</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
