@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const depenses = await prisma.depense.findMany({
       where,
       include: {
-        projet: { select: { id: true, numero: true, adresse: true } }
+        projet: { select: { id: true, numero: true, adresse: true, ville: true } }
       },
       orderBy: { dateDepense: "desc" }
     })

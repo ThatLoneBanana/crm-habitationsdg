@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const feuilles = await prisma.feuilleTemps.findMany({
       where,
       include: {
-        projet: { select: { id: true, adresse: true, numero: true } },
+        projet: { select: { id: true, adresse: true, ville: true, numero: true } },
         employe: { select: { id: true, prenom: true, nom: true } },
       },
       orderBy: { date: 'desc' },

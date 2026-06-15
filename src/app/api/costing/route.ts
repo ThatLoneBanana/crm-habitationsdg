@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
         id: p.id,
         numero: p.numero,
         adresse: p.adresse,
+        ville: p.ville,
         montantTotal: p.montantTotal ? parseFloat(p.montantTotal.toString()) : 0,
         depensesMateriaux,
         depensesSousTraitant,

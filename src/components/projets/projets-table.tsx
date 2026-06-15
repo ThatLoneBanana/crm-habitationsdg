@@ -199,7 +199,7 @@ export function ProjetsTable({ projets }: ProjetsTableProps) {
                         className="h-8 w-8 p-0 hover:text-red-600"
                         title="Supprimer"
                         onClick={() => {
-                          if (confirm(`Êtes-vous sûr de vouloir supprimer le projet ${projet.numero}?`)) {
+                          if (confirm(`Êtes-vous sûr de vouloir supprimer le projet ${projet.adresse}?`)) {
                             console.log('Supprimer projet:', projet.id);
                             // TODO: Appeler API de suppression
                           }

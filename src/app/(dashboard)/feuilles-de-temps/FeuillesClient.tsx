@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import { Clock, Trash2 } from 'lucide-react'
 
 interface Employe { id: string; prenom: string; nom: string; email?: string; telephone?: string; tauxHoraire: number; actif: boolean }
-interface FeuilleTemps { id: string; employeId: string; projetId: string; date: string; heures: number; tauxHoraire: number; employe: { prenom: string; nom: string }; projet: { numero: string; adresse: string } }
-interface Depense { id: string; projetId: string; categorie: string; description: string; montant: number; dateDepense: string; facture?: string; projet: { numero: string; adresse: string } }
+interface FeuilleTemps { id: string; employeId: string; projetId: string; date: string; heures: number; tauxHoraire: number; employe: { prenom: string; nom: string }; projet: { numero: string; adresse: string; ville?: string } }
+interface Depense { id: string; projetId: string; categorie: string; description: string; montant: number; dateDepense: string; facture?: string; projet: { numero: string; adresse: string; ville?: string } }
 interface LigneGrille { id: string; employeId: string; projetId: string; heures: { lun: number | null; mar: number | null; mer: number | null; jeu: number | null; ven: number | null }; tauxHoraire: number }
 type Onglet = 'consultation' | 'saisie' | 'employes'
 
@@ -398,7 +398,7 @@ export default function FeuillesDeTempsPage() {
                   <tr key={f.id} style={{ borderBottom: i < 19 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
                     <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(f.date).toLocaleDateString()}</td>
                     <td style={{ padding: '12px', fontSize: '13px' }}>{f.employe.prenom} {f.employe.nom}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.adresse} ({f.projet.numero})</td>
+                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.adresse}{f.projet.ville ? `, ${f.projet.ville}` : ''}</td>
                     <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{f.heures.toFixed(1)}</td>
                     <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500 }}>${(f.heures * f.tauxHoraire).toFixed(2)}</td>
                   </tr>
@@ -481,7 +481,7 @@ export default function FeuillesDeTempsPage() {
                         <td style={{ padding: '4px' }}>
                           <select value={ligne.projetId} onChange={e => setLignes(lignes.map(l => l.id === ligne.id ? { ...l, projetId: e.target.value } : l))} style={{ width: '100%', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px' }}>
                             <option value=''>Choisir...</option>
-                            {projets.map(p => <option key={p.id} value={p.id}>{p.numero}</option>)}
+                            {projets.map(p => <option key={p.id} value={p.id}>{p.adresse}{p.ville ? `, ${p.ville}` : ''}</option>)}
                           </select>
                         </td>
                         {['lun', 'mar', 'mer', 'jeu', 'ven'].map(jour => (
@@ -565,7 +565,7 @@ export default function FeuillesDeTempsPage() {
                       <tr key={d.id} style={{ borderBottom: i < 9 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
                         <td style={{ padding: '6px 8px' }}>{new Date(d.dateDepense).toLocaleDateString()}</td>
                         <td style={{ padding: '6px 8px' }}>{d.description}</td>
-                        <td style={{ padding: '6px 8px' }}>{d.projet.numero}</td>
+                        <td style={{ padding: '6px 8px' }}>{d.projet.adresse}{d.projet.ville ? `, ${d.projet.ville}` : ''}</td>
                         <td style={{ padding: '6px 8px', textAlign: 'right' }}>${d.montant.toFixed(2)}</td>
                         <td style={{ padding: '6px 8px', fontSize: '11px' }}>{categoriesLabels[d.categorie] || d.categorie}</td>
                         <td style={{ padding: '6px 8px', textAlign: 'center', fontSize: '11px' }}>{d.facture || '—'}</td>

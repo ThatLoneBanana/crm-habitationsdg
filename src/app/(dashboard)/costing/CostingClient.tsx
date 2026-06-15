@@ -7,6 +7,7 @@ interface ProjetCosting {
   id: string
   numero: string
   adresse: string
+  ville: string
   montantTotal: number
   depensesMateriaux: number
   depensesSousTraitant: number
@@ -97,7 +98,7 @@ export default function CostingPage() {
 
               return (
                 <tr key={p.id} style={{ borderBottom: i < projets.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
-                  <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>{p.numero} — {p.adresse}</td>
+                  <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>{p.adresse}{p.ville ? `, ${p.ville}` : ''}</td>
                   <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.montantTotal || 0, 0)}</td>
                   <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.depensesMateriaux, 0)}</td>
                   <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{formatMontant(p.depensesSousTraitant, 0)}</td>
