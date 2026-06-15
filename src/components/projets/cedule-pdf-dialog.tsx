@@ -11,12 +11,14 @@ interface CedulePDFDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projet: any;
+  parametres?: { rbq?: string; siteWeb?: string };
 }
 
 export function CedulePDFDialog({
   open,
   onOpenChange,
   projet,
+  parametres,
 }: CedulePDFDialogProps) {
   const [isClient, setIsClient] = useState(typeof window !== 'undefined');
 
@@ -37,7 +39,7 @@ export function CedulePDFDialog({
 
         <div className="flex-1 overflow-hidden bg-gray-100">
           <PDFViewer width="100%" height="100%" style={{ border: 'none' }}>
-            <CedulePDF projet={projet} />
+            <CedulePDF projet={projet} parametres={parametres} />
           </PDFViewer>
         </div>
 
@@ -56,7 +58,7 @@ export function CedulePDFDialog({
           </Button>
 
           <PDFDownloadLink
-            document={<CedulePDF projet={projet} />}
+            document={<CedulePDF projet={projet} parametres={parametres} />}
             fileName={`${fileName}.pdf`}
           >
             {({ blob, url, loading, error }) => (

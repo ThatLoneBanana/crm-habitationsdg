@@ -96,6 +96,7 @@ export default function NouveauProjetPage() {
   const [vendeur, setVendeur] = useState('');
   const [chargeProjet, setChargeProjet] = useState('Louis Bellavance');
   const [generatedUrl, setGeneratedUrl] = useState('');
+  const [margeCeduleJours, setMargeCeduleJours] = useState(5);
 
   // Étape 3: Cédule
   const [sansCedule, setSansCedule] = useState(false);
@@ -115,17 +116,21 @@ export default function NouveauProjetPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientRes, templateRes, fournisseurRes] = await Promise.all([
+        const [clientRes, templateRes, fournisseurRes, parametresRes] = await Promise.all([
           fetch('/api/clients'),
           fetch('/api/templates'),
           fetch('/api/fournisseurs'),
+          fetch('/api/parametres'),
         ]);
         const clientData = await clientRes.json();
         const templateData = await templateRes.json();
         const fournisseurData = await fournisseurRes.json();
+        const parametresData = await parametresRes.json();
 
         setClients(clientData.clients || []);
         setFournisseurs(fournisseurData.fournisseurs || []);
+        const marge = parametresData.parametres?.margeCeduleJours
+        if (typeof marge === 'number') setMargeCeduleJours(marge)
 
         const templatesByType: Record<string, Template> = {};
         templateData.templates.forEach((t: any) => {
@@ -165,7 +170,7 @@ export default function NouveauProjetPage() {
           }
 
           const livraison = new Date(dateLivraison);
-          let cursor = subJoursOuvrables(livraison, 5);
+          let cursor = subJoursOuvrables(livraison, margeCeduleJours);
 
           const tempEtapes = template.etapes.map((e: any) => ({
             ordre: e.ordre,
@@ -221,7 +226,7 @@ export default function NouveauProjetPage() {
   useEffect(() => {
     if (etapes.length > 0 && dateLivraison && !templateCharge) {
       const livraison = new Date(dateLivraison);
-      const nouvelleAncre = subJoursOuvrables(livraison, 5);
+      const nouvelleAncre = subJoursOuvrables(livraison, margeCeduleJours);
       let cursor = new Date(nouvelleAncre);
 
       const newEtapes = JSON.parse(JSON.stringify(etapes));
@@ -772,6 +777,7 @@ export default function NouveauProjetPage() {
               typeProjet={typeProjet as any}
               dateLivraison={new Date(dateLivraison)}
               fournisseurs={fournisseurs}
+              margeCeduleJours={margeCeduleJours}
               mode="creation"
               onChange={(newEtapes) => {
                 const converted = newEtapes.map(e => ({

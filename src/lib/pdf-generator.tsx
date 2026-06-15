@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export function generateCedulePDF(projet: any, logoBase64: string) {
+export function generateCedulePDF(projet: any, logoBase64: string, parametres?: { rbq?: string; siteWeb?: string }) {
   const typeLabel = projet.typeProjet === 'JUMELE' ? 'JUMELÉ' : 'MAISON';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -178,7 +178,7 @@ export function generateCedulePDF(projet: any, logoBase64: string) {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             {logoBase64 && <Image src={logoBase64} style={styles.logo} />}
-            <Text style={styles.rqb}>RBQ: 5856-1036-01</Text>
+            <Text style={styles.rqb}>RBQ: {parametres?.rbq ?? '5856-1036-01'}</Text>
           </View>
 
           <View style={styles.headerCenter}>
@@ -276,7 +276,7 @@ export function generateCedulePDF(projet: any, logoBase64: string) {
 
         {/* Pied de page */}
         <View style={styles.footer}>
-          <Text>Habitations DG — RBQ: 5856-1036-01 — habitations-dg.com</Text>
+          <Text>Habitations DG — RBQ: {parametres?.rbq ?? '5856-1036-01'} — {parametres?.siteWeb ?? 'habitations-dg.com'}</Text>
           <Text>Imprimé: {today.toLocaleDateString('fr-CA')} à {today.getHours().toString().padStart(2, '0')}h{today.getMinutes().toString().padStart(2, '0')}</Text>
         </View>
       </Page>

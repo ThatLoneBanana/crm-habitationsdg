@@ -23,6 +23,8 @@ export interface CedulaEditorProps {
   onChange: (etapes: EtapeEditable[]) => void;
   onValider?: () => void;
   etapesInitiales?: EtapeEditable[];
+  margeCeduleJours?: number;
+  toleranceJours?: number;
 }
 
 export default function CedulaEditor({
@@ -33,6 +35,7 @@ export default function CedulaEditor({
   onChange,
   onValider,
   etapesInitiales = [],
+  margeCeduleJours = 5,
 }: CedulaEditorProps) {
   const [etapes, setEtapes] = useState<EtapeEditable[]>([]);
   const [conflits, setConflits] = useState<number[]>([]);
@@ -71,7 +74,7 @@ export default function CedulaEditor({
     }));
 
     // Calcul dates à rebours depuis dateLivraison - 5 jours ouvrables
-    const ancre = subJoursOuvrables(dateLivraison, 5);
+    const ancre = subJoursOuvrables(dateLivraison, margeCeduleJours);
     let cursor = new Date(ancre);
 
     for (let i = newEtapes.length - 1; i >= 0; i--) {
@@ -233,7 +236,7 @@ export default function CedulaEditor({
       interne: e.interne,
     }));
 
-    const ancre = subJoursOuvrables(dateLivraison, 5);
+    const ancre = subJoursOuvrables(dateLivraison, margeCeduleJours);
     let cursor = new Date(ancre);
 
     for (let i = etapesInitiales.length - 1; i >= 0; i--) {

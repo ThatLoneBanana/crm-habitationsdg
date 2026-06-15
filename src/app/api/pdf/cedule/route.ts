@@ -22,14 +22,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Projet non trouvé' }, { status: 404 });
     }
 
-    const html = genererHTML(projet);
+    const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
+
+    const html = genererHTML(projet, parametres);
     return NextResponse.json({ html });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-function genererHTML(projet: any) {
+function genererHTML(projet: any, parametres?: { rbq?: string } | null) {
+  const rbq = parametres?.rbq ?? '5856-1036-01';
   const formatDate = (date: any) => {
     if (!date) return '';
     return new Date(date).toLocaleDateString('fr-CA');
@@ -63,7 +66,7 @@ function genererHTML(projet: any) {
     <body>
       <div class="header">
         <div class="logo">Habitations DG</div>
-        <div style="font-size: 12px; color: #666;">RBQ: 5856-1036-01</div>
+        <div style="font-size: 12px; color: #666;">RBQ: ${rbq}</div>
       </div>
 
       <div class="info">
@@ -101,7 +104,7 @@ function genererHTML(projet: any) {
       </table>
 
       <div class="footer">
-        <p>Habitations DG — RBQ: 5856-1036-01</p>
+        <p>Habitations DG — RBQ: ${rbq}</p>
       </div>
     </body>
     </html>

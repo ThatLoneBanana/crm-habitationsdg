@@ -226,6 +226,8 @@ model Parametres {
   telephone               String   @default("")
   siteWeb                 String   @default("habitations-dg.com")
   maxHeuresParSemaine     Float    @default(36.5)
+  margeCeduleJours        Int      @default(5)
+  toleranceDefautJours    Int      @default(3)
   updatedAt               DateTime @updatedAt
 }
 

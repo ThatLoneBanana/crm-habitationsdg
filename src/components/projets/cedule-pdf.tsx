@@ -11,9 +11,10 @@ Font.register({
 interface CedulePDFProps {
   projet: any;
   logoBase64?: string;
+  parametres?: { rbq?: string; siteWeb?: string };
 }
 
-export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
+export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: CedulePDFProps) {
   const [logoBase64, setLogoBase64] = useState<string | undefined>(initialLogo);
   const [dateImpression, setDateImpression] = useState<string>('');
 
@@ -248,7 +249,7 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
                 style={styles.logo}
               />
             )}
-            <Text style={styles.rqb}>RBQ: 5856-1036-01</Text>
+            <Text style={styles.rqb}>RBQ: {parametres?.rbq ?? '5856-1036-01'}</Text>
           </View>
 
           {/* CENTRE — Titre */}
@@ -418,7 +419,7 @@ export function CedulePDF({ projet, logoBase64: initialLogo }: CedulePDFProps) {
 
         {/* Pied de page */}
         <View style={styles.footer}>
-          <Text>Habitations DG — RBQ: 5856-1036-01 — habitations-dg.com</Text>
+          <Text>Habitations DG — RBQ: {parametres?.rbq ?? '5856-1036-01'} — {parametres?.siteWeb ?? 'habitations-dg.com'}</Text>
           <Text>{dateImpression || 'Imprimé...'}</Text>
         </View>
       </Page>

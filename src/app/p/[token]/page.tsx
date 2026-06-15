@@ -11,6 +11,7 @@ import { Phone, Mail } from 'lucide-react';
 export default function VueClientPage({ params: paramPromise }: { params: Promise<{ token: string }> }) {
   const params = use(paramPromise);
   const [projet, setProjet] = useState<any>(null);
+  const [parametres, setParametres] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +23,7 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
         const data = await res.json();
         if (!data.projet) throw new Error('Projet non trouvé');
         setProjet(data.projet);
+        setParametres(data.parametres || null);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -185,10 +187,10 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
       {/* Pied de page */}
       <footer className="border-t border-gray-200 mt-8 py-6 text-center text-xs text-gray-500">
         <div className="max-w-md mx-auto px-4 space-y-2">
-          <p className="font-semibold">Habitations DG</p>
-          <p>RBQ: 5856-1036-01</p>
-          <a href="https://habitations-dg.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            habitations-dg.com
+          <p className="font-semibold">{parametres?.nomCompagnie ?? 'Habitations DG'}</p>
+          <p>RBQ: {parametres?.rbq ?? '5856-1036-01'}</p>
+          <a href={`https://${parametres?.siteWeb ?? 'habitations-dg.com'}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            {parametres?.siteWeb ?? 'habitations-dg.com'}
           </a>
         </div>
       </footer>

@@ -34,6 +34,8 @@ export async function PUT(request: NextRequest) {
         telephone: body.telephone || '',
         siteWeb: body.siteWeb || '',
         maxHeuresParSemaine: body.maxHeuresParSemaine ? parseFloat(body.maxHeuresParSemaine) : 36.5,
+        margeCeduleJours: body.margeCeduleJours != null ? parseInt(body.margeCeduleJours, 10) : 5,
+        toleranceDefautJours: body.toleranceDefautJours != null ? parseInt(body.toleranceDefautJours, 10) : 3,
       },
       update: {
         nomCompagnie: body.nomCompagnie || undefined,
@@ -42,6 +44,8 @@ export async function PUT(request: NextRequest) {
         telephone: body.telephone || undefined,
         siteWeb: body.siteWeb || undefined,
         maxHeuresParSemaine: body.maxHeuresParSemaine ? parseFloat(body.maxHeuresParSemaine) : undefined,
+        margeCeduleJours: body.margeCeduleJours != null ? parseInt(body.margeCeduleJours, 10) : undefined,
+        toleranceDefautJours: body.toleranceDefautJours != null ? parseInt(body.toleranceDefautJours, 10) : undefined,
       }
     })
 

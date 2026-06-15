@@ -211,6 +211,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 });
     }
 
+    // Tolérance de décalage par défaut depuis les paramètres d'entreprise
+    const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
+    const toleranceDefaut = parametres?.toleranceDefautJours ?? 3;
+
     // Générer le slug unique et le numéro
     const slug = await generateSlugUnique(client.prenom, client.nom, adresse);
     const numero = `PRJ-${Date.now().toString().slice(-6)}`;
@@ -232,6 +236,7 @@ export async function POST(request: NextRequest) {
         urlClient: urlClient || null,
         vendeurId: vendeurId || null,
         chargeProjetId: chargeProjetId || null,
+        toleranceJours: toleranceDefaut,
       },
     });
 

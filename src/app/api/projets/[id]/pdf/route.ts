@@ -46,8 +46,11 @@ export async function GET(
       console.error('Logo non trouvé:', err);
     }
 
+    // Paramètres d'entreprise (RBQ, site web) — fallback en dur si absents
+    const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
+
     // Générer le PDF
-    const pdfBuffer = await renderToBuffer(generateCedulePDF(projet, logoBase64));
+    const pdfBuffer = await renderToBuffer(generateCedulePDF(projet, logoBase64, parametres ?? undefined));
 
     // Retourner le PDF avec les headers appropriés
     return new NextResponse(new Uint8Array(pdfBuffer), {

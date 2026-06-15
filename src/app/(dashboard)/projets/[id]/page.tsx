@@ -39,6 +39,8 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
   const [modifierCedulaOpen, setModifierCedulaOpen] = useState(false);
   const [etapesModifiees, setEtapesModifiees] = useState<any[]>([]);
   const [savingCedule, setSavingCedule] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [margeCeduleJours, setMargeCeduleJours] = useState(5);
+  const [parametresEntreprise, setParametresEntreprise] = useState<any>(null);
 
   useEffect(() => {
     const fetchProjet = async () => {
@@ -61,6 +63,15 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           setUtilisateurs(usersData.users || []);
+        }
+
+        // Charger la marge de cédule (paramètre d'entreprise)
+        const paramRes = await fetch('/api/parametres');
+        if (paramRes.ok) {
+          const paramData = await paramRes.json();
+          setParametresEntreprise(paramData.parametres || null);
+          const marge = paramData.parametres?.margeCeduleJours;
+          if (typeof marge === 'number') setMargeCeduleJours(marge);
         }
 
         // Charger le costing
@@ -578,6 +589,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
               typeProjet={projet?.typeProjet}
               dateLivraison={new Date(projet?.dateLivraison)}
               fournisseurs={utilisateurs}
+              margeCeduleJours={margeCeduleJours}
               onChange={setNouvellesEtapes}
             />
           </div>
@@ -662,8 +674,10 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
               <CedulaEditor
                 mode='projet'
                 etapesInitiales={etapesModifiees}
+                typeProjet={projet?.typeProjet}
                 dateLivraison={projet ? new Date(projet.dateLivraison) : new Date()}
                 fournisseurs={[]}
+                margeCeduleJours={margeCeduleJours}
                 toleranceJours={projet?.toleranceJours || 3}
                 onChange={setEtapesModifiees}
               />
@@ -677,6 +691,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
         open={printDialogOpen}
         onOpenChange={setPrintDialogOpen}
         projet={projet}
+        parametres={parametresEntreprise}
       />
     </div>
   );

@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Projet non trouvé' }, { status: 404 });
     }
 
-    return NextResponse.json({ projet });
+    const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
+
+    return NextResponse.json({ projet, parametres });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
