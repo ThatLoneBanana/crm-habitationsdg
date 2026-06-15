@@ -133,7 +133,7 @@ export default function DashboardClient({
   ]
 
   return (
-    <div style={{ padding: '22px 24px 40px', maxWidth: 1180 }}>
+    <div style={{ padding: '22px 24px 40px' }}>
       {/* En-tête */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>

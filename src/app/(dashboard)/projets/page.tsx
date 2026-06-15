@@ -195,7 +195,7 @@ export default function ProjetListPage() {
   };
 
   return (
-    <div style={{ padding: '22px 24px 40px', maxWidth: 1280 }}>
+    <div style={{ padding: '22px 24px 40px' }}>
       {/* En-tête */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18, gap: 16, flexWrap: 'wrap' }}>
         <div>
