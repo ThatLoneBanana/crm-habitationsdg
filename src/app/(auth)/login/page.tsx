@@ -40,12 +40,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--color-background-secondary)' }}>
-      <div style={{ width: '360px', background: 'var(--color-background-primary)', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 'var(--border-radius-lg)', padding: '32px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-canvas)' }}>
+      <div style={{ width: '360px', background: 'var(--surface)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '32px' }}>
         <img src='/habitationsdg.svg' alt='Habitations DG' style={{ width: '120px', margin: '0 auto 24px', display: 'block' }} />
 
         {error && (
-          <div style={{ background: '#FCEBEB', border: '0.5px solid #EAB8B4', borderRadius: 'var(--border-radius-md)', padding: '10px 12px', marginBottom: '12px', fontSize: '12px', color: '#A32D2D' }}>
+          <div style={{ background: 'var(--danger-tint)', border: '0.5px solid var(--danger)', borderRadius: 'var(--radius-md)', padding: '10px 12px', marginBottom: '12px', fontSize: '12px', color: 'var(--danger-text)' }}>
             {error}
           </div>
         )}
@@ -58,7 +58,7 @@ export default function LoginPage() {
               type='email'
               required
               disabled={loading}
-              style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: 'var(--border-radius-md)', fontSize: '13px' }}
+              style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '13px' }}
             />
           </div>
           <div>
@@ -68,13 +68,13 @@ export default function LoginPage() {
               type='password'
               required
               disabled={loading}
-              style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--color-border-secondary)', borderRadius: 'var(--border-radius-md)', fontSize: '13px' }}
+              style={{ width: '100%', padding: '8px 10px', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '13px' }}
             />
           </div>
           <button
             type='submit'
             disabled={loading}
-            style={{ width: '100%', padding: '10px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: 'var(--border-radius-md)', fontSize: '13px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px', opacity: loading ? 0.6 : 1 }}
+            style={{ width: '100%', padding: '10px', background: 'var(--dg-red)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '4px', opacity: loading ? 0.6 : 1 }}
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>

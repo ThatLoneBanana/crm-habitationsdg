@@ -1,12 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-function formatMontant(n: number): string {
-  if (n >= 1000000) return `${(n/1000000).toFixed(1)}M$`
-  if (n >= 1000) return `${(n/1000).toFixed(0)}k$`
-  return `${n}$`
-}
+import { formatMontant, formatMontantCourt } from '@/lib/utils'
 
 const PHASES: Record<string, { label: string; tint: string; ink: string; bar: string }> = {
   SIGNE:       { label: 'Signé',       tint: 'var(--phase-signe-tint)',       ink: 'var(--phase-signe-ink)',       bar: 'var(--phase-signe-bar)' },
@@ -131,10 +126,10 @@ export default function DashboardClient({
 
   const metrics: { icon: string; label: string; value: React.ReactNode; sub: string; tone: Tone }[] = [
     { icon: 'ti-building-community', label: 'Projets actifs',     value: projetsActifs,                  sub: `${livraisonsCeMois} livraison(s) ce mois`,              tone: 'neutral' },
-    { icon: 'ti-currency-dollar',    label: 'En chantier',        value: formatMontant(montantTotal),    sub: 'valeur totale active',                                  tone: 'success' },
-    { icon: 'ti-alert-triangle',     label: 'Alertes',            value: alertes.length,                 sub: `${nbUrgentes} urgente(s)`,                              tone: alertes.length > 0 ? 'danger' : 'neutral' },
-    { icon: 'ti-receipt',            label: 'Extras non signés',  value: extrasNonSignes,                sub: `${formatMontant(montantExtrasNonSignes)} à confirmer`,  tone: extrasNonSignes > 0 ? 'warning' : 'neutral' },
-    { icon: 'ti-cash',               label: 'Paiements attendus', value: paiementsAttendus,              sub: `${formatMontant(montantPaiementsAttendus)} à recevoir`, tone: paiementsAttendus > 0 ? 'info' : 'neutral' },
+    { icon: 'ti-currency-dollar',    label: 'En chantier',        value: formatMontantCourt(montantTotal), sub: 'valeur totale active',                                     tone: 'success' },
+    { icon: 'ti-alert-triangle',     label: 'Alertes',            value: alertes.length,                   sub: `${nbUrgentes} urgente(s)`,                                 tone: alertes.length > 0 ? 'danger' : 'neutral' },
+    { icon: 'ti-receipt',            label: 'Extras non signés',  value: extrasNonSignes,                  sub: `${formatMontant(montantExtrasNonSignes, 0)} à confirmer`,   tone: extrasNonSignes > 0 ? 'warning' : 'neutral' },
+    { icon: 'ti-cash',               label: 'Paiements attendus', value: paiementsAttendus,                sub: `${formatMontant(montantPaiementsAttendus, 0)} à recevoir`,  tone: paiementsAttendus > 0 ? 'info' : 'neutral' },
   ]
 
   return (
