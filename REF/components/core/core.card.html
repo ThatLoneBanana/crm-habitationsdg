@@ -1,0 +1,128 @@
+<!-- @dsCard group="Components" viewport="700x880" name="Core components" subtitle="Buttons, badges, phases, fields, metrics" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="../../styles.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+<style>
+  body { margin: 0; background: var(--bg-canvas); padding: 22px; }
+  .wrap { display: flex; flex-direction: column; gap: 22px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .sec { display: flex; flex-direction: column; gap: 10px; }
+  .sec > .lbl { font-size: var(--text-2xs); font-weight: var(--fw-semibold); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-tertiary); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { Button, IconButton, Badge, PhaseBadge, StatusDot, MetricCard, Input, Select, Toggle, Avatar, Tabs, ProgressBar } = window.HabitationsDGDesignSystem_408490;
+const ti = (n) => <i className={"ti ti-" + n} />;
+
+function Lbl({ children }) { return <div className="lbl">{children}</div>; }
+
+function Demo() {
+  const [tab, setTab] = React.useState("Cédule");
+  const [vis, setVis] = React.useState(true);
+  return (
+    <>
+      <div className="sec">
+        <Lbl>Boutons</Lbl>
+        <div className="panel">
+          <div className="row">
+            <Button variant="primary" icon={ti("send")}>Envoyer la cédule</Button>
+            <Button variant="secondary">Vue client</Button>
+            <Button variant="outline" icon={ti("pencil")}>Modifier</Button>
+            <Button variant="ghost">Annuler</Button>
+            <Button variant="danger" icon={ti("trash")}>Supprimer</Button>
+            <Button variant="success" icon={ti("check")}>Marquer payé</Button>
+            <Button variant="primary" disabled>Désactivé</Button>
+          </div>
+          <div className="row" style={{ marginTop: 10 }}>
+            <Button size="sm" variant="primary">Petit</Button>
+            <Button size="md" variant="primary">Moyen</Button>
+            <Button size="lg" variant="primary">Grand</Button>
+            <IconButton label="Imprimer" variant="outline">{ti("printer")}</IconButton>
+            <IconButton label="Options">{ti("dots")}</IconButton>
+            <IconButton label="Supprimer" variant="danger">{ti("trash")}</IconButton>
+          </div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <Lbl>Badges & statuts</Lbl>
+        <div className="panel">
+          <div className="row">
+            <Badge tone="neutral">Préliminaire</Badge>
+            <Badge tone="accent">Extra</Badge>
+            <Badge tone="success" dot>Payé</Badge>
+            <Badge tone="warning">Non signé</Badge>
+            <Badge tone="danger" pill>En retard</Badge>
+            <Badge tone="info">Entreprise</Badge>
+            <Badge tone="outline">GCR</Badge>
+          </div>
+          <div className="row" style={{ marginTop: 12 }}>
+            <PhaseBadge phase="SIGNE" />
+            <PhaseBadge phase="PREPARATION" />
+            <PhaseBadge phase="CHANTIER" />
+            <PhaseBadge phase="LIVRAISON" />
+            <PhaseBadge phase="TERMINE" />
+          </div>
+          <div className="row" style={{ marginTop: 12 }}>
+            <StatusDot status="termine" showLabel />
+            <StatusDot status="encours" showLabel pulse />
+            <StatusDot status="demain" showLabel />
+            <StatusDot status="avenir" showLabel />
+          </div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <Lbl>Métriques</Lbl>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+          <MetricCard icon={ti("building-community")} label="Projets actifs" value="7" sub="1 livraison ce mois" />
+          <MetricCard icon={ti("currency-dollar")} label="Valeur en chantier" value="2,1 M$" sub="valeur active" tone="success" />
+          <MetricCard icon={ti("alert-triangle")} label="Alertes" value="3" sub="1 urgente" tone="danger" />
+          <MetricCard icon={ti("receipt")} label="Extras non signés" value="4 800 $" sub="à confirmer" tone="warning" />
+        </div>
+      </div>
+
+      <div className="sec">
+        <Lbl>Champs</Lbl>
+        <div className="panel">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, alignItems: "start" }}>
+            <Input label="Adresse" defaultValue="18 Rue des Érables" />
+            <Input label="Rechercher" icon={ti("search")} placeholder="Projet, client…" />
+            <Select label="Assigné" options={["Interne", "Plomberie Côté", "Gypse Beauce", "Élec. Vachon"]} />
+          </div>
+          <div className="row" style={{ marginTop: 14, gap: 24 }}>
+            <Toggle checked={vis} onChange={setVis} label="Visible client" />
+            <Avatar name="Nicolas Savard" />
+            <Avatar name="Sophie-Rose Dion" size="sm" />
+            <div style={{ width: 180 }}>
+              <ProgressBar value={88} phase="LIVRAISON" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <Lbl>Onglets projet</Lbl>
+        <div className="panel" style={{ padding: 0 }}>
+          <Tabs value={tab} onChange={setTab}
+            tabs={["Cédule", { id: "Extras", label: "Extras", count: 4 }, "Paiements", "GCR", "Costing", "Documents"]} />
+        </div>
+      </div>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

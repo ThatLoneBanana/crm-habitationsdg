@@ -1,0 +1,49 @@
+/* ==========================================================================
+   Habitations DG — Base reset & primitives
+   Minimal, opinionated reset. Sets the app canvas, default type, and a few
+   shared primitives (focus ring, tabular numerics) used across the CRM.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--text-primary);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6, p, figure { margin: 0; }
+
+a { color: inherit; text-decoration: none; }
+
+button { font-family: inherit; }
+
+/* Money, dates, counts — keep figures aligned in tables */
+.dg-tabular,
+[data-tabular] { font-variant-numeric: var(--numeric-tabular); }
+
+/* Uppercase eyebrow / section label */
+.dg-eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* Shared focus-visible treatment */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-sm);
+}
+
+::selection { background: var(--dg-red-100); color: var(--dg-red-700); }

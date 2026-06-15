@@ -1,0 +1,60 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Navigation — segmented, chips, stepper" subtitle="SegmentedControl · FilterChip · Stepper" -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+<style>
+  body { margin:0; background:var(--bg-canvas); padding:22px; }
+  .wrap { display:flex; flex-direction:column; gap:20px; }
+  .lbl { font-size:var(--text-2xs); font-weight:var(--fw-semibold); letter-spacing:var(--ls-label); text-transform:uppercase; color:var(--text-tertiary); margin-bottom:9px; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const NS = window.HabitationsDGDesignSystem_408490;
+const { SegmentedControl, FilterChip, Stepper } = NS;
+
+function Demo() {
+  const [mode, setMode] = React.useState('consult');
+  const [view, setView] = React.useState('liste');
+  const [phase, setPhase] = React.useState('CHANTIER');
+  return (
+    <>
+      <div><div className="lbl">Segmented control</div>
+        <div className="panel"><div className="row" style={{ gap:20 }}>
+          <SegmentedControl value={mode} onChange={setMode}
+            options={[{value:'consult',label:'Consultation',icon:'eye'},{value:'edit',label:'Édition',icon:'pencil'}]} />
+          <SegmentedControl size="sm" value={view} onChange={setView}
+            options={[{value:'cartes',label:'Cartes',icon:'layout-grid'},{value:'liste',label:'Liste',icon:'list'}]} />
+        </div></div>
+      </div>
+
+      <div><div className="lbl">Filter chips (par phase)</div>
+        <div className="panel"><div className="row">
+          <FilterChip label="Tous" count={7} active={phase==null} onClick={()=>setPhase(null)} />
+          <FilterChip label="Signé" dotColor="var(--phase-signe-bar)" count={1} active={phase==='SIGNE'} onClick={()=>setPhase('SIGNE')} />
+          <FilterChip label="Préparation" dotColor="var(--phase-preparation-bar)" count={1} active={phase==='PREPARATION'} onClick={()=>setPhase('PREPARATION')} />
+          <FilterChip label="Chantier" dotColor="var(--phase-chantier-bar)" count={4} active={phase==='CHANTIER'} onClick={()=>setPhase('CHANTIER')} />
+          <FilterChip label="Livraison" dotColor="var(--phase-livraison-bar)" count={1} active={phase==='LIVRAISON'} onClick={()=>setPhase('LIVRAISON')} />
+        </div></div>
+      </div>
+
+      <div><div className="lbl">Stepper (création de projet)</div>
+        <div className="panel"><Stepper current={2} steps={["Client","Projet","Cédule","Confirmation"]} /></div>
+      </div>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

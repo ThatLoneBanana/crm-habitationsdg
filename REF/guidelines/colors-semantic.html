@@ -1,0 +1,24 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Semantic colors" subtitle="Success · Warning · Danger · Info — green is health, never a CTA" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body{margin:0;background:var(--bg-canvas);padding:18px;font-family:var(--font-sans);}
+  .row{display:flex;gap:10px;}
+  .col{flex:1;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);}
+  .chip{height:42px;display:flex;align-items:center;padding:0 10px;gap:7px;}
+  .chip b{font-size:var(--text-xs);font-weight:var(--fw-semibold);color:#fff;}
+  .tint{height:26px;display:flex;align-items:center;padding:0 10px;}
+  .tint span{font-size:var(--text-2xs);font-weight:var(--fw-semibold);}
+  .meta{padding:7px 10px;}
+  .name{font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-primary);}
+  .hex{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;font-variant-numeric:tabular-nums;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="col"><div class="chip" style="background:var(--success)"><b>Success</b></div><div class="tint" style="background:var(--success-tint)"><span style="color:var(--success-text)">Payé · santé</span></div><div class="meta"><div class="name">--success</div><div class="hex">1D9E75</div></div></div>
+    <div class="col"><div class="chip" style="background:var(--warning)"><b>Warning</b></div><div class="tint" style="background:var(--warning-tint)"><span style="color:var(--warning-text)">Non signé</span></div><div class="meta"><div class="name">--warning</div><div class="hex">D97706</div></div></div>
+    <div class="col"><div class="chip" style="background:var(--danger)"><b>Danger</b></div><div class="tint" style="background:var(--danger-tint)"><span style="color:var(--danger-text)">En retard</span></div><div class="meta"><div class="name">--danger</div><div class="hex">DC2626</div></div></div>
+    <div class="col"><div class="chip" style="background:var(--info)"><b>Info</b></div><div class="tint" style="background:var(--info-tint)"><span style="color:var(--info-text)">Entreprise</span></div><div class="meta"><div class="name">--info</div><div class="hex">2563EB</div></div></div>
+  </div>
+</body></html>

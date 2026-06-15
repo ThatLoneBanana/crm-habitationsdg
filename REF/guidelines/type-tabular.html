@@ -1,0 +1,23 @@
+<!-- @dsCard group="Type" viewport="700x150" name="Tabular figures" subtitle="Money, dates & counts align in columns" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body{margin:0;background:var(--surface);padding:20px;font-family:var(--font-sans);color:var(--text-primary);}
+  table{border-collapse:collapse;width:100%;font-size:var(--text-sm);}
+  td,th{text-align:right;padding:5px 14px;border-bottom:1px solid var(--divider);}
+  th{font-size:var(--text-2xs);text-transform:uppercase;letter-spacing:var(--ls-label);color:var(--text-tertiary);font-weight:var(--fw-semibold);}
+  td:first-child,th:first-child{text-align:left;color:var(--text-secondary);}
+  .num{font-variant-numeric:tabular-nums;font-weight:var(--fw-medium);}
+  .pos{color:var(--success-text);}
+</style></head>
+<body>
+  <table>
+    <thead><tr><th>Paiement</th><th>Montant</th><th>Reçu</th><th>Prévu</th></tr></thead>
+    <tbody>
+      <tr><td>Tranche 1 (50%)</td><td class="num pos">306 000,00 $</td><td class="num">15 mars 2026</td><td class="num">—</td></tr>
+      <tr><td>Tranche 2 (35%)</td><td class="num">214 200,00 $</td><td class="num">—</td><td class="num">15 juin 2026</td></tr>
+      <tr><td>Tranche 3 (15%)</td><td class="num">91 800,00 $</td><td class="num">—</td><td class="num">14 août 2026</td></tr>
+    </tbody>
+  </table>
+</body></html>

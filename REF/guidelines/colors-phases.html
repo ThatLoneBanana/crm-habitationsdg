@@ -1,0 +1,24 @@
+<!-- @dsCard group="Colors" viewport="700x190" name="Phase palette" subtitle="Signé · Préparation · Chantier · Livraison · Terminé" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body{margin:0;background:var(--bg-canvas);padding:18px;font-family:var(--font-sans);}
+  .row{display:flex;gap:10px;}
+  .col{flex:1;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);}
+  .bar{height:34px;}
+  .tint{height:34px;display:flex;align-items:center;justify-content:center;}
+  .pill{font-size:var(--text-2xs);font-weight:var(--fw-semibold);padding:3px 9px;border-radius:var(--radius-full);}
+  .meta{padding:8px;}
+  .name{font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-primary);}
+  .hex{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;font-variant-numeric:tabular-nums;margin-top:2px;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="col"><div class="bar" style="background:var(--phase-signe-bar)"></div><div class="tint" style="background:var(--phase-signe-tint)"><span class="pill" style="background:var(--phase-signe-bar);color:#fff">Signé</span></div><div class="meta"><div class="name">Signé</div><div class="hex">378ADD</div></div></div>
+    <div class="col"><div class="bar" style="background:var(--phase-preparation-bar)"></div><div class="tint" style="background:var(--phase-preparation-tint)"><span class="pill" style="background:var(--phase-preparation-bar);color:#fff">Préparation</span></div><div class="meta"><div class="name">Préparation</div><div class="hex">7F77DD</div></div></div>
+    <div class="col"><div class="bar" style="background:var(--phase-chantier-bar)"></div><div class="tint" style="background:var(--phase-chantier-tint)"><span class="pill" style="background:var(--phase-chantier-bar);color:#fff">Chantier</span></div><div class="meta"><div class="name">Chantier</div><div class="hex">EF9F27</div></div></div>
+    <div class="col"><div class="bar" style="background:var(--phase-livraison-bar)"></div><div class="tint" style="background:var(--phase-livraison-tint)"><span class="pill" style="background:var(--phase-livraison-bar);color:#fff">Livraison</span></div><div class="meta"><div class="name">Livraison</div><div class="hex">639922</div></div></div>
+    <div class="col"><div class="bar" style="background:var(--phase-termine-bar)"></div><div class="tint" style="background:var(--phase-termine-tint)"><span class="pill" style="background:var(--phase-termine-bar);color:#fff">Terminé</span></div><div class="meta"><div class="name">Terminé</div><div class="hex">B4B2A9</div></div></div>
+  </div>
+</body></html>

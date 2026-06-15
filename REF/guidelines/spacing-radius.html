@@ -1,0 +1,34 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Radius & elevation" subtitle="Modest radii, soft low shadows for floating surfaces" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body{margin:0;background:var(--bg-canvas);padding:20px;font-family:var(--font-sans);color:var(--text-primary);}
+  .row{display:flex;gap:18px;align-items:center;}
+  .group{display:flex;gap:12px;align-items:flex-end;}
+  .item{display:flex;flex-direction:column;align-items:center;gap:7px;}
+  .box{width:52px;height:44px;background:var(--surface);border:1px solid var(--border);}
+  .sh{width:56px;height:44px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);}
+  .tok{font-size:9px;color:var(--text-tertiary);text-align:center;}
+  .tok b{display:block;color:var(--text-secondary);font-weight:var(--fw-semibold);font-size:var(--text-2xs);}
+  .div{width:1px;height:62px;background:var(--border);}
+</style></head>
+<body>
+  <div class="row">
+    <div class="group">
+      <div class="item"><div class="box" style="border-radius:var(--radius-sm)"></div><div class="tok"><b>sm</b>4</div></div>
+      <div class="item"><div class="box" style="border-radius:var(--radius)"></div><div class="tok"><b>base</b>6</div></div>
+      <div class="item"><div class="box" style="border-radius:var(--radius-md)"></div><div class="tok"><b>md</b>8</div></div>
+      <div class="item"><div class="box" style="border-radius:var(--radius-lg)"></div><div class="tok"><b>lg</b>10</div></div>
+      <div class="item"><div class="box" style="border-radius:var(--radius-xl)"></div><div class="tok"><b>xl</b>14</div></div>
+      <div class="item"><div class="box" style="border-radius:var(--radius-full)"></div><div class="tok"><b>full</b></div></div>
+    </div>
+    <div class="div"></div>
+    <div class="group">
+      <div class="item"><div class="sh" style="box-shadow:var(--shadow-sm)"></div><div class="tok"><b>sm</b></div></div>
+      <div class="item"><div class="sh" style="box-shadow:var(--shadow-md)"></div><div class="tok"><b>md</b>menu</div></div>
+      <div class="item"><div class="sh" style="box-shadow:var(--shadow-lg)"></div><div class="tok"><b>lg</b>dialog</div></div>
+      <div class="item"><div class="sh" style="box-shadow:var(--shadow-pop)"></div><div class="tok"><b>pop</b></div></div>
+    </div>
+  </div>
+</body></html>

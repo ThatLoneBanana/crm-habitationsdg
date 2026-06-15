@@ -1,0 +1,8 @@
+/* ==========================================================================
+   Habitations DG — Webfonts
+   Inter is the brand's actual typeface (exact match, not a substitution).
+   Served from Google Fonts. Swap these @font-face URLs for self-hosted
+   woff2 binaries in production if offline delivery is required.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');

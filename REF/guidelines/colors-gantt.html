@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Gantt task status" subtitle="Auto-computed by date — Terminé · En cours · Demain · À venir" -->
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body{margin:0;background:var(--bg-canvas);padding:18px;font-family:var(--font-sans);}
+  .grid{display:flex;gap:10px;}
+  .col{flex:1;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);padding:12px;}
+  .barwrap{height:22px;border-radius:var(--radius);display:flex;align-items:center;padding:0 8px;box-shadow:var(--shadow-sm);}
+  .barwrap span{font-size:9px;font-weight:var(--fw-semibold);color:#fff;}
+  .name{font-size:var(--text-xs);font-weight:var(--fw-semibold);color:var(--text-primary);margin-top:10px;}
+  .hex{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;font-variant-numeric:tabular-nums;}
+  .desc{font-size:9px;color:var(--text-tertiary);margin-top:2px;}
+</style></head>
+<body>
+  <div class="grid">
+    <div class="col"><div class="barwrap" style="background:var(--task-termine)"><span>████</span></div><div class="name">Terminé</div><div class="hex">639922</div><div class="desc">fin passée</div></div>
+    <div class="col"><div class="barwrap" style="background:var(--task-encours)"><span>███</span></div><div class="name">En cours</div><div class="hex">1D9E75</div><div class="desc">aujourd'hui dans la barre</div></div>
+    <div class="col"><div class="barwrap" style="background:var(--task-demain)"><span>██</span></div><div class="name">Commence demain</div><div class="hex">378ADD</div><div class="desc">début = demain</div></div>
+    <div class="col"><div class="barwrap" style="background:var(--task-avenir)"><span>██</span></div><div class="name">À venir</div><div class="hex">B4B2A9</div><div class="desc">plus tard</div></div>
+    <div class="col" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;">
+      <div style="width:2px;height:46px;background:var(--task-today-line);border-radius:2px;"></div>
+      <div class="name" style="margin:0;text-align:center;">Ligne « aujourd'hui »</div><div class="hex">DC2626</div>
+    </div>
+  </div>
+</body></html>

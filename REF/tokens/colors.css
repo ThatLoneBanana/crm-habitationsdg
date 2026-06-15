@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Habitations DG — Color tokens
+   Brand: red action (#DC2626) + near-black ink. Warm-neutral surfaces give
+   the "construction / architectural" warmth without losing crisp legibility.
+   Phase palette + financial-health green are pulled straight from the CRM code.
+   ========================================================================== */
+
+:root {
+  /* --- Brand red ------------------------------------------------------- */
+  --dg-red-logo:   #EA1C24;  /* monogram mark only */
+  --dg-red:        #DC2626;  /* primary action — buttons, active nav */
+  --dg-red-hover:  #C01D1D;  /* button hover (darken) */
+  --dg-red-press:  #A81818;  /* button active/press */
+  --dg-red-700:    #991B1B;
+  --dg-red-600:    #DC2626;
+  --dg-red-500:    #EF4444;
+  --dg-red-200:    #FBD0D0;
+  --dg-red-100:    #FEE2E2;
+  --dg-red-50:     #FEF2F2;  /* tinted hover surface for nav/danger rows */
+
+  /* --- Warm-neutral ink & surface scale -------------------------------- */
+  --n-0:    #FFFFFF;  /* card / popover surface */
+  --n-25:   #FBFBFA;  /* app canvas */
+  --n-50:   #F7F6F4;  /* subtle surface — table & card headers */
+  --n-100:  #F1F0ED;  /* hover surface, track fills */
+  --n-150:  #E9E8E4;  /* alternate zebra / week tint */
+  --n-200:  #E2E0DB;  /* default border */
+  --n-250:  #D7D5CF;  /* strong border / divider on tint */
+  --n-300:  #CBC9C2;
+  --n-400:  #A8A59D;  /* disabled text, faint icon */
+  --n-500:  #847F76;  /* placeholder */
+  --n-600:  #65615A;  /* muted / secondary text */
+  --n-700:  #4A4742;  /* body text on tint */
+  --n-800:  #33312D;  /* strong body text */
+  --n-900:  #1F1D1B;  /* primary text — near-black, faintly warm */
+
+  /* --- Semantic neutrals ----------------------------------------------- */
+  --bg-app:          var(--n-25);
+  --bg-canvas:       var(--n-50);
+  --surface:         var(--n-0);
+  --surface-subtle:  var(--n-50);
+  --surface-hover:   var(--n-100);
+  --border:          var(--n-200);
+  --border-strong:   var(--n-250);
+  --divider:         var(--n-150);
+
+  --text-primary:    var(--n-900);
+  --text-secondary:  var(--n-600);
+  --text-tertiary:   var(--n-500);
+  --text-disabled:   var(--n-400);
+  --text-on-accent:  #FFFFFF;
+
+  /* --- Action / primary (red) ------------------------------------------ */
+  --accent:          var(--dg-red);
+  --accent-hover:    var(--dg-red-hover);
+  --accent-press:    var(--dg-red-press);
+  --accent-tint:     var(--dg-red-50);
+  --accent-border:   var(--dg-red-200);
+
+  /* --- Financial health / positive status (GREEN — never a primary CTA) */
+  --success:         #1D9E75;  /* teal-green: "en cours", money in, health */
+  --success-strong:  #0F7A57;
+  --success-tint:    #E4F4ED;
+  --success-text:    #0F6E56;
+
+  /* --- Warning / attention (amber) ------------------------------------- */
+  --warning:         #D97706;
+  --warning-strong:  #B45309;
+  --warning-tint:    #FEF3C7;
+  --warning-text:    #92400E;
+
+  /* --- Danger / urgent (red, semantic — shares brand hue) -------------- */
+  --danger:          #DC2626;
+  --danger-strong:   #991B1B;
+  --danger-tint:     #FEE2E2;
+  --danger-text:     #991B1B;
+
+  /* --- Info (blue) ----------------------------------------------------- */
+  --info:            #2563EB;
+  --info-tint:       #E6F1FB;
+  --info-text:       #185FA5;
+
+  /* ====================================================================
+     PHASE PALETTE — project lifecycle. Each phase: bar (solid), tint (bg),
+     ink (text on tint). Values are the production CRM's exact colors.
+     ==================================================================== */
+  --phase-signe-bar:      #378ADD;  --phase-signe-tint:      #E6F1FB;  --phase-signe-ink:      #185FA5;
+  --phase-preparation-bar:#7F77DD;  --phase-preparation-tint:#EEEDFE;  --phase-preparation-ink:#3C3489;
+  --phase-chantier-bar:   #EF9F27;  --phase-chantier-tint:   #FAEEDA;  --phase-chantier-ink:   #854F0B;
+  --phase-livraison-bar:  #639922;  --phase-livraison-tint:  #EAF3DE;  --phase-livraison-ink:  #3B6D11;
+  --phase-termine-bar:    #B4B2A9;  --phase-termine-tint:    #F1EFE8;  --phase-termine-ink:    #5F5E5A;
+
+  /* ====================================================================
+     GANTT TASK STATUS — auto-computed by date (task-status.ts logic)
+     ==================================================================== */
+  --task-termine:   #639922;  /* fin passée — vert */
+  --task-encours:   #1D9E75;  /* aujourd'hui dans la barre — teal */
+  --task-demain:    #378ADD;  /* commence demain — bleu */
+  --task-avenir:    #B4B2A9;  /* à venir — gris */
+  --task-today-line:#DC2626;  /* ligne verticale "aujourd'hui" */
+}

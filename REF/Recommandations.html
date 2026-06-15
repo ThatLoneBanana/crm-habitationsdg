@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Habitations DG — Recommandations produit</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+<style>
+  body { background: var(--bg-canvas); color: var(--text-primary); }
+  .page { max-width: 820px; margin: 0 auto; padding: 56px 32px 96px; }
+  .eyebrow { font-size: var(--text-2xs); font-weight: 700; letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--dg-red); }
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.025em; margin: 10px 0 8px; line-height: 1.08; }
+  .lede { font-size: 15px; color: var(--text-secondary); line-height: 1.6; max-width: 64ch; }
+  .meta { font-size: 12px; color: var(--text-tertiary); margin-top: 14px; display: flex; gap: 14px; flex-wrap: wrap; }
+  h2 { font-size: 13px; font-weight: 700; letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-tertiary); margin: 48px 0 16px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+  .rec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 12px; }
+  .rec-head { display: flex; align-items: flex-start; gap: 12px; }
+  .rec-num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; background: var(--n-900); color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .rec-title { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .rec-for { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+  .rec-body { font-size: 13.5px; color: var(--text-secondary); line-height: 1.62; margin: 11px 0 0; }
+  .rec-body b { color: var(--text-primary); font-weight: 600; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-full); white-space: nowrap; }
+  .p-high { background: var(--danger-tint); color: var(--danger-text); }
+  .p-med { background: var(--warning-tint); color: var(--warning-text); }
+  .p-low { background: var(--surface-subtle); color: var(--text-secondary); border: 1px solid var(--border); }
+  .effort { font-size: 11px; color: var(--text-tertiary); margin-top: 12px; display: flex; align-items: center; gap: 6px; }
+  .group-intro { font-size: 13px; color: var(--text-secondary); margin: -6px 0 16px; line-height: 1.55; }
+  ul.tight { margin: 8px 0 0; padding-left: 18px; }
+  ul.tight li { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 4px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 22px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 12px; color: var(--text-secondary); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .foot { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-tertiary); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">Habitations DG · Design system</div>
+  <h1>Recommandations produit</h1>
+  <p class="lede">Au-delà des écrans demandés, voici ce que je pousserais pour faire passer le CRM de « fonctionnel » à « indispensable au quotidien » — classé par impact sur le travail de Nicolas, Sophie-Rose, les vendeurs et le chargé de projet. Rien ici n'est construit&nbsp;; ce sont des pistes, à trier ensemble.</p>
+  <div class="meta">
+    <span><i class="ti ti-calendar"></i> 15 juin 2026</span>
+    <span><i class="ti ti-user"></i> Pour Nicolas (directeur des opérations)</span>
+    <span><i class="ti ti-target"></i> 12 propositions priorisées</span>
+  </div>
+
+  <div class="legend">
+    <span><span class="pill p-high">Priorité haute</span> impact quotidien fort, à faire tôt</span>
+    <span><span class="pill p-med">Priorité moyenne</span> gain net, après les fondations</span>
+    <span><span class="pill p-low">Plus tard</span> raffinement / nice-to-have</span>
+  </div>
+
+  <h2>1 · Workflow chantier — le cœur du métier</h2>
+  <p class="group-intro">Là où le CRM fait gagner (ou perdre) des heures réelles à l'équipe terrain.</p>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">1</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Décalage de cédule en un geste, avec aperçu d'impact</div>
+          <div class="rec-for">Nicolas · chargé de projet</div></div>
+          <span class="pill p-high">Priorité haute</span>
+        </div>
+        <p class="rec-body">Quand un sous-traitant se décommande, Nicolas doit pouvoir dire « décale le gypse de 3 jours » et <b>voir immédiatement</b> l'effet en cascade : nouvelle date de livraison, conflits créés, buffers consommés. Le pattern d'alerte « recalculer en cascade&nbsp;? » (dans États & patterns) est la base&nbsp;; j'ajouterais un <b>aperçu fantôme</b> des barres déplacées avant de confirmer, et un <b>« annuler »</b> sur le toast pendant 10&nbsp;s.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort moyen · s'appuie sur la logique de cascade existante</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">2</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Notifications proactives aux sous-traitants</div>
+          <div class="rec-for">Chargé de projet · fournisseurs</div></div>
+          <span class="pill p-high">Priorité haute</span>
+        </div>
+        <p class="rec-body">Chaque étape porte déjà un corps de métier. Quand une date bouge, envoyer automatiquement un <b>SMS / courriel</b> à « Gypse Beauce » avec la nouvelle fenêtre d'intervention. Couplé à une <b>confirmation du sous-traitant</b> (un lien « je confirme / je ne peux pas »), ça transforme la cédule en outil de coordination, pas juste de suivi.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort élevé · intégration SMS + portail fournisseur léger</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">3</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Photos de chantier datées par étape</div>
+          <div class="rec-for">Nicolas (mobile) · client</div></div>
+          <span class="pill p-med">Priorité moyenne</span>
+        </div>
+        <p class="rec-body">Depuis son camion, Nicolas prend déjà des photos. Les <b>rattacher à l'étape en cours</b> (un bouton appareil-photo sur la ligne du Gantt mobile) crée un journal visuel gratuit : preuve d'avancement pour le client, référence en cas de litige GCR, et mémoire pour la facturation. Les photos marquées « visible client » alimentent la vue client publique.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort moyen · upload mobile + stockage</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>2 · Argent — la vue de Sophie-Rose</h2>
+  <p class="group-intro">Le costing existe&nbsp;; reste à le brancher sur le réel et à fermer la boucle des paiements.</p>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">4</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Alerte de marge en temps réel</div>
+          <div class="rec-for">Nicolas · Sophie-Rose</div></div>
+          <span class="pill p-high">Priorité haute</span>
+        </div>
+        <p class="rec-body">Le costing montre déjà une santé par couleur. J'irais plus loin : dès qu'une catégorie <b>dépasse son budget</b> (écart positif) ou que la marge projetée passe sous <b>12&nbsp;%</b>, une alerte remonte au dashboard de Nicolas — comme les alertes livraison. « 144 Route du Lac · marge tombée à 8,8&nbsp;% » est exactement le genre d'info qui doit le réveiller avant la fin du projet, pas après.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort faible · réutilise le système d'alertes du dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">5</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Paiements liés aux étapes de la cédule</div>
+          <div class="rec-for">Sophie-Rose · client</div></div>
+          <span class="pill p-med">Priorité moyenne</span>
+        </div>
+        <p class="rec-body">Déclencher les tranches de paiement à l'atteinte d'une étape (« coffrage coulé → facturer la tranche 2 »). Le système connaît les dates&nbsp;; il peut <b>générer la facture au bon moment</b> et signaler les retards. Ça relie directement la cédule (Nicolas) et la compta (Sophie-Rose), aujourd'hui deux mondes séparés.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort moyen</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">6</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Saisie des dépenses par photo de facture</div>
+          <div class="rec-for">Sophie-Rose · acheteurs terrain</div></div>
+          <span class="pill p-med">Priorité moyenne</span>
+        </div>
+        <p class="rec-body">Une facture Bomat / Canac photographiée, catégorisée et imputée au bon projet en quelques tapes. Le costing « réel » devient fiable sans double saisie. À terme, lecture OCR du montant et du fournisseur.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort moyen-élevé</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>3 · Pipeline & relation client</h2>
+  <p class="group-intro">Avant le chantier (vendeurs) et pendant (transparence client).</p>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">7</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Pipeline de vente avant le projet</div>
+          <div class="rec-for">Vendeurs · Nicolas</div></div>
+          <span class="pill p-med">Priorité moyenne</span>
+        </div>
+        <p class="rec-body">Aujourd'hui un projet naît « Signé ». Mais Carl et Mélanie travaillent des <b>prospects</b> avant : soumission, choix de modèle, financement. Un mini-pipeline (Prospect → Soumission → Signé) donnerait à Nicolas une visibilité sur les <b>3-4 prochains mois</b> de charge de chantier, et aux vendeurs un outil de suivi.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort moyen · nouvelle phase amont</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">8</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Sélections & extras signés par le client en ligne</div>
+          <div class="rec-for">Client · vendeurs</div></div>
+          <span class="pill p-med">Priorité moyenne</span>
+        </div>
+        <p class="rec-body">La vue client publique est en lecture seule. L'étape suivante : laisser le client <b>approuver un extra</b> ou <b>faire ses sélections</b> (céramique, armoires) directement, avec signature. Les « 4 800&nbsp;$ d'extras non signés » du dashboard se règlent tout seuls.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort élevé · signature électronique</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>4 · Pilotage & raffinements</h2>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">9</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Vue « charge des sous-traitants »</div>
+          <div class="rec-for">Nicolas · chargé de projet</div></div>
+          <span class="pill p-med">Priorité moyenne</span>
+        </div>
+        <p class="rec-body">Une ligne du temps qui croise <b>tous les chantiers</b> par corps de métier : « Gypse Beauce est sur 3 chantiers la semaine du 22 juin ». Détecte les surréservations avant qu'elles ne fassent déraper deux cédules à la fois.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort moyen</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">10</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Recherche globale (⌘K)</div>
+          <div class="rec-for">Tous</div></div>
+          <span class="pill p-low">Plus tard</span>
+        </div>
+        <p class="rec-body">Un champ unique pour sauter à un projet, un client, un fournisseur ou une étape. Pour une équipe qui jongle avec ~42 projets, c'est le raccourci le plus rentable. Très aligné avec l'esprit Linear visé.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort faible-moyen</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">11</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Mode hors-ligne pour le terrain</div>
+          <div class="rec-for">Nicolas (mobile)</div></div>
+          <span class="pill p-low">Plus tard</span>
+        </div>
+        <p class="rec-body">Les chantiers en région ont une couverture cellulaire inégale. Consulter une cédule et saisir des heures / photos <b>hors-ligne</b>, puis synchroniser au retour, évite la frustration dans le camion.</p>
+        <div class="effort"><i class="ti ti-flame"></i> Effort élevé · PWA + sync</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec">
+    <div class="rec-head">
+      <span class="rec-num">12</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div><div class="rec-title">Raffinements visuels</div>
+          <div class="rec-for">Tous</div></div>
+          <span class="pill p-low">Plus tard</span>
+        </div>
+        <ul class="tight">
+          <li><b>Densité ajustable</b> — un mode « confortable / compact » pour les tableaux, selon écran de bureau ou laptop.</li>
+          <li><b>Mode sombre</b> — le système de tokens est déjà prêt à l'accueillir (un seul scope à inverser).</li>
+          <li><b>Impression soignée</b> — feuille de style print pour la cédule et le costing (Nicolas imprime pour les réunions de chantier).</li>
+          <li><b>Survol du Gantt</b> — infobulle riche sur une barre (dates, sous-traitant, conflit) sans ouvrir l'éditeur.</li>
+        </ul>
+        <div class="effort"><i class="ti ti-flame"></i> Effort faible chacun</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Ma recommandation de séquence&nbsp;:</b> commencer par les nº 1, 2 et 4 — ils touchent le quotidien de Nicolas et s'appuient sur la logique déjà bâtie (cascade, alertes, costing). Puis 5 et 6 pour fiabiliser l'argent côté Sophie-Rose. Le pipeline (7) et la signature client (8) viennent quand les fondations terrain sont solides. Le reste est du raffinement à saupoudrer.
+    <br><br>
+    Je suis preneur de ton retour — on peut prototyper n'importe laquelle de ces pistes en haute-fidélité dans le UI kit avant de décider.
+  </div>
+</div>
+</body>
+</html>
