@@ -179,7 +179,9 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
         setModifierOpen(false);
         router.refresh();
       } else {
-        alert('Erreur lors de la modification');
+        // Remonter l'erreur RÉELLE de l'API plutôt qu'un message vague.
+        const d = await res.json().catch(() => ({}));
+        alert('Erreur lors de la modification : ' + (d.error || res.statusText || `HTTP ${res.status}`));
       }
     } catch (err: any) {
       alert('Erreur: ' + err.message);
