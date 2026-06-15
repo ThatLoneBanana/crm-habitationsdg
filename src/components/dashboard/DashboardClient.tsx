@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 function formatMontant(n: number): string {
@@ -7,16 +8,110 @@ function formatMontant(n: number): string {
   return `${n}$`
 }
 
+const PHASES: Record<string, { label: string; tint: string; ink: string; bar: string }> = {
+  SIGNE:       { label: 'Signé',       tint: 'var(--phase-signe-tint)',       ink: 'var(--phase-signe-ink)',       bar: 'var(--phase-signe-bar)' },
+  PREPARATION: { label: 'Préparation', tint: 'var(--phase-preparation-tint)', ink: 'var(--phase-preparation-ink)', bar: 'var(--phase-preparation-bar)' },
+  CHANTIER:    { label: 'Chantier',    tint: 'var(--phase-chantier-tint)',    ink: 'var(--phase-chantier-ink)',    bar: 'var(--phase-chantier-bar)' },
+  LIVRAISON:   { label: 'Livraison',   tint: 'var(--phase-livraison-tint)',   ink: 'var(--phase-livraison-ink)',   bar: 'var(--phase-livraison-bar)' },
+  TERMINE:     { label: 'Terminé',     tint: 'var(--phase-termine-tint)',     ink: 'var(--phase-termine-ink)',     bar: 'var(--phase-termine-bar)' },
+}
 function phaseConfig(phase: string | null | undefined) {
-  if (!phase) return { label: 'Signé', bg: '#E6F1FB', text: '#185FA5', bar: '#378ADD' }
-  const config: Record<string, { label: string; bg: string; text: string; bar: string }> = {
-    SIGNE: { label: 'Signé', bg: '#E6F1FB', text: '#185FA5', bar: '#378ADD' },
-    PREPARATION: { label: 'Préparation', bg: '#EEEDFE', text: '#3C3489', bar: '#7F77DD' },
-    CHANTIER: { label: 'Chantier', bg: '#FAEEDA', text: '#854F0B', bar: '#EF9F27' },
-    LIVRAISON: { label: 'Livraison', bg: '#EAF3DE', text: '#3B6D11', bar: '#639922' },
-    TERMINE: { label: 'Terminé', bg: '#F1EFE8', text: '#5F5E5A', bar: '#B4B2A9' },
-  }
-  return config[phase] || config['SIGNE']
+  return PHASES[phase ?? 'SIGNE'] ?? PHASES.SIGNE
+}
+
+type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+const TONE_TEXT: Record<Tone, string> = {
+  neutral: 'var(--text-primary)',
+  success: 'var(--success)',
+  warning: 'var(--warning)',
+  danger:  'var(--danger)',
+  info:    'var(--info)',
+}
+const BADGE_TONE: Record<Tone, { bg: string; color: string }> = {
+  neutral: { bg: 'var(--n-100)',       color: 'var(--text-secondary)' },
+  success: { bg: 'var(--success-tint)', color: 'var(--success-text)' },
+  warning: { bg: 'var(--warning-tint)', color: 'var(--warning-text)' },
+  danger:  { bg: 'var(--danger-tint)',  color: 'var(--danger-text)' },
+  info:    { bg: 'var(--info-tint)',    color: 'var(--info-text)' },
+}
+
+/* — Primitives DG (tokens uniquement, aucune couleur hardcodée) — */
+
+function MetricCard({ icon, label, value, sub, tone = 'neutral' }: { icon: string; label: string; value: React.ReactNode; sub?: string; tone?: Tone }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '13px 15px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+        <i className={`ti ${icon}`} aria-hidden="true" style={{ fontSize: 14, color: 'var(--text-tertiary)' }}></i>
+        {label}
+      </div>
+      <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, lineHeight: 'var(--lh-tight)', letterSpacing: 'var(--ls-tight)', color: TONE_TEXT[tone], fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+      </div>
+      {sub ? <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: 3 }}>{sub}</div> : null}
+    </div>
+  )
+}
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', ...style }}>
+      {children}
+    </div>
+  )
+}
+
+function CardHeader({ icon, iconColor, title, action }: { icon: string; iconColor?: string; title: string; action?: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)' }}>
+        <i className={`ti ${icon}`} aria-hidden="true" style={{ fontSize: 15, color: iconColor ?? 'var(--text-secondary)' }}></i>
+        {title}
+      </span>
+      {action ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{action}</span> : null}
+    </div>
+  )
+}
+
+function Badge({ tone = 'neutral', pill = false, children }: { tone?: Tone; pill?: boolean; children: React.ReactNode }) {
+  const skin = BADGE_TONE[tone]
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-2xs)', fontWeight: 600, lineHeight: 1, letterSpacing: '.01em', whiteSpace: 'nowrap', padding: '3px 7px', borderRadius: pill ? 'var(--radius-full)' : 'var(--radius)', background: skin.bg, color: skin.color }}>
+      {children}
+    </span>
+  )
+}
+
+function PhaseBadge({ phase }: { phase: string | null | undefined }) {
+  const p = phaseConfig(phase)
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-2xs)', fontWeight: 600, lineHeight: 1, letterSpacing: '.01em', whiteSpace: 'nowrap', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: p.tint, color: p.ink }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.bar, flex: '0 0 auto' }}></span>
+      {p.label}
+    </span>
+  )
+}
+
+function ProgressBar({ value, phase }: { value: number; phase: string | null | undefined }) {
+  const pct = Math.max(0, Math.min(100, value))
+  return (
+    <div style={{ height: 3, background: 'var(--n-100)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+      <div style={{ height: '100%', width: `${pct}%`, background: phaseConfig(phase).bar, borderRadius: 'var(--radius-full)', transition: 'width var(--dur-slow) var(--ease-out)' }} />
+    </div>
+  )
+}
+
+function Row({ children, onClick, last }: { children: React.ReactNode; onClick?: () => void; last?: boolean }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ borderBottom: last ? 'none' : '1px solid var(--divider)', background: hover ? 'var(--surface-subtle)' : 'transparent', cursor: onClick ? 'pointer' : 'default', transition: 'background var(--dur-fast)' }}
+    >
+      {children}
+    </div>
+  )
 }
 
 export default function DashboardClient({
@@ -31,142 +126,121 @@ export default function DashboardClient({
   const joursLabels = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
   const moisLabels = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
+  const nbEtapes = agendaSemaine.reduce((s: number, j: any) => s + j.etapes.length, 0)
+  const nbUrgentes = alertes.filter((a: any) => a.type === 'urgent').length
+
+  const metrics: { icon: string; label: string; value: React.ReactNode; sub: string; tone: Tone }[] = [
+    { icon: 'ti-building-community', label: 'Projets actifs',     value: projetsActifs,                  sub: `${livraisonsCeMois} livraison(s) ce mois`,              tone: 'neutral' },
+    { icon: 'ti-currency-dollar',    label: 'En chantier',        value: formatMontant(montantTotal),    sub: 'valeur totale active',                                  tone: 'success' },
+    { icon: 'ti-alert-triangle',     label: 'Alertes',            value: alertes.length,                 sub: `${nbUrgentes} urgente(s)`,                              tone: alertes.length > 0 ? 'danger' : 'neutral' },
+    { icon: 'ti-receipt',            label: 'Extras non signés',  value: extrasNonSignes,                sub: `${formatMontant(montantExtrasNonSignes)} à confirmer`,  tone: extrasNonSignes > 0 ? 'warning' : 'neutral' },
+    { icon: 'ti-cash',               label: 'Paiements attendus', value: paiementsAttendus,              sub: `${formatMontant(montantPaiementsAttendus)} à recevoir`, tone: paiementsAttendus > 0 ? 'info' : 'neutral' },
+  ]
+
   return (
-    <div style={{ padding: '24px 24px 0' }}>
+    <div style={{ padding: '22px 24px 40px', maxWidth: 1180 }}>
       {/* En-tête */}
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: 500 }}>Bonjour {prenomUser} 👋</h1>
-        <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-          {joursLabels[now.getDay()]} {now.getDate()} {moisLabels[now.getMonth()]} {now.getFullYear()}
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>
+            Bonjour {prenomUser} <span style={{ fontWeight: 400 }}>👋</span>
+          </h1>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
+            {joursLabels[now.getDay()]} {now.getDate()} {moisLabels[now.getMonth()]} {now.getFullYear()}
+          </p>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{projetsActifs}</span> projets actifs
+        </div>
       </div>
 
-      {/* Métriques — 5 colonnes avec cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '10px', marginBottom: '20px', paddingTop: '24px' }}>
-        {[
-          { label: 'Projets actifs', val: projetsActifs, sub: `${livraisonsCeMois} livraison(s) ce mois`, icon: 'ti-building-community', color: '#000' },
-          { label: 'En chantier', val: formatMontant(montantTotal), sub: 'valeur totale active', icon: 'ti-currency-dollar', color: '#1D9E75' },
-          { label: 'Alertes', val: alertes.length, sub: alertes.filter((a:any)=>a.type==='urgent').length + ' urgente(s)', icon: 'ti-alert-triangle', color: alertes.length > 0 ? '#DC2626' : '#000' },
-          { label: 'Extras non signés', val: extrasNonSignes, sub: `${formatMontant(montantExtrasNonSignes)} à confirmer`, icon: 'ti-receipt', color: extrasNonSignes > 0 ? '#D97706' : '#000' },
-          { label: 'Paiements attendus', val: paiementsAttendus, sub: `${formatMontant(montantPaiementsAttendus)} à recevoir`, icon: 'ti-cash', color: paiementsAttendus > 0 ? '#2563EB' : '#000' },
-        ].map((m, i) => (
-          <div key={i} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '14px 16px' }}>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <i className={`ti ${m.icon}`} aria-hidden="true" style={{ fontSize: '13px' }}></i>
-              {m.label}
-            </div>
-            <div style={{ fontSize: '22px', fontWeight: 500, color: m.color }}>{m.val}</div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px' }}>{m.sub}</div>
-          </div>
+      {/* Métriques — 5 colonnes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10, marginBottom: 20 }}>
+        {metrics.map((m, i) => (
+          <MetricCard key={i} icon={m.icon} label={m.label} value={m.value} sub={m.sub} tone={m.tone} />
         ))}
       </div>
 
       {/* Grid principal — 1fr gauche, 340px droite */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
 
         {/* COLONNE GAUCHE — Alertes + Agenda */}
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Alertes */}
           {alertes.length > 0 && (
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
-              <div style={{ padding: '10px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <i className="ti ti-bell" aria-hidden="true" style={{ fontSize: '14px', color: '#DC2626' }}></i>
-                Alertes prioritaires
-              </div>
+            <Card>
+              <CardHeader icon="ti-bell" iconColor="var(--dg-red)" title="Alertes prioritaires" action={<Badge tone="danger">{alertes.length}</Badge>} />
               {alertes.map((a: any, i: number) => (
-                <div key={i}
-                  onClick={() => router.push(`/projets/${a.projetId}`)}
-                  style={{ padding: '10px 14px', borderBottom: i < alertes.length-1 ? '1px solid #F3F4F6' : 'none', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'white')}
-                >
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.type === 'urgent' ? '#DC2626' : '#F59E0B', flexShrink: 0 }}></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.titre}</div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>{a.sous}</div>
+                <Row key={i} last={i === alertes.length - 1} onClick={() => router.push(`/projets/${a.projetId}`)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 14px' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: a.type === 'urgent' ? 'var(--danger)' : 'var(--warning)', flexShrink: 0 }}></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.titre}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{a.sous}</div>
+                    </div>
+                    <Badge tone={a.type === 'urgent' ? 'danger' : 'warning'} pill>{a.badge}</Badge>
+                    <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 15, color: 'var(--text-disabled)' }}></i>
                   </div>
-                  <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '4px', background: a.type === 'urgent' ? '#FEE2E2' : '#FEF3C7', color: a.type === 'urgent' ? '#991B1B' : '#92400E', whiteSpace: 'nowrap', flexShrink: 0 }}>{a.badge}</span>
-                </div>
+                </Row>
               ))}
-            </div>
+            </Card>
           )}
 
           {/* Agenda */}
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <i className="ti ti-calendar-week" aria-hidden="true" style={{ fontSize: '14px', color: '#2563EB' }}></i>
-                Agenda de la semaine
-              </span>
-              <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                {agendaSemaine.reduce((s: number, j: any) => s + j.etapes.length, 0)} étapes
-              </span>
-            </div>
+          <Card>
+            <CardHeader icon="ti-calendar-week" iconColor="var(--info)" title="Agenda de la semaine" action={<span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{nbEtapes} étapes</span>} />
             {agendaSemaine.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280', fontSize: '12px' }}>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
                 Aucune étape planifiée cette semaine
               </div>
             ) : agendaSemaine.map((jour: any, ji: number) => (
               <div key={ji}>
-                <div style={{ padding: '6px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', borderTop: '1px solid #E5E7EB', fontSize: '11px', fontWeight: 500, color: '#6B7280', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{jour.label}</span>
-                  <span>{jour.etapes.length} étape{jour.etapes.length > 1 ? 's' : ''}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--divider)', borderTop: ji > 0 ? '1px solid var(--divider)' : 'none', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  <span style={{ textTransform: 'capitalize' }}>{jour.label}</span>
+                  <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>{jour.etapes.length} étape{jour.etapes.length > 1 ? 's' : ''}</span>
                 </div>
                 {jour.etapes.map((e: any, ei: number) => (
-                  <div key={ei}
-                    onClick={() => router.push(`/projets/${e.projetSlug}`)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderBottom: ei < jour.etapes.length-1 ? '1px solid #F3F4F6' : 'none', cursor: 'pointer' }}
-                    onMouseEnter={e2 => (e2.currentTarget.style.background = '#F9FAFB')}
-                    onMouseLeave={e2 => (e2.currentTarget.style.background = 'white')}
-                  >
-                    <div style={{ width: '3px', height: '30px', borderRadius: '2px', background: phaseConfig(e.phase).bar, flexShrink: 0 }}></div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', fontWeight: 500 }}>{e.nom}</div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.projet} · {e.client}</div>
+                  <Row key={ei} last={ei === jour.etapes.length - 1} onClick={() => router.push(`/projets/${e.projetSlug}`)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px' }}>
+                      <span style={{ width: 3, height: 30, borderRadius: 2, background: phaseConfig(e.phase).bar, flexShrink: 0 }}></span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 500 }}>{e.nom}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.projet} · {e.client}</div>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 7px', borderRadius: 'var(--radius-full)', background: e.assigneA === 'Interne' ? 'var(--n-100)' : 'var(--n-150)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>{e.assigneA}</span>
                     </div>
-                    <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: '#F3F4F6', color: '#6B7280', whiteSpace: 'nowrap', flexShrink: 0 }}>{e.assigneA}</span>
-                  </div>
+                  </Row>
                 ))}
               </div>
             ))}
-          </div>
+          </Card>
         </div>
 
-        {/* COLONNE DROITE — Projets */}
-        <div style={{ width: '340px', flexShrink: 0 }}>
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <i className="ti ti-list" aria-hidden="true" style={{ fontSize: '14px' }}></i>
-              Tous les projets
-            </div>
-            {projets.map((p: any, i: number) => (
-              <div key={i}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: i < projets.length-1 ? '1px solid #F3F4F6' : 'none', cursor: 'pointer' }}
-                onClick={() => router.push(`/projets/${p.slug || p.id}`)}
-                onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'white')}
-              >
+        {/* COLONNE DROITE — Projets (rail 340px) */}
+        <Card>
+          <CardHeader icon="ti-list" title="Tous les projets" action={<span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{projets.length}</span>} />
+          {projets.map((p: any, i: number) => (
+            <Row key={i} last={i === projets.length - 1} onClick={() => router.push(`/projets/${p.slug || p.id}`)}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 14px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{p.client.prenom} {p.client.nom}</div>
-                  <div style={{ fontSize: '11px', color: '#6B7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{p.adresse}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.client.prenom} {p.client.nom}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.adresse}</div>
                   {p.prochaineEtape && (
-                    <div style={{ fontSize: '11px', color: '#6B7280' }}>↳ {p.prochaineEtape.nom}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>↳ {p.prochaineEtape.nom}</div>
                   )}
-                  <div style={{ height: '3px', background: '#F3F4F6', borderRadius: '2px', marginTop: '4px' }}>
-                    <div style={{ height: '100%', width: `${p.avancement}%`, background: phaseConfig(p.phase).bar, borderRadius: '2px' }} />
-                  </div>
+                  <div style={{ marginTop: 6 }}><ProgressBar value={p.avancement} phase={p.phase} /></div>
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: phaseConfig(p.phase).bg, color: phaseConfig(p.phase).text, fontWeight: 500 }}>{phaseConfig(p.phase).label}</span>
-                  <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '2px' }}>{p.avancement}%</div>
+                <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                  <PhaseBadge phase={p.phase} />
+                  <div style={{ fontSize: 10, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{p.avancement}%</div>
                   {p.joursRestants !== null && (
-                    <div style={{ fontSize: '10px', color: p.joursRestants <= 14 ? '#DC2626' : '#15803D', marginTop: '1px' }}>{p.joursRestants}j</div>
+                    <div style={{ fontSize: 10, fontWeight: 500, color: p.joursRestants <= 14 ? 'var(--danger)' : 'var(--success-text)', fontVariantNumeric: 'tabular-nums' }}>{p.joursRestants} j</div>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </Row>
+          ))}
+        </Card>
 
       </div>
     </div>
