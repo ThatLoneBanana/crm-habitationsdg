@@ -185,11 +185,13 @@ export default function DashboardClient({
               </div>
             ) : agendaSemaine.map((jour: any, ji: number) => (
               <div key={ji}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--divider)', borderTop: ji > 0 ? '1px solid var(--divider)' : 'none', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '6px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--divider)', borderTop: ji > 0 ? '1px solid var(--divider)' : 'none', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
                   <span style={{ textTransform: 'capitalize' }}>{jour.label}</span>
-                  <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>{jour.etapes.length} étape{jour.etapes.length > 1 ? 's' : ''}</span>
                 </div>
-                {jour.etapes.map((e: any, ei: number) => (
+                {jour.etapes.map((e: any, ei: number) => {
+                  const estInterne = !e.assigneA || e.assigneA === 'Interne'
+                  const fournisseurLabel = estInterne ? 'Habitations DG' : e.assigneA
+                  return (
                   <Row key={ei} last={ei === jour.etapes.length - 1} onClick={() => router.push(`/projets/${e.projetSlug}`)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px' }}>
                       <span style={{ width: 3, height: 30, borderRadius: 2, background: phaseConfig(e.phase).bar, flexShrink: 0 }}></span>
@@ -197,10 +199,11 @@ export default function DashboardClient({
                         <div style={{ fontSize: 12.5, fontWeight: 500 }}>{e.nom}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.projet} · {e.client}</div>
                       </div>
-                      <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 7px', borderRadius: 'var(--radius-full)', background: e.assigneA === 'Interne' ? 'var(--n-100)' : 'var(--n-150)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>{e.assigneA}</span>
+                      <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 7px', borderRadius: 'var(--radius-full)', background: estInterne ? 'var(--n-100)' : 'var(--n-150)', color: 'var(--text-secondary)', whiteSpace: 'nowrap', flexShrink: 0 }}>{fournisseurLabel}</span>
                     </div>
                   </Row>
-                ))}
+                  )
+                })}
               </div>
             ))}
           </Card>
