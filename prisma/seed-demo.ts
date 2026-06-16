@@ -290,6 +290,47 @@ function genDepenses(projetId: string, A: number, budget: number, debut: Date, n
   return rows;
 }
 
+// ── Extras (travaux additionnels demandés par le client) ─────────────────────
+const EXTRAS_POOL: { description: string; montant: number; fournisseur: string | null }[] = [
+  { description: 'Céramique format 24x24 (mise à niveau)', montant: 1200, fournisseur: 'Céramique Plus' },
+  { description: 'Escalier en bois franc', montant: 2400, fournisseur: null },
+  { description: 'Comptoir de quartz (mise à niveau)', montant: 3200, fournisseur: 'Cuisines Beauce' },
+  { description: 'Plancher chauffant — salle de bain', montant: 1800, fournisseur: 'Plomberie Côté' },
+  { description: 'Douche en céramique pleine hauteur', montant: 1500, fournisseur: 'Céramique Plus' },
+  { description: 'Îlot de cuisine agrandi', montant: 2100, fournisseur: 'Cuisines Beauce' },
+  { description: 'Foyer au gaz', montant: 4500, fournisseur: 'Ventil. Express' },
+  { description: 'Aspirateur central', montant: 1300, fournisseur: null },
+  { description: 'Thermopompe murale supplémentaire', montant: 2800, fournisseur: 'Ventil. Express' },
+  { description: 'Luminaires DEL — cuisine et salon', montant: 680, fournisseur: 'Élec. Vachon' },
+  { description: 'Garde-corps en verre', montant: 2600, fournisseur: null },
+  { description: "Armoires jusqu'au plafond", montant: 1900, fournisseur: 'Cuisines Beauce' },
+  { description: 'Robinetterie haut de gamme', montant: 900, fournisseur: 'Plomberie Côté' },
+  { description: 'Stores motorisés', montant: 2200, fournisseur: null },
+  { description: 'Terrasse arrière agrandie', montant: 3500, fournisseur: null },
+];
+type ExtraRow = { projetId: string; description: string; montant: number; fournisseur: string | null; statut: 'EN_ATTENTE' | 'SIGNE' | 'REFUSE'; signeLe: Date | null };
+// Extras réalistes : 1-4 par projet commencé (majorité SIGNÉ, quelques en
+// attente, un occasionnel refusé), 0-1 EN_ATTENTE pour un projet non commencé.
+// Les SIGNÉ portent une date de signature passée ; alimentent le revenu costing
+// (revenus = contrat + extras signés) et la métrique « Extras non signés ».
+function genExtras(projetId: string, A: number, premierDebut: Date, now: Date, rng: () => number): ExtraRow[] {
+  const rows: ExtraRow[] = [];
+  const count = A > 0 ? 1 + Math.floor(rng() * 4) : (rng() < 0.5 ? 1 : 0);
+  const start = startOfDay(premierDebut).getTime();
+  const span = Math.max(1, now.getTime() - start);
+  const offset = Math.floor(rng() * EXTRAS_POOL.length);
+  for (let k = 0; k < count; k++) {
+    const it = EXTRAS_POOL[(offset + k) % EXTRAS_POOL.length];
+    let statut: ExtraRow['statut'];
+    if (A <= 0) statut = 'EN_ATTENTE';
+    else { const r = rng(); statut = r < 0.6 ? 'SIGNE' : r < 0.85 ? 'EN_ATTENTE' : 'REFUSE'; }
+    const signeLe = statut === 'SIGNE' ? new Date(start + Math.floor(rng() * span)) : null;
+    const montant = Math.round((it.montant * (0.9 + rng() * 0.25)) / 5) * 5;
+    rows.push({ projetId, description: it.description, montant, fournisseur: it.fournisseur, statut, signeLe });
+  }
+  return rows;
+}
+
 // Étapes de base (depuis un template, jamais hardcodées).
 function baseDepuisTemplate(etapes: { nom: string; ordre: number; joursDefaut: number; assigneA: string | null; visibleClient: boolean; interne: boolean }[]): EtapeEditable[] {
   return etapes.map((te) => ({
@@ -362,6 +403,8 @@ async function main() {
   let totalFeuilles = 0;
   let totalDepenses = 0;
   let totalAttendu = 0;
+  let totalExtras = 0;
+  let extrasSignesN = 0, extrasSignesM = 0, extrasAttenteN = 0, extrasAttenteM = 0;
   const costing: { adresse: string; revenu: number; depenses: number; marge: number }[] = [];
   const usedSlugs = new Set<string>();
   let exempleEntreprise: { adresse: string; avancement: number; jalons: string[] } | null = null;
@@ -431,6 +474,19 @@ async function main() {
       exempleEntreprise = { adresse: `${p.adresse}, ${p.ville}`, avancement, jalons: paiements.map((pp) => `${pp.description} — ${pp.recu ? 'reçu' : 'attendu'}`) };
     }
 
+    // Extras (travaux additionnels) — alimentent le revenu costing (signés) et la
+    // métrique dashboard « Extras non signés ».
+    const extras = genExtras(projet.id, A, premierDebut, now, mulberry32(i + 101));
+    let extrasSignesProjet = 0;
+    if (extras.length > 0) {
+      await prisma.extra.createMany({ data: extras });
+      totalExtras += extras.length;
+      for (const ex of extras) {
+        if (ex.statut === 'SIGNE') { extrasSignesN++; extrasSignesM += ex.montant; extrasSignesProjet += ex.montant; }
+        else if (ex.statut === 'EN_ATTENTE') { extrasAttenteN++; extrasAttenteM += ex.montant; }
+      }
+    }
+
     // Couche financière — proportionnelle à l'avancement A, calibrée sur la marge
     // FINALE du projet. Main-d'œuvre (feuilles) + dépenses (matériaux/sous-traitants/
     // équipement/autre). Rien si avancement nul (projets SIGNE).
@@ -452,8 +508,10 @@ async function main() {
       if (deps.length > 0) { await prisma.depense.createMany({ data: deps }); totalDepenses += deps.length; }
       depTotal = coutMO + deps.reduce((s, d) => s + d.montant, 0);
     }
-    const margeAffichee = p.montant > 0 ? Math.round(((p.montant - depTotal) / p.montant) * 100) : 0;
-    costing.push({ adresse: `${p.adresse}, ${p.ville}`, revenu: p.montant, depenses: Math.round(depTotal), marge: margeAffichee });
+    // Revenu costing = contrat + extras signés (comme /api/projets/costing).
+    const revenu = p.montant + extrasSignesProjet;
+    const margeAffichee = revenu > 0 ? Math.round(((revenu - depTotal) / revenu) * 100) : 0;
+    costing.push({ adresse: `${p.adresse}, ${p.ville}`, revenu, depenses: Math.round(depTotal), marge: margeAffichee });
 
     resume.push({ type: p.type, phase: p.phase, avancement, ville: p.ville, adresse: p.adresse, livraison, slug, coords: `${lat}, ${lng}`, etapes: cedule.length });
   }
@@ -497,6 +555,8 @@ async function main() {
     console.log(`Exemple Entreprise à ~${exempleEntreprise.avancement}% (${exempleEntreprise.adresse}) :`);
     for (const j of exempleEntreprise.jalons) console.log(`  ${j}`);
   }
+
+  console.log(`\nExtras : ${totalExtras} créés — ${extrasSignesN} signés (${Math.round(extrasSignesM).toLocaleString('fr-CA')} $, ajoutés au revenu costing), ${extrasAttenteN} en attente (${Math.round(extrasAttenteM).toLocaleString('fr-CA')} $ → « Extras non signés »).`);
 }
 
 main()
