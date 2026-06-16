@@ -245,6 +245,10 @@ export default function ParametresPage() {
         {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
           <button onClick={() => setActiveTab('acces')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'acces' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'acces' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'acces' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Accès</button>
         )}
+        {/* Onglet de navigation vers l'éditeur de cédules types (page dédiée, ADMIN/DEV) */}
+        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
+          <a href="/parametres/templates" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: 'none', color: 'var(--color-text-secondary)', textDecoration: 'none', display: 'inline-block' }}>Cédules types</a>
+        )}
       </div>
 
       {error && <div style={{ background: '#FCEBEB', color: '#A32D2D', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '12px' }}>{error}</div>}
