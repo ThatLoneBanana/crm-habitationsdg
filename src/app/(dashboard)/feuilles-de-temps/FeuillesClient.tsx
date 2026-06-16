@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Clock, Trash2 } from 'lucide-react'
+import { formatMontant } from '@/lib/utils'
 
-interface Employe { id: string; prenom: string; nom: string; email?: string; telephone?: string; tauxHoraire: number; actif: boolean }
+interface Employe { id: string; prenom: string; nom: string; email?: string; telephone?: string; metier?: string; tauxHoraire: number; actif: boolean }
 interface FeuilleTemps { id: string; employeId: string; projetId: string; date: string; heures: number; tauxHoraire: number; employe: { prenom: string; nom: string }; projet: { numero: string; adresse: string; ville?: string } }
 interface Depense { id: string; projetId: string; categorie: string; description: string; montant: number; dateDepense: string; facture?: string; projet: { numero: string; adresse: string; ville?: string } }
 interface LigneGrille { id: string; employeId: string; projetId: string; heures: { lun: number | null; mar: number | null; mer: number | null; jeu: number | null; ven: number | null }; tauxHoraire: number }
@@ -19,6 +19,58 @@ const categoriesLabels: { [key: string]: string } = {
   'SOUS_TRAITANT': 'Sous-traitant',
   'EQUIPEMENT': 'Équipement',
   'AUTRE': 'Autre',
+}
+
+const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven']
+
+// Couleur du total d'heures (vert ≈ complet, orange sous le max, rouge dépassement, gris zéro)
+function heuresColor(total: number, max: number) {
+  if (total > max) return 'var(--danger)'
+  if (total >= max - 2) return 'var(--success)'
+  if (total === 0) return 'var(--text-disabled)'
+  return 'var(--warning)'
+}
+
+function Avatar({ name }: { name: string }) {
+  const initials = name.trim().split(/\s+/).slice(0, 2).map(s => s.charAt(0).toUpperCase()).join('') || '–'
+  return (
+    <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--n-200)', color: 'var(--text-secondary)', fontSize: 10, fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>{initials}</span>
+  )
+}
+
+function SegmentedControl({ value, onChange, options }: { value: string; onChange: (v: any) => void; options: { value: string; label: string; icon: string }[] }) {
+  return (
+    <div style={{ display: 'inline-flex', padding: 3, gap: 2, background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+      {options.map(o => {
+        const active = o.value === value
+        return (
+          <button key={o.value} onClick={() => onChange(o.value)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--font-sans)', background: active ? 'var(--surface)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-secondary)', boxShadow: active ? 'var(--shadow-sm)' : 'none' }}>
+            <i className={`ti ti-${o.icon}`} aria-hidden="true" style={{ fontSize: 15 }} />{o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+const cardSt: React.CSSProperties = { border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }
+const thSt: React.CSSProperties = { padding: '9px 14px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }
+const selSt: React.CSSProperties = { width: '100%', padding: '5px 7px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }
+const navBtn: React.CSSProperties = { width: 26, height: 26, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }
+
+function Lg({ c, t }: { c: string; t: string }) {
+  return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: c }} />{t}</span>
+}
+
+function CardHeader({ icon, title, action }: { icon: string; title: string; action?: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)' }}>
+        <i className={`ti ti-${icon}`} aria-hidden="true" style={{ fontSize: 15, color: 'var(--text-secondary)' }} />{title}
+      </span>
+      {action}
+    </div>
+  )
 }
 
 export default function FeuillesDeTempsPage() {
@@ -355,52 +407,40 @@ export default function FeuillesDeTempsPage() {
   if (loading) return <div style={{ padding: '24px' }}>Chargement...</div>
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-        <Clock size={24} color="#ea1c24" />
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Feuilles de temps</h1>
-      </div>
-
-      <div style={{ display: 'flex', gap: '0', marginBottom: '24px', borderBottom: '2px solid #E5E7EB' }}>
-        {onglets.map(tab => (
-          <button key={tab.id} onClick={() => setOngletActif(tab.id)} style={{ padding: '12px 20px', border: 'none', background: ongletActif === tab.id ? '#ea1c24' : 'transparent', color: ongletActif === tab.id ? 'white' : '#6B7280', borderBottom: ongletActif === tab.id ? '3px solid #ea1c24' : 'none', cursor: 'pointer', fontSize: '14px', fontWeight: ongletActif === tab.id ? 600 : 400 }}>
-            {tab.label}
-          </button>
-        ))}
+    <div style={{ padding: '22px 24px 40px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18, gap: 14, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Feuilles de temps</h1>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>Semaine du {lundiFormaté} au {vendrediFormaté} {annee} · {Object.values(heuresParEmploye).reduce((a, b) => a + (b as number), 0).toLocaleString('fr-CA').replace('.', ',')} h saisies</p>
+        </div>
+        <SegmentedControl value={ongletActif} onChange={setOngletActif}
+          options={[{ value: 'consultation', label: 'Consultation', icon: 'table' }, { value: 'saisie', label: 'Saisie', icon: 'edit' }, { value: 'employes', label: 'Employés', icon: 'users' }]} />
       </div>
 
       {ongletActif === 'consultation' && (
-        <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
-              <div style={{ fontSize: '12px', color: '#6B7280' }}>Total heures</div>
-              <div style={{ fontSize: '24px', fontWeight: '600' }}>{totalHeures.toFixed(1)}h</div>
-            </div>
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px', background: '#FAFAFA' }}>
-              <div style={{ fontSize: '12px', color: '#6B7280' }}>Total montant</div>
-              <div style={{ fontSize: '24px', fontWeight: '600' }}>${totalMontant.toFixed(2)}</div>
-            </div>
-          </div>
-
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ background: '#F9FAFB' }}>
-                <tr>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Date</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Employé</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Projet</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Heures</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
+        <div style={cardSt}>
+          <CardHeader icon="table" title="Heures saisies"
+            action={<span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{totalHeures.toLocaleString('fr-CA', { maximumFractionDigits: 1 }).replace('.', ',')} h · {formatMontant(totalMontant)}</span>} />
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+                  {([['Date', 'left'], ['Employé', 'left'], ['Projet', 'left'], ['Heures', 'right'], ['Taux', 'right'], ['Coût main-d’œuvre', 'right']] as [string, 'left' | 'right'][]).map((h, i) => (
+                    <th key={i} style={{ ...thSt, textAlign: h[1] }}>{h[0]}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {feuilles_filtrees.slice(0, 20).map((f, i) => (
-                  <tr key={f.id} style={{ borderBottom: i < 19 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(f.date).toLocaleDateString()}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.employe.prenom} {f.employe.nom}</td>
-                    <td style={{ padding: '12px', fontSize: '13px' }}>{f.projet.adresse}{f.projet.ville ? `, ${f.projet.ville}` : ''}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right' }}>{f.heures.toFixed(1)}</td>
-                    <td style={{ padding: '12px', fontSize: '13px', textAlign: 'right', fontWeight: 500 }}>${(f.heures * f.tauxHoraire).toFixed(2)}</td>
+                {feuilles_filtrees.length === 0 ? (
+                  <tr><td colSpan={6} style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Aucune heure saisie</td></tr>
+                ) : feuilles_filtrees.slice(0, 30).map((f) => (
+                  <tr key={f.id} style={{ borderBottom: '1px solid var(--divider)' }}>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{new Date(f.date).toLocaleDateString('fr-CA')}</td>
+                    <td style={{ padding: '10px 14px' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Avatar name={`${f.employe.prenom} ${f.employe.nom}`} /><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{f.employe.prenom} {f.employe.nom}</span></span></td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{f.projet.adresse}{f.projet.ville ? `, ${f.projet.ville}` : ''}</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{f.heures.toLocaleString('fr-CA', { maximumFractionDigits: 1 }).replace('.', ',')} h</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatMontant(f.tauxHoraire)}</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{formatMontant(f.heures * f.tauxHoraire)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -411,87 +451,81 @@ export default function FeuillesDeTempsPage() {
 
       {ongletActif === 'saisie' && (
         <div style={{ paddingBottom: '100px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <button onClick={semainePrecedente} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer' }}>←</button>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', flex: 1 }}>Semaine du {lundiFormaté} au {vendrediFormaté} {annee}</h2>
-            <button onClick={semaineSuivante} style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer' }}>→</button>
-            <button onClick={semaineCourante} style={{ padding: '8px 12px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Aujourd'hui</button>
-          </div>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-            {Object.entries(heuresParEmploye).map(([employeId, heures]) => {
-              const max = parametres?.maxHeuresParSemaine || 36.5
-              const depasse = heures > max
-              const proche = heures > max * 0.9
-              const emp = employes.find(e => e.id === employeId)
-
-              return (
-                <span key={employeId} style={{
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  background: depasse ? '#FEF2F2' : proche ? '#FAEEDA' : '#F0FDF7',
-                  color: depasse ? '#EF4444' : proche ? '#854F0B' : '#DC2626',
-                  border: `1px solid ${depasse ? '#FCA5A5' : proche ? '#FCD34D' : '#86EFAC'}`,
-                }}>
-                  {emp?.prenom} {emp?.nom} — {heures.toFixed(1)}h / {max}h {depasse && '⚠️'}
-                </span>
-              )
-            })}
-          </div>
-
-          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: '600' }}>Saisie hebdomadaire</h3>
-            <button onClick={ajouterLigne} style={{ padding: '8px 14px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Ajouter une ligne</button>
-          </div>
-
-          {lignes.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>Aucune saisie pour cette semaine</div>
-              <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Clique sur "+ Ajouter une ligne" pour commencer</div>
+          <div style={cardSt}>
+            {/* Barre de navigation de semaine + enregistrer */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={semainePrecedente} title="Semaine précédente" style={navBtn}><i className="ti ti-chevron-left" /></button>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Semaine du {lundiFormaté} au {vendrediFormaté} {annee}</span>
+                <button onClick={semaineSuivante} title="Semaine suivante" style={navBtn}><i className="ti ti-chevron-right" /></button>
+                <button onClick={semaineCourante} style={{ height: 26, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-sans)' }}>Aujourd'hui</button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {unsavedChanges && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--warning-text)' }}>Modifications non enregistrées</span>}
+                <button onClick={handleSauvegarderSemaine} disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', color: '#fff', background: 'var(--dg-red)', border: 'none', borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  <i className="ti ti-device-floppy" aria-hidden="true" />{saving ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
             </div>
-          ) : (
-            <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
-                <thead style={{ background: '#F9FAFB' }}>
-                  <tr>
-                    <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Employé</th>
-                    <th style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Projet</th>
-                    {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven'].map(j => (
-                      <th key={j} style={{ padding: '8px', textAlign: 'center', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>{j}</th>
-                    ))}
-                    <th style={{ padding: '8px', textAlign: 'right', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Total</th>
-                    <th style={{ padding: '8px', textAlign: 'center', fontSize: '11px', fontWeight: 500, color: '#6B7280', borderBottom: '1px solid #E5E7EB' }}>Actions</th>
+
+            {/* Grille hebdomadaire */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 880, fontSize: 12.5 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ ...thSt, textAlign: 'left' }}>Employé</th>
+                    <th style={{ ...thSt, textAlign: 'left' }}>Projet</th>
+                    {JOURS.map((j, i) => {
+                      const jour = new Date(semaineLundi); jour.setDate(semaineLundi.getDate() + i)
+                      return (
+                        <th key={i} style={{ ...thSt, textAlign: 'center', minWidth: 64 }}>
+                          {j}<div style={{ fontSize: 9, fontWeight: 400, color: 'var(--text-disabled)' }}>{jour.getDate()}</div>
+                        </th>
+                      )
+                    })}
+                    <th style={{ ...thSt, textAlign: 'center' }}>Total</th>
+                    <th style={{ ...thSt, textAlign: 'center', width: 40 }} />
                   </tr>
                 </thead>
                 <tbody>
-                  {lignes.map((ligne, i) => {
-                    const total = totalLigne(ligne)
-                    const emp = employes.find(e => e.id === ligne.employeId)
-                    const proj = projets.find(p => p.id === ligne.projetId)
+                  {lignes.length === 0 ? (
+                    <tr><td colSpan={9} style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Aucune saisie — ajoutez une ligne pour commencer.</td></tr>
+                  ) : lignes.map((ligne, i) => {
+                    const max = parametres?.maxHeuresParSemaine || 36.5
+                    const totalH = Object.values(ligne.heures).reduce((s: number, h: number | null) => s + (h || 0), 0)
+                    const depasse = totalH > max
                     return (
-                      <tr key={ligne.id} style={{ borderBottom: i < lignes.length - 1 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#FAFAFA' }}>
-                        <td style={{ padding: '4px' }}>
-                          <select value={ligne.employeId} onChange={e => onEmployeChange(ligne.id, e.target.value)} style={{ width: '100%', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px' }}>
-                            <option value=''>Choisir...</option>
+                      <tr key={ligne.id} style={{ borderBottom: i === lignes.length - 1 ? 'none' : '1px solid var(--divider)' }}>
+                        <td style={{ padding: '6px 14px', minWidth: 160 }}>
+                          <select value={ligne.employeId} onChange={e => onEmployeChange(ligne.id, e.target.value)} style={selSt}>
+                            <option value=''>Choisir…</option>
                             {employes.filter(e => e.actif || e.id === ligne.employeId).map(e => <option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding: '4px' }}>
-                          <select value={ligne.projetId} onChange={e => setLignes(lignes.map(l => l.id === ligne.id ? { ...l, projetId: e.target.value } : l))} style={{ width: '100%', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px' }}>
-                            <option value=''>Choisir...</option>
+                        <td style={{ padding: '6px 14px', minWidth: 180 }}>
+                          <select value={ligne.projetId} onChange={e => setLignes(lignes.map(l => l.id === ligne.id ? { ...l, projetId: e.target.value } : l))} style={selSt}>
+                            <option value=''>Choisir…</option>
                             {projets.map(p => <option key={p.id} value={p.id}>{p.adresse}{p.ville ? `, ${p.ville}` : ''}</option>)}
                           </select>
                         </td>
-                        {['lun', 'mar', 'mer', 'jeu', 'ven'].map(jour => (
-                          <td key={jour} style={{ padding: '4px' }}>
-                            <input type="number" step="0.5" value={ligne.heures[jour as keyof typeof ligne.heures] || ''} onChange={e => handleChangerHeures(ligne.id, jour, e.target.value)} style={{ width: '100%', padding: '4px', border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', textAlign: 'center' }} />
-                          </td>
-                        ))}
-                        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 500, fontSize: '12px' }}>${total.toFixed(0)}</td>
-                        <td style={{ padding: '4px', textAlign: 'center' }}>
-                          <button onClick={() => setLignes(lignes.filter(l => l.id !== ligne.id))} style={{ padding: '2px 6px', border: '1px solid #E5E7EB', background: 'white', borderRadius: '3px', cursor: 'pointer', color: '#DC2626', fontSize: '11px' }}>✕</button>
+                        {(['lun', 'mar', 'mer', 'jeu', 'ven'] as const).map(jour => {
+                          const v = ligne.heures[jour]
+                          return (
+                            <td key={jour} style={{ padding: '5px 6px', textAlign: 'center' }}>
+                              <input type="number" step="0.5" value={v ?? ''} placeholder="—" onChange={e => handleChangerHeures(ligne.id, jour, e.target.value)}
+                                style={{ width: 46, height: 28, textAlign: 'center', fontSize: 12.5, fontVariantNumeric: 'tabular-nums', border: '1px solid var(--border)', borderRadius: 6, background: v ? 'var(--surface)' : 'var(--surface-subtle)', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }} />
+                            </td>
+                          )
+                        })}
+                        <td style={{ padding: '6px 12px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: heuresColor(totalH, max) }}>
+                            {depasse ? <i className="ti ti-alert-triangle" style={{ fontSize: 13 }} /> : null}
+                            {totalH.toLocaleString('fr-CA', { maximumFractionDigits: 1 }).replace('.', ',')} h
+                          </span>
+                          <div style={{ fontSize: 9.5, color: 'var(--text-disabled)', fontVariantNumeric: 'tabular-nums' }}>/ {max.toString().replace('.', ',')} max</div>
+                        </td>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                          <button onClick={() => setLignes(lignes.filter(l => l.id !== ligne.id))} title="Retirer la ligne" style={{ width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-x" /></button>
                         </td>
                       </tr>
                     )
@@ -499,7 +533,19 @@ export default function FeuillesDeTempsPage() {
                 </tbody>
               </table>
             </div>
-          )}
+
+            {/* Ajouter une ligne + légende des couleurs */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '9px 14px', borderTop: '1px solid var(--border)', background: 'var(--surface-subtle)', flexWrap: 'wrap' }}>
+              <button onClick={ajouterLigne} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, padding: '0 11px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
+                <i className="ti ti-plus" aria-hidden="true" />Ajouter une ligne
+              </button>
+              <div style={{ display: 'flex', gap: 16, fontSize: 11, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+                <Lg c="var(--success)" t="Semaine complète" />
+                <Lg c="var(--warning)" t="Sous le maximum" />
+                <Lg c="var(--danger)" t="Dépassement" />
+              </div>
+            </div>
+          </div>
 
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '2px solid #E5E7EB' }}>
             <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>💰 Dépenses fournisseurs</h3>
@@ -580,88 +626,80 @@ export default function FeuillesDeTempsPage() {
             </div>
           </div>
 
-          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: '1px solid #E5E7EB', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100 }}>
-            <div style={{ fontSize: '12px' }}>
-              {unsavedChanges ? (
-                <span style={{ color: '#EF9F27', fontWeight: 500 }}>⚠ Modifications non sauvegardées</span>
-              ) : (
-                <span style={{ color: '#DC2626' }}>✓ Tout est sauvegardé</span>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setUnsavedChanges(false)} style={{ padding: '8px 16px', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>Annuler</button>
-              <button onClick={handleSauvegarderSemaine} disabled={saving} style={{ padding: '8px 16px', background: '#ea1c24', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}>
-                {saving ? 'Sauvegarde...' : 'Sauvegarder la semaine'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
       {ongletActif === 'employes' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600' }}>Employés ({employes.length})</h2>
-            <button onClick={() => setShowAjouterEmploye(true)} style={{ padding: '8px 14px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Ajouter un employé</button>
-          </div>
-
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 100px 120px 120px 80px', alignItems: 'center', padding: '12px 14px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontSize: '11px', fontWeight: 600, color: '#6B7280' }}>
-              <div>Employé</div>
-              <div style={{ textAlign: 'center' }}>Heures</div>
-              <div>Taux/h</div>
-              <div>Statut</div>
-              <div>Actions</div>
+          <div style={cardSt}>
+            <CardHeader icon="users" title={`Employés (${employes.length})`}
+              action={<button onClick={() => setShowAjouterEmploye(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 11px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)' }}><i className="ti ti-plus" aria-hidden="true" />Ajouter</button>} />
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+                    {([['Employé', 'left'], ['Rôle', 'left'], ['Heures (mois)', 'right'], ['Taux horaire', 'right'], ['Max hebdo', 'right'], ['Statut', 'left'], ['', 'right']] as [string, 'left' | 'right'][]).map((h, i) => (
+                      <th key={i} style={{ ...thSt, textAlign: h[1] }}>{h[0]}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {employes.map((emp, i) => {
+                    const max = parametres?.maxHeuresParSemaine || 36.5
+                    return (
+                      <tr key={emp.id} style={{ borderBottom: i === employes.length - 1 ? 'none' : '1px solid var(--divider)', opacity: emp.actif ? 1 : 0.55 }}>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            <Avatar name={`${emp.prenom} ${emp.nom}`} />
+                            <span><span style={{ fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>{emp.prenom} {emp.nom}</span><span style={{ fontSize: 10.5, color: 'var(--text-tertiary)' }}>{emp.email || '—'}</span></span>
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{emp.metier || '—'}</td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{heuresmoisMap[emp.id] || 0} h</td>
+                        <td style={{ padding: '8px 14px', textAlign: 'right' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
+                            <input type="number" step="0.01" value={tauxEdits[emp.id] !== undefined ? tauxEdits[emp.id] : emp.tauxHoraire} onChange={e => setTauxEdits(prev => ({ ...prev, [emp.id]: parseFloat(e.target.value) }))} style={{ width: 66, padding: '5px 6px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)', textAlign: 'right' }} />
+                            <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>$/h</span>
+                            {tauxEdits[emp.id] !== undefined && (
+                              <button onClick={() => handleSauvegarderTauxEmploye(emp.id)} title="Enregistrer le taux" style={{ width: 26, height: 26, border: 'none', borderRadius: 6, background: 'var(--dg-red)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}><i className="ti ti-check" /></button>
+                            )}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{max.toString().replace('.', ',')} h</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-2xs)', fontWeight: 600, padding: '3px 8px', borderRadius: 'var(--radius-full)', background: emp.actif ? 'var(--success-tint)' : 'var(--n-100)', color: emp.actif ? 'var(--success-text)' : 'var(--text-secondary)' }}>
+                            {emp.actif ? <><span style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor' }} />Actif</> : 'Inactif'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                          <button onClick={() => handleToggleEmploye(emp.id, emp.actif)} style={{ height: 26, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>{emp.actif ? 'Désactiver' : 'Activer'}</button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-
-            {employes.map((emp, i) => (
-              <div key={emp.id} style={{ display: 'grid', gridTemplateColumns: '2fr 100px 120px 120px 80px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #F3F4F6', background: i % 2 === 0 ? 'white' : '#F9FAFB', opacity: emp.actif ? 1 : 0.6 }}>
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: '13px' }}>{emp.prenom} {emp.nom}</div>
-                  <div style={{ fontSize: '11px', color: '#6B7280' }}>{emp.email || '—'}</div>
-                </div>
-                <div style={{ fontSize: '12px', textAlign: 'center', color: '#6B7280' }}>{heuresmoisMap[emp.id] || 0}h</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <input type="number" step="0.01" value={tauxEdits[emp.id] !== undefined ? tauxEdits[emp.id] : emp.tauxHoraire} onChange={e => setTauxEdits(prev => ({ ...prev, [emp.id]: parseFloat(e.target.value) }))} style={{ width: '60px', padding: '4px 6px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '11px' }} />
-                  <span style={{ fontSize: '10px', color: '#6B7280' }}>$/h</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '3px', background: emp.actif ? '#EAF3DE' : '#FCEBEB', color: emp.actif ? '#3B6D11' : '#A32D2D', fontWeight: 500 }}>
-                    {emp.actif ? 'Actif' : 'Inactif'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                  {tauxEdits[emp.id] !== undefined && (
-                    <button onClick={() => handleSauvegarderTauxEmploye(emp.id)} style={{ padding: '4px 8px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '3px', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}>
-                      Sauvegarder
-                    </button>
-                  )}
-                  <button onClick={() => handleToggleEmploye(emp.id, emp.actif)} style={{ padding: '4px 8px', background: emp.actif ? '#FCEBEB' : '#EAF3DE', color: emp.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '3px', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}>
-                    {emp.actif ? 'Désactiver' : 'Activer'}
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
 
           {showAjouterEmploye && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-              <div style={{ background: 'white', borderRadius: '8px', padding: '24px', width: '90%', maxWidth: '400px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Ajouter un employé</h3>
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <input type="text" placeholder="Prénom" value={nouvelEmploye.prenom} onChange={e => setNouvelEmploye({...nouvelEmploye, prenom: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
-                    <input type="text" placeholder="Nom" value={nouvelEmploye.nom} onChange={e => setNouvelEmploye({...nouvelEmploye, nom: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(31,29,27,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }} onClick={() => setShowAjouterEmploye(false)}>
+              <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 22, width: '100%', maxWidth: 400 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>Ajouter un employé</h3>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <input type="text" placeholder="Prénom" value={nouvelEmploye.prenom} onChange={e => setNouvelEmploye({...nouvelEmploye, prenom: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                    <input type="text" placeholder="Nom" value={nouvelEmploye.nom} onChange={e => setNouvelEmploye({...nouvelEmploye, nom: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
                   </div>
-                  <input type="email" placeholder="Email" value={nouvelEmploye.email} onChange={e => setNouvelEmploye({...nouvelEmploye, email: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
-                  <input type="tel" placeholder="Téléphone" value={nouvelEmploye.telephone} onChange={e => setNouvelEmploye({...nouvelEmploye, telephone: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
-                  <input type="number" step="0.01" placeholder="Taux horaire" value={nouvelEmploye.tauxHoraire} onChange={e => setNouvelEmploye({...nouvelEmploye, tauxHoraire: parseFloat(e.target.value)})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '12px' }} />
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                    <button onClick={handleAjouterEmploye} disabled={saving || !nouvelEmploye.prenom || !nouvelEmploye.nom} style={{ flex: 1, padding: '10px', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving || !nouvelEmploye.prenom || !nouvelEmploye.nom ? 0.6 : 1 }}>
-                      {saving ? 'Ajout...' : 'Ajouter'}
-                    </button>
-                    <button onClick={() => setShowAjouterEmploye(false)} style={{ flex: 1, padding: '10px', background: '#E5E7EB', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+                  <input type="email" placeholder="Courriel (optionnel)" value={nouvelEmploye.email} onChange={e => setNouvelEmploye({...nouvelEmploye, email: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                  <input type="tel" placeholder="Téléphone" value={nouvelEmploye.telephone} onChange={e => setNouvelEmploye({...nouvelEmploye, telephone: e.target.value})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                  <input type="number" step="0.01" placeholder="Taux horaire ($/h)" value={nouvelEmploye.tauxHoraire} onChange={e => setNouvelEmploye({...nouvelEmploye, tauxHoraire: parseFloat(e.target.value)})} style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }} />
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 6 }}>
+                    <button onClick={() => setShowAjouterEmploye(false)} style={{ padding: '9px 14px', background: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
                       Annuler
+                    </button>
+                    <button onClick={handleAjouterEmploye} disabled={saving || !nouvelEmploye.prenom || !nouvelEmploye.nom} style={{ padding: '9px 16px', background: 'var(--dg-red)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving || !nouvelEmploye.prenom || !nouvelEmploye.nom ? 0.6 : 1 }}>
+                      {saving ? 'Ajout…' : 'Ajouter'}
                     </button>
                   </div>
                 </div>
