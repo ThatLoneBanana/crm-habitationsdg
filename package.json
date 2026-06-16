@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "seed:jumele": "node prisma/seed-template-jumele.mjs"
+    "seed:jumele": "node prisma/seed-template-jumele.mjs",
+    "seed:demo": "npx --yes tsx prisma/seed-demo.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
