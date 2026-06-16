@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireApiCapability } from '@/lib/auth-guard'
+import { calculateTaskStatus } from '@/lib/task-status'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,7 @@ export async function GET(request: NextRequest) {
       include: {
         depenses: true,
         feuillesTemps: true,
+        taches: { select: { dateDebut: true, dateFin: true } },
       },
     })
 
@@ -40,11 +42,21 @@ export async function GET(request: NextRequest) {
       const depensesTotal =
         depensesMateriaux + depensesSousTraitant + depensesEquipement + depensesAutre + depensesMainOeuvre
 
+      // Avancement date-based unifié (étape terminée ⇔ dateFin passée), identique
+      // à la liste des projets et à la fiche projet (calculateTaskStatus).
+      const avancement = p.taches.length > 0
+        ? Math.round(
+            p.taches.filter(t => calculateTaskStatus(t.dateDebut, t.dateFin).status === 'completed').length
+              / p.taches.length * 100
+          )
+        : 0
+
       return {
         id: p.id,
         numero: p.numero,
         adresse: p.adresse,
         ville: p.ville,
+        avancement,
         montantTotal: p.montantTotal ? parseFloat(p.montantTotal.toString()) : 0,
         depensesMateriaux,
         depensesSousTraitant,

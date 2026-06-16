@@ -9,6 +9,7 @@ interface ProjetCosting {
   numero: string
   adresse: string
   ville: string
+  avancement: number
   montantTotal: number
   depensesMateriaux: number
   depensesSousTraitant: number
@@ -78,14 +79,14 @@ export default function CostingPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
           <thead>
             <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
-              {[['Projet', 'left'], ['Revenus', 'right'], ['Dépenses', 'right'], ['Profit', 'right'], ['Marge', 'right'], ['Santé', 'left']].map((h, i) => (
+              {[['Projet', 'left'], ['Avancement', 'left'], ['Revenus', 'right'], ['Dépenses', 'right'], ['Profit', 'right'], ['Marge', 'right'], ['Santé', 'left']].map((h, i) => (
                 <th key={i} style={{ ...TH, textAlign: h[1] as 'left' | 'right' }}>{h[0]}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {projets.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Aucun projet</td></tr>
+              <tr><td colSpan={7} style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Aucun projet</td></tr>
             ) : (
               projets.map((p, i) => {
                 const revenus = p.montantTotal || 0
@@ -100,6 +101,14 @@ export default function CostingPage() {
                     <td style={{ padding: '11px 14px' }}>
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.adresse}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{p.ville}</div>
+                    </td>
+                    <td style={{ padding: '11px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 48, maxWidth: 84, height: 3, background: 'var(--n-100)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, p.avancement))}%`, background: 'var(--text-secondary)', borderRadius: 'var(--radius-full)' }} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', width: 30, textAlign: 'right' }}>{p.avancement}%</span>
+                      </div>
                     </td>
                     <td style={{ padding: '11px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{formatMontant(revenus, 0)}</td>
                     <td style={{ padding: '11px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{formatMontant(p.depensesTotal, 0)}</td>
