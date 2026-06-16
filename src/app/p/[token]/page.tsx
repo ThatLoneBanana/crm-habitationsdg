@@ -94,9 +94,9 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
       <div style={{ background: 'var(--n-900)', color: '#fff', padding: '16px 18px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {/* Logo-mot blanchi (brightness(0) invert(1)) pour ressortir sur le bandeau --n-900.
-              Local à ce bandeau foncé : la sidebar (fond clair) et le PDF utilisent d'autres assets. */}
-          <img src="/habitationsdg.svg" alt="Habitations DG" style={{ height: 30, filter: 'brightness(0) invert(1)' }} />
+          {/* Logo blanc dédié (habitationsdg-blanc.svg) sur le bandeau foncé --n-900.
+              Hauteur seule → aspect préservé, aucun étirement. Local à cet écran. */}
+          <img src="/habitationsdg-blanc.svg" alt="Habitations DG" style={{ height: 30 }} />
           <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-2xs)', fontWeight: 600, padding: '3px 9px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}>Espace client</span>
         </div>
         <div style={{ marginTop: 16 }}>
