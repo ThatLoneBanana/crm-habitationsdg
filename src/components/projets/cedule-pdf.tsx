@@ -104,14 +104,26 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
 
   // Calculer position d'une étape
   const getTaskPosition = (dateDebut: Date) => {
-    let dayIndex = 0;
+    // Colonne (jour ouvrable) correspondant exactement à la date de début.
     for (let i = 0; i < dateColumns.length; i++) {
       if (dateColumns[i].toDateString() === dateDebut.toDateString()) {
-        dayIndex = i;
-        break;
+        return i * pixelPerDay;
       }
     }
-    return dayIndex * pixelPerDay;
+    // Si dateDebut tombe un weekend, il n'existe aucune colonne (les colonnes
+    // sont des jours ouvrables) : caler la barre sur la 1re colonne suivante,
+    // au lieu de la coller au début de l'échéancier (dayIndex 0). Cohérent avec
+    // getTaskWidth qui ne compte que les jours ouvrables.
+    const cible = new Date(dateDebut);
+    cible.setHours(0, 0, 0, 0);
+    for (let i = 0; i < dateColumns.length; i++) {
+      const col = new Date(dateColumns[i]);
+      col.setHours(0, 0, 0, 0);
+      if (col.getTime() >= cible.getTime()) {
+        return i * pixelPerDay;
+      }
+    }
+    return 0;
   };
 
   const getTaskWidth = (dateDebut: Date, dateFin: Date) => {
@@ -170,9 +182,12 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
       lineHeight: 1.4,
     },
     logo: {
-      width: 130,
-      height: 35,
+      // Aspect du logo préservé (≈ 800x587) — objectFit 'contain' empêche tout
+      // étirement même si le PNG diffère légèrement du ratio de la boîte.
+      width: 60,
+      height: 44,
       marginBottom: 6,
+      objectFit: 'contain',
     },
     title: {
       fontSize: 13,
