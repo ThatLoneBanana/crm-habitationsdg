@@ -14,6 +14,7 @@ import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
 import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
 import { GCRTab } from '@/components/projets/gcr-tab';
+import { CostingTab } from '@/components/projets/costing-tab';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
 import { useRouter } from 'next/navigation';
@@ -448,40 +449,11 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
 
           <TabsContent value="costing" className="m-0">
             {costingLoading ? (
-              <div className="p-8 text-center text-gray-500">Chargement du costing...</div>
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Chargement du costing…</div>
             ) : costing ? (
-              <div className="space-y-6 p-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-white p-4 rounded-lg border">
-                    <p className="text-xs text-gray-500">Revenus</p>
-                    <p className="text-2xl font-bold text-green-600">${costing.revenues.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                    <p className="text-xs text-gray-500 mt-2">Contrat: ${costing.montantContrat.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                    <p className="text-xs text-gray-500">+ Extras: ${costing.extrasSignes.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-lg border">
-                    <p className="text-xs text-gray-500">Dépenses</p>
-                    <p className="text-2xl font-bold text-red-600">-${costing.totalDepenses.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                  </div>
-                  <div className={`p-4 rounded-lg border ${costing.marge >= 20 ? 'bg-green-50' : costing.marge >= 10 ? 'bg-orange-50' : 'bg-red-50'}`}>
-                    <p className="text-xs text-gray-500">Profit Net</p>
-                    <p className={`text-2xl font-bold ${costing.profitNet >= 0 ? 'text-green-600' : 'text-red-600'}`}>${costing.profitNet.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</p>
-                    <p className={`text-sm font-bold mt-2 ${costing.marge >= 20 ? 'text-green-700' : costing.marge >= 10 ? 'text-orange-700' : 'text-red-700'}`}>Marge: {costing.marge.toFixed(1)}%</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg border">
-                  <h3 className="font-semibold mb-4">Détails des dépenses</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Matériaux</span><span>-${costing.depensesMateriaux.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</span></div>
-                    <div className="flex justify-between"><span>Sous-traitants</span><span>-${costing.depensesSousTraitants.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</span></div>
-                    <div className="flex justify-between"><span>Équipement</span><span>-${costing.depensesEquipement.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</span></div>
-                    <div className="flex justify-between"><span>Autres</span><span>-${costing.depensesAutre.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</span></div>
-                    <div className="border-t pt-2 mt-2 font-semibold flex justify-between"><span>Main d'œuvre</span><span>-${costing.depensesMainOeuvre.toLocaleString('fr-CA', { maximumFractionDigits: 0 })}</span></div>
-                  </div>
-                </div>
-              </div>
+              <CostingTab calculs={costing} />
             ) : (
-              <div className="p-8 text-center text-gray-500">Données costing non disponibles</div>
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Données costing non disponibles</div>
             )}
           </TabsContent>
 
