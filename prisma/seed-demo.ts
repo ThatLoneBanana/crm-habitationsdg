@@ -1,17 +1,18 @@
 /**
  * Seed DÉMO idempotent et re-runnable.
- * Lancer : npx tsx prisma/seed-demo.ts
+ * Lancer : npx tsx prisma/seed-demo.ts   (ou : npm run seed:demo)
  *
  * Remplace les données de test (projets + clients + leurs dépendances) par
- * 4 projets jumelés réalistes, géocodés en Chaudière-Appalaches, avec une
- * cédule générée à partir du template JUMELE de la DB (jamais hardcodée).
+ * 20 projets jumelés/maison réalistes, géocodés en Chaudière-Appalaches, avec
+ * une cédule générée à partir du template de leur TYPE (JUMELE → template
+ * JUMELE, MAISON → template MAISON) — jamais hardcodée.
  *
  * Idempotent : à chaque exécution, on WIPE puis on recrée proprement.
  * Ne touche PAS : User, Employe, Fournisseur, Parametres, Template/
  * TemplateEtape, RolePermission.
  *
- * Garde-fou : si le template JUMELE est absent/vide, on s'arrête AVANT tout
- * wipe (npm run seed:jumele doit avoir été lancé).
+ * Garde-fou : si un template (JUMELE ou MAISON) est absent/vide, on s'arrête
+ * AVANT tout wipe (npm run seed:jumele / npm run seed:maison d'abord).
  */
 import * as dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
@@ -21,45 +22,96 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 
-// ── Données démo ───────────────────────────────────────────────────────────
+// ── Clients (20, réalistes québécois — Cédrick Pelchat conservé) ─────────────
 const CLIENTS = [
   { prenom: 'Cédrick', nom: 'Pelchat', email: 'ced.pelchat@outlook.com', telephone: '418-883-6642' },
   { prenom: 'Marie-Pier', nom: 'Lessard', email: 'mp.lessard@videotron.ca', telephone: '418-387-5521' },
   { prenom: 'Jonathan', nom: 'Bilodeau', email: 'jbilodeau.qc@gmail.com', telephone: '418-225-9034' },
   { prenom: 'Karine', nom: 'Veilleux', email: 'karine.veilleux@hotmail.com', telephone: '581-447-1188' },
+  { prenom: 'Simon', nom: 'Gagnon', email: 'simon.gagnon@gmail.com', telephone: '418-774-2210' },
+  { prenom: 'Audrey', nom: 'Roy', email: 'audrey.roy@outlook.com', telephone: '418-228-7745' },
+  { prenom: 'Mathieu', nom: 'Cloutier', email: 'm.cloutier@videotron.ca', telephone: '581-300-6612' },
+  { prenom: 'Stéphanie', nom: 'Fortin', email: 'steph.fortin@gmail.com', telephone: '418-397-4458' },
+  { prenom: 'Guillaume', nom: 'Doyon', email: 'g.doyon@hotmail.com', telephone: '418-642-9931' },
+  { prenom: 'Catherine', nom: 'Nadeau', email: 'cath.nadeau@gmail.com', telephone: '418-386-2204' },
+  { prenom: 'Vincent', nom: 'Lehoux', email: 'v.lehoux@outlook.com', telephone: '581-225-8890' },
+  { prenom: 'Josée', nom: 'Boutin', email: 'josee.boutin@videotron.ca', telephone: '418-774-5567' },
+  { prenom: 'Patrick', nom: 'Giguère', email: 'p.giguere@gmail.com', telephone: '418-228-3312' },
+  { prenom: 'Mélanie', nom: 'Vachon', email: 'melanie.vachon@hotmail.com', telephone: '418-387-9920' },
+  { prenom: 'Francis', nom: 'Poulin', email: 'francis.poulin@gmail.com', telephone: '581-447-2236' },
+  { prenom: 'Geneviève', nom: 'Morin', email: 'g.morin@outlook.com', telephone: '418-642-1175' },
+  { prenom: 'Alexandre', nom: 'Turcotte', email: 'alex.turcotte@gmail.com', telephone: '418-397-6648' },
+  { prenom: 'Nathalie', nom: 'Bélanger', email: 'n.belanger@videotron.ca', telephone: '418-225-4471' },
+  { prenom: 'Maxime', nom: 'Drouin', email: 'max.drouin@gmail.com', telephone: '581-300-9982' },
+  { prenom: 'Isabelle', nom: 'Couture', email: 'isabelle.couture@hotmail.com', telephone: '418-386-7713' },
 ];
 
-type Frac = 0 | 0.25 | 0.5 | 0.75;
+// Coordonnées de base par ville (Chaudière-Appalaches). Un jitter déterministe
+// par projet écarte les marqueurs d'une même ville.
+const CITIES: Record<string, [number, number]> = {
+  'Sainte-Claire': [46.6042, -70.8612],
+  'Sainte-Marie': [46.4419, -71.0203],
+  'Beauceville': [46.2108, -70.7791],
+  'Saint-Henri': [46.6891, -71.0704],
+  'Lévis': [46.7766, -71.1781],
+  'Saint-Joseph-de-Beauce': [46.3047, -70.8772],
+  'Sainte-Marguerite': [46.5547, -70.9678],
+  'Saint-Georges': [46.1167, -70.6667],
+  'Scott': [46.5006, -71.0689],
+  'Saint-Anselme': [46.6219, -70.9750],
+};
+
+type TypeP = 'JUMELE' | 'MAISON';
+type Phase = 'SIGNE' | 'PREPARATION' | 'CHANTIER' | 'LIVRAISON' | 'TERMINE';
 interface ProjetDemo {
-  numero: string;
-  adresse: string;
+  type: TypeP;
   ville: string;
-  phase: 'SIGNE' | 'CHANTIER' | 'LIVRAISON';
+  adresse: string;
+  phase: Phase;
+  frac: number; // avancement cible (date-based)
+  montant: number;
   typeContrat: 'PRELIMINAIRE' | 'ENTREPRISE';
-  montantTotal: number;
-  latitude: number;
-  longitude: number;
-  cibleAvancement: Frac;
 }
 
-// Coordonnées fixes (pas de géocodage Nominatim), distinctes, dans la zone réelle
-// de chaque ville de Chaudière-Appalaches → marqueurs visibles sur la carte.
+// 20 projets : ~moitié-moitié JUMELE/MAISON, phases/avancements variés pour un
+// Gantt riche (2 SIGNE, 2 PREPARATION, 11 CHANTIER 20-70 %, 3 LIVRAISON, 2 TERMINE).
 const PROJETS: ProjetDemo[] = [
-  { numero: 'PRJ-260001', adresse: '31 Anna-Dussault', ville: 'Sainte-Claire', phase: 'SIGNE', typeContrat: 'PRELIMINAIRE', montantTotal: 425000, latitude: 46.6042, longitude: -70.8612, cibleAvancement: 0 },
-  { numero: 'PRJ-260002', adresse: '118 Cardinal-Bégin', ville: 'Sainte-Marie', phase: 'CHANTIER', typeContrat: 'ENTREPRISE', montantTotal: 458500, latitude: 46.4419, longitude: -71.0203, cibleAvancement: 0.25 },
-  { numero: 'PRJ-260003', adresse: '55 Rosaire-Cliche', ville: 'Beauceville', phase: 'CHANTIER', typeContrat: 'PRELIMINAIRE', montantTotal: 412000, latitude: 46.2108, longitude: -70.7791, cibleAvancement: 0.5 },
-  { numero: 'PRJ-260004', adresse: '24 Honoré-Mercier', ville: 'Saint-Henri', phase: 'LIVRAISON', typeContrat: 'ENTREPRISE', montantTotal: 489000, latitude: 46.6891, longitude: -71.0704, cibleAvancement: 0.75 },
+  { type: 'JUMELE', ville: 'Sainte-Claire', adresse: '31 Anna-Dussault', phase: 'CHANTIER', frac: 0.45, montant: 432000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'MAISON', ville: 'Sainte-Marie', adresse: '118 Cardinal-Bégin', phase: 'CHANTIER', frac: 0.30, montant: 565000, typeContrat: 'ENTREPRISE' },
+  { type: 'JUMELE', ville: 'Beauceville', adresse: '55 Rosaire-Cliche', phase: 'LIVRAISON', frac: 0.86, montant: 458000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'MAISON', ville: 'Saint-Henri', adresse: '24 Honoré-Mercier', phase: 'CHANTIER', frac: 0.60, montant: 612000, typeContrat: 'ENTREPRISE' },
+  { type: 'JUMELE', ville: 'Lévis', adresse: '412 des Rivières', phase: 'SIGNE', frac: 0, montant: 445000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'MAISON', ville: 'Saint-Joseph-de-Beauce', adresse: '9 du Verger', phase: 'CHANTIER', frac: 0.25, montant: 588000, typeContrat: 'ENTREPRISE' },
+  { type: 'JUMELE', ville: 'Sainte-Marguerite', adresse: "76 de l'Église", phase: 'TERMINE', frac: 1, montant: 421000, typeContrat: 'ENTREPRISE' },
+  { type: 'MAISON', ville: 'Saint-Georges', adresse: '188 130e Rue', phase: 'CHANTIER', frac: 0.50, montant: 634000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'JUMELE', ville: 'Scott', adresse: '14 des Pionniers', phase: 'PREPARATION', frac: 0.05, montant: 408000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'MAISON', ville: 'Saint-Anselme', adresse: '47 Sainte-Anne', phase: 'CHANTIER', frac: 0.70, montant: 599000, typeContrat: 'ENTREPRISE' },
+  { type: 'JUMELE', ville: 'Sainte-Marie', adresse: '233 Notre-Dame Nord', phase: 'CHANTIER', frac: 0.35, montant: 467000, typeContrat: 'ENTREPRISE' },
+  { type: 'MAISON', ville: 'Beauceville', adresse: '102 Saint-Joseph', phase: 'LIVRAISON', frac: 0.92, montant: 521000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'JUMELE', ville: 'Saint-Henri', adresse: '61 Commerciale', phase: 'CHANTIER', frac: 0.20, montant: 415000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'MAISON', ville: 'Sainte-Claire', adresse: '88 Principale', phase: 'CHANTIER', frac: 0.55, montant: 577000, typeContrat: 'ENTREPRISE' },
+  { type: 'JUMELE', ville: 'Lévis', adresse: '305 Saint-Laurent', phase: 'CHANTIER', frac: 0.65, montant: 489000, typeContrat: 'ENTREPRISE' },
+  { type: 'MAISON', ville: 'Saint-Joseph-de-Beauce', adresse: '22 des Érables', phase: 'SIGNE', frac: 0, montant: 605000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'JUMELE', ville: 'Saint-Georges', adresse: '410 1re Avenue', phase: 'CHANTIER', frac: 0.40, montant: 452000, typeContrat: 'PRELIMINAIRE' },
+  { type: 'MAISON', ville: 'Scott', adresse: '33 du Moulin', phase: 'PREPARATION', frac: 0.05, montant: 558000, typeContrat: 'ENTREPRISE' },
+  { type: 'JUMELE', ville: 'Sainte-Marguerite', adresse: '19 du Coteau', phase: 'TERMINE', frac: 1, montant: 437000, typeContrat: 'ENTREPRISE' },
+  { type: 'MAISON', ville: 'Saint-Anselme', adresse: '70 de la Fabrique', phase: 'LIVRAISON', frac: 0.78, montant: 643000, typeContrat: 'PRELIMINAIRE' },
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function normalize(str: string): string {
   return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 }
-// Slug au format habituel : prenomnom-numero-rue
 function buildSlug(prenom: string, nom: string, adresse: string): string {
   const numAdresse = adresse.match(/^\d+/)?.[0] ?? '';
   const premierMot = adresse.replace(/^\d+\s*/, '').split(/[\s-]/)[0] ?? '';
   return `${normalize(prenom)}${normalize(nom)}-${numAdresse}-${normalize(premierMot)}`;
+}
+function coordsPour(ville: string, idx: number): [number, number] {
+  const base = CITIES[ville] ?? [46.6, -70.95];
+  const latOff = (((idx * 7) % 9) - 4) * 0.0022;
+  const lngOff = (((idx * 11) % 11) - 5) * 0.0022;
+  return [Number((base[0] + latOff).toFixed(5)), Number((base[1] + lngOff).toFixed(5))];
 }
 function dayPlus(base: Date, days: number): Date {
   const d = new Date(base);
@@ -72,34 +124,29 @@ function estPassee(dateFin: Date, now: Date): boolean {
   f.setHours(23, 59, 59, 999);
   return f.getTime() < now.getTime();
 }
-// Nombre d'étapes terminées (dateFin passée) pour une date de livraison donnée.
 function nbPassees(base: EtapeEditable[], livraison: Date, marge: number, now: Date): number {
   const ced = calculerDepuisLivraison(base, livraison, marge);
   return ced.filter((e) => estPassee(e.dateFin, now)).length;
 }
-// Cherche une date de livraison telle que EXACTEMENT cibleN étapes soient
-// terminées aujourd'hui. nbPassees est monotone non-croissant en livraison →
-// on scanne et on prend la médiane des candidats (boundary stable d'un jour à
-// l'autre, donc avancement robuste aux ré-exécutions dans la même semaine).
+// Date de livraison telle qu'EXACTEMENT cibleN étapes soient terminées
+// aujourd'hui (nbPassees monotone non-croissant en livraison → médiane des
+// candidats = boundary stable).
 function trouverLivraison(base: EtapeEditable[], marge: number, cibleN: number, now: Date): Date {
   const candidats: Date[] = [];
-  for (let off = -220; off <= 240; off++) {
+  for (let off = -260; off <= 260; off++) {
     const liv = dayPlus(now, off);
     if (nbPassees(base, liv, marge, now) === cibleN) candidats.push(liv);
   }
   if (candidats.length > 0) return candidats[Math.floor(candidats.length / 2)];
-  // Repli : la date qui s'approche le plus de la cible.
   let best = dayPlus(now, 0);
   let bestDiff = Infinity;
-  for (let off = -220; off <= 240; off++) {
+  for (let off = -260; off <= 260; off++) {
     const liv = dayPlus(now, off);
     const diff = Math.abs(nbPassees(base, liv, marge, now) - cibleN);
     if (diff < bestDiff) { bestDiff = diff; best = liv; }
   }
   return best;
 }
-
-// Échéancier de paiement selon le type de contrat (logique CLAUDE.md).
 function paiementsPour(typeContrat: string, total: number) {
   if (typeContrat === 'PRELIMINAIRE') {
     return [
@@ -113,29 +160,9 @@ function paiementsPour(typeContrat: string, total: number) {
     { description: 'Remise des clés (15 %)', montant: total * 0.15, pourcentage: 15 as number | null, recu: false },
   ];
 }
-
-// ── Programme principal ──────────────────────────────────────────────────────
-async function main() {
-  const now = new Date();
-
-  // 0) Garde-fou : template JUMELE peuplé AVANT tout wipe.
-  const template = await prisma.template.findFirst({
-    where: { type: 'JUMELE' },
-    include: { etapes: { orderBy: { ordre: 'asc' } } },
-  });
-  if (!template || template.etapes.length === 0) {
-    console.error('✋ ARRÊT : le template JUMELE est absent ou vide en DB.');
-    console.error('   Lance d\'abord :  npm run seed:jumele');
-    console.error('   Aucune donnée n\'a été supprimée.');
-    process.exitCode = 1;
-    return;
-  }
-
-  const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
-  const marge = parametres?.margeCeduleJours ?? 5;
-
-  // Étapes de base (depuis le template, jamais hardcodées).
-  const baseEtapes: EtapeEditable[] = template.etapes.map((te) => ({
+// Étapes de base (depuis un template, jamais hardcodées).
+function baseDepuisTemplate(etapes: { nom: string; ordre: number; joursDefaut: number; assigneA: string | null; visibleClient: boolean; interne: boolean }[]): EtapeEditable[] {
+  return etapes.map((te) => ({
     nom: te.nom,
     ordre: te.ordre,
     jours: te.joursDefaut,
@@ -146,7 +173,36 @@ async function main() {
     visibleClient: te.visibleClient,
     interne: te.interne,
   }));
-  const nbEtapes = baseEtapes.length;
+}
+
+// ── Programme principal ──────────────────────────────────────────────────────
+async function main() {
+  const now = new Date();
+
+  // 0) Garde-fou : templates JUMELE ET MAISON peuplés AVANT tout wipe.
+  const templates = await prisma.template.findMany({
+    where: { type: { in: ['JUMELE', 'MAISON'] } },
+    include: { etapes: { orderBy: { ordre: 'asc' } } },
+  });
+  const tplJumele = templates.find((t) => t.type === 'JUMELE');
+  const tplMaison = templates.find((t) => t.type === 'MAISON');
+  const manquant: string[] = [];
+  if (!tplJumele || tplJumele.etapes.length === 0) manquant.push('JUMELE (npm run seed:jumele)');
+  if (!tplMaison || tplMaison.etapes.length === 0) manquant.push('MAISON (npm run seed:maison)');
+  if (manquant.length > 0) {
+    console.error(`✋ ARRÊT : template(s) vide(s)/absent(s) → ${manquant.join(', ')}.`);
+    console.error("   Aucune donnée n'a été supprimée.");
+    process.exitCode = 1;
+    return;
+  }
+
+  const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
+  const marge = parametres?.margeCeduleJours ?? 5;
+
+  const baseParType: Record<TypeP, EtapeEditable[]> = {
+    JUMELE: baseDepuisTemplate(tplJumele!.etapes),
+    MAISON: baseDepuisTemplate(tplMaison!.etapes),
+  };
 
   // 1) WIPE (ordre FK : enfants → Projet → Client). Transaction.
   await prisma.$transaction([
@@ -167,41 +223,43 @@ async function main() {
     clientIds.push(created.id);
   }
 
-  // 3) + 4) Projets + cédule depuis le template
-  const resume: { adresse: string; ville: string; phase: string; livraison: string; etapes: number; passees: number; avancement: number; slug: string; coords: string }[] = [];
+  // 3) + 4) Projets + cédule depuis le template de leur type
+  type Ligne = { type: string; phase: string; avancement: number; ville: string; adresse: string; livraison: Date; slug: string; coords: string; etapes: number };
+  const resume: Ligne[] = [];
 
   for (let i = 0; i < PROJETS.length; i++) {
     const p = PROJETS[i];
-    const cibleN = Math.round(p.cibleAvancement * nbEtapes);
-    const livraison = trouverLivraison(baseEtapes, marge, cibleN, now);
+    const base = baseParType[p.type];
+    const nbEtapes = base.length;
+    const cibleN = Math.round(p.frac * nbEtapes);
+    const livraison = trouverLivraison(base, marge, cibleN, now);
 
-    // Cédule calculée à rebours depuis la livraison (logique cedula-utils).
-    const cedule = calculerDepuisLivraison(baseEtapes, livraison, marge);
+    const cedule = calculerDepuisLivraison(base, livraison, marge);
     const passees = cedule.filter((e) => estPassee(e.dateFin, now)).length;
     const avancement = Math.round((passees / nbEtapes) * 100);
 
     const slug = buildSlug(CLIENTS[i].prenom, CLIENTS[i].nom, p.adresse);
-    // dateContrat : antérieure (≤ aujourd'hui), juste avant le début des travaux.
     const premierDebut = cedule[0]?.dateDebut ?? now;
     const ancre = premierDebut.getTime() < now.getTime() ? premierDebut : now;
     const dateContrat = dayPlus(ancre, -21);
+    const [lat, lng] = coordsPour(p.ville, i + 1);
 
     const projet = await prisma.projet.create({
       data: {
-        numero: p.numero,
+        numero: `PRJ-2600${String(i + 1).padStart(2, '0')}`,
         adresse: p.adresse,
         ville: p.ville,
-        typeProjet: 'JUMELE',
+        typeProjet: p.type,
         typeContrat: p.typeContrat,
         phase: p.phase,
         dateContrat,
         dateLivraison: livraison,
-        montantTotal: p.montantTotal,
+        montantTotal: p.montant,
         toleranceJours: parametres?.toleranceDefautJours ?? 3,
         slug,
         urlClient: slug,
-        latitude: p.latitude,
-        longitude: p.longitude,
+        latitude: lat,
+        longitude: lng,
         clientId: clientIds[i],
       },
     });
@@ -222,35 +280,28 @@ async function main() {
     });
 
     await prisma.paiement.createMany({
-      data: paiementsPour(p.typeContrat, p.montantTotal).map((pp) => ({ projetId: projet.id, ...pp })),
+      data: paiementsPour(p.typeContrat, p.montant).map((pp) => ({ projetId: projet.id, ...pp })),
     });
 
-    resume.push({
-      adresse: `${p.adresse}, ${p.ville}`,
-      ville: p.ville,
-      phase: p.phase,
-      livraison: livraison.toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' }),
-      etapes: cedule.length,
-      passees,
-      avancement,
-      slug,
-      coords: `${p.latitude}, ${p.longitude}`,
-    });
+    resume.push({ type: p.type, phase: p.phase, avancement, ville: p.ville, adresse: p.adresse, livraison, slug, coords: `${lat}, ${lng}`, etapes: cedule.length });
   }
 
   // 5) Résumé
-  console.log('\n=== SEED DÉMO — RÉSUMÉ ===');
-  console.log(`Template JUMELE : ${nbEtapes} étapes · marge cédule : ${marge} j ouvrables`);
-  console.log(`${CLIENTS.length} clients créés, ${PROJETS.length} projets créés.\n`);
+  resume.sort((a, b) => a.livraison.getTime() - b.livraison.getTime());
+  console.log('\n=== SEED DÉMO — RÉSUMÉ (20 projets, triés par livraison) ===');
+  console.log(`Templates : JUMELE ${tplJumele!.etapes.length} ét. · MAISON ${tplMaison!.etapes.length} ét. · marge ${marge} j ouvr.`);
+  console.log(`${CLIENTS.length} clients, ${PROJETS.length} projets créés.\n`);
   for (const r of resume) {
-    console.log(`• ${r.adresse} [${r.phase}]`);
-    console.log(`    livraison ${r.livraison} · cédule ${r.etapes} étapes · ${r.passees}/${r.etapes} terminées → avancement ${r.avancement}%`);
-    console.log(`    slug=${r.slug} · coords=(${r.coords})`);
+    const liv = r.livraison.toLocaleDateString('fr-CA', { day: '2-digit', month: 'short', year: 'numeric' });
+    console.log(`  ${liv}  ${r.type.padEnd(6)} ${r.phase.padEnd(11)} ${String(r.avancement).padStart(3)}%  ${r.adresse}, ${r.ville}`);
   }
-  const tousCoords = resume.every((r) => r.coords && !r.coords.startsWith('undefined'));
+  const livs = resume.map((r) => r.livraison.getTime());
+  const span = Math.round((Math.max(...livs) - Math.min(...livs)) / (1000 * 60 * 60 * 24));
+  const tousCoords = resume.every((r) => !!r.coords && !r.coords.startsWith('undefined'));
   const tousSlug = resume.every((r) => !!r.slug);
-  console.log(`\nCarte : ${tousCoords ? 'OK — les 4 projets ont des coordonnées.' : '⚠ coordonnées manquantes.'}`);
-  console.log(`Vue client : ${tousSlug ? 'OK — les 4 projets ont un slug.' : '⚠ slug manquant.'}`);
+  console.log(`\nPlage de livraisons : ${span} jours (~${Math.round(span / 30)} mois) → Gantt avec chevauchements.`);
+  console.log(`Carte : ${tousCoords ? 'OK — 20 projets géocodés.' : '⚠ coordonnées manquantes.'}`);
+  console.log(`Vue client : ${tousSlug ? 'OK — 20 slugs.' : '⚠ slug manquant.'}`);
 }
 
 main()
