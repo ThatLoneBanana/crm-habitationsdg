@@ -24,6 +24,7 @@ export interface CedulaEditorProps {
   etapesInitiales?: EtapeEditable[];
   margeCeduleJours?: number;
   toleranceJours?: number;
+  templateId?: string; // #9 — si fourni, charge/réinitialise depuis CE template (sinon défaut par type)
 }
 
 export default function CedulaEditor({
@@ -35,6 +36,7 @@ export default function CedulaEditor({
   onValider,
   etapesInitiales = [],
   margeCeduleJours = 5,
+  templateId,
 }: CedulaEditorProps) {
   const [etapes, setEtapes] = useState<EtapeEditable[]>([]);
   const [conflits, setConflits] = useState<number[]>([]);
@@ -60,8 +62,11 @@ export default function CedulaEditor({
     let annule = false;
     const chargerTemplateDB = async () => {
       try {
-        const res = await fetch(`/api/templates?type=${typeProjet}`);
-        const template = res.ok ? await res.json() : null;
+        // #9 — depuis le template CHOISI si fourni, sinon le défaut par type.
+        const url = templateId ? `/api/templates/${templateId}` : `/api/templates?type=${typeProjet}`;
+        const res = await fetch(url);
+        const data = res.ok ? await res.json() : null;
+        const template = templateId ? data?.template : data;
         const dbEtapes: any[] = template?.etapes ?? [];
 
         const newEtapes: EtapeEditable[] = dbEtapes.map((e: any, i: number) => ({
@@ -234,9 +239,11 @@ export default function CedulaEditor({
     if (!confirm('Réinitialiser toutes les dates ? Les modifications seront perdues.')) return;
 
     try {
-      // Recharge le template par défaut DEPUIS LA DB (jamais un fichier au runtime).
-      const res = await fetch(`/api/templates?type=${typeProjet}`);
-      const template = res.ok ? await res.json() : null;
+      // #9 — réinitialise depuis le template CHOISI si fourni, sinon le défaut par type.
+      const url = templateId ? `/api/templates/${templateId}` : `/api/templates?type=${typeProjet}`;
+      const res = await fetch(url);
+      const data = res.ok ? await res.json() : null;
+      const template = templateId ? data?.template : data;
       const dbEtapes: any[] = template?.etapes ?? [];
 
       const nouvellesEtapes: EtapeEditable[] = dbEtapes.map((e: any, i: number) => ({
@@ -276,23 +283,23 @@ export default function CedulaEditor({
       {/* Bandeau 3 cartes */}
       <div className="grid grid-cols-3 gap-4">
         
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: '#EAF3DE', borderColor: '#B8D4A3' }}>
-          <p className="text-xs text-gray-600 mb-1">📅 Début estimé</p>
-          <p className="text-lg font-bold" style={{ color: '#15803D' }}>
+        <div style={{ padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--success-tint)' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Début estimé</p>
+          <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--success-text)' }}>
             {etapes.length > 0
               ? (etapes[0].dateDebut instanceof Date ? etapes[0].dateDebut : new Date(etapes[0].dateDebut)).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })
               : '—'}
           </p>
         </div>
-        <div className="p-4 rounded-lg border" style={{ backgroundColor: '#FAECE7', borderColor: '#E8B7A0' }}>
-          <p className="text-xs text-gray-600 mb-1">🚩 Date de livraison</p>
-          <p className="text-lg font-bold" style={{ color: '#7C2D12' }}>
+        <div style={{ padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', background: 'var(--dg-red-50)' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Date de livraison</p>
+          <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--dg-red-700)' }}>
             {dateLivraison.toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <div className="p-4 rounded-lg border bg-gray-100 border-gray-300">
-          <p className="text-xs text-gray-600 mb-1">📊 Total</p>
-          <p className="text-lg font-bold text-gray-900">{totalJours} jours ouvrables</p>
+        <div style={{ padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface-subtle)' }}>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Total</p>
+          <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{totalJours} jours ouvrables</p>
         </div>
       </div>
 

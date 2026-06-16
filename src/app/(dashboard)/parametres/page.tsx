@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { PageHeader, Card, CardHeader, Field, Input, Select, Button, Badge, Banner, dgTH, dgTD } from '@/components/dg'
 
 type Role = 'ADMIN' | 'COMPTABILITE' | 'VENDEUR' | 'CHARGE_PROJET' | 'DEVELOPPEUR'
 interface User { id: string; email: string; prenom: string; nom: string; role: Role; actif: boolean }
@@ -230,131 +231,153 @@ export default function ParametresPage() {
   const roleLabel = (r: Role) => ({ ADMIN: 'Admin', COMPTABILITE: 'Comptabilité', VENDEUR: 'Vendeur', CHARGE_PROJET: 'Chargé de projet', DEVELOPPEUR: 'Développeur' }[r])
   const roleColor = (r: Role) => ({ ADMIN: '#185FA5', COMPTABILITE: '#3C3489', VENDEUR: '#854F0B', CHARGE_PROJET: '#1D9E75', DEVELOPPEUR: '#7C3AED' }[r])
 
-  return (
-    <div style={{ padding: '24px' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 500, marginBottom: '24px' }}>Paramètres</h1>
+  // Onglet stylé DG : soulignement actif rouge, tokens réels (corrige le --color-* cassé).
+  const TabBtn = ({ id, label }: { id: 'general' | 'compte' | 'utilisateurs' | 'acces'; label: string }) => {
+    const active = activeTab === id
+    return (
+      <button onClick={() => setActiveTab(id)} style={{ padding: '10px 14px', fontSize: 13, fontWeight: active ? 600 : 500, background: 'transparent', border: 'none', cursor: 'pointer', marginBottom: -1, borderBottom: active ? '2px solid var(--dg-red)' : '2px solid transparent', color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label}</button>
+    )
+  }
+  const estAdminDev = currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR'
 
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '24px', borderBottom: '0.5px solid var(--color-border-tertiary)' }}>
-        {estAdminOuComptabilite && (
-          <button onClick={() => setActiveTab('general')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'general' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'general' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'general' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Général</button>
-        )}
-        <button onClick={() => setActiveTab('compte')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'compte' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'compte' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'compte' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Mon compte</button>
-        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
-          <button onClick={() => setActiveTab('utilisateurs')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'utilisateurs' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'utilisateurs' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'utilisateurs' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Utilisateurs</button>
-        )}
-        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
-          <button onClick={() => setActiveTab('acces')} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: activeTab === 'acces' ? 500 : 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: activeTab === 'acces' ? '2px solid var(--color-text-primary)' : 'none', color: activeTab === 'acces' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)' }}>Accès</button>
-        )}
-        {/* Onglet de navigation vers l'éditeur de cédules types (page dédiée, ADMIN/DEV) */}
-        {(currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
-          <a href="/parametres/templates" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 400, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: 'none', color: 'var(--color-text-secondary)', textDecoration: 'none', display: 'inline-block' }}>Cédules types</a>
+  return (
+    <div style={{ padding: '22px 24px 40px' }}>
+      <PageHeader title="Paramètres" />
+
+      <div style={{ display: 'flex', gap: 2, marginBottom: 24, borderBottom: '1px solid var(--border)' }}>
+        {estAdminOuComptabilite && <TabBtn id="general" label="Général" />}
+        <TabBtn id="compte" label="Mon compte" />
+        {estAdminDev && <TabBtn id="utilisateurs" label="Utilisateurs" />}
+        {estAdminDev && <TabBtn id="acces" label="Accès" />}
+        {/* Lien vers l'éditeur de cédules types (page dédiée, ADMIN/DEV) */}
+        {estAdminDev && (
+          <a href="/parametres/templates" style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', textDecoration: 'none', borderBottom: '2px solid transparent', marginBottom: -1 }}>Cédules types</a>
         )}
       </div>
 
-      {error && <div style={{ background: '#FCEBEB', color: '#A32D2D', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '12px' }}>{error}</div>}
-      {success && <div style={{ background: '#EAF3DE', color: '#3B6D11', padding: '12px', borderRadius: '6px', marginBottom: '16px', fontSize: '12px' }}>{success}</div>}
+      {error && <Banner tone="danger">{error}</Banner>}
+      {success && <Banner tone="success">{success}</Banner>}
 
       {activeTab === 'general' && (
-        <div style={{ maxWidth: '600px' }}>
-          {currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR' ? (
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#EFF6FF', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>📊 Journal d'activité</h3>
-                <p style={{ fontSize: '12px', color: '#6B7280' }}>Voir l'historique complet des actions dans l'application</p>
+        <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {estAdminDev && (
+            <Card>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: 16 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Journal d'activité</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Historique complet des actions dans l'application.</div>
+                </div>
+                <a href='/parametres/logs' style={{ textDecoration: 'none' }}>
+                  <Button variant="outline"><i className="ti ti-history" aria-hidden="true" />Ouvrir</Button>
+                </a>
               </div>
-              <a href='/parametres/logs' style={{ padding: '8px 16px', background: '#1D9E75', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>Ouvrir</a>
+            </Card>
+          )}
+          <Card>
+            <CardHeader title="Paramètres généraux" />
+            <div style={{ padding: 16, display: 'grid', gap: 16 }}>
+              <Field label="Nom de la compagnie"><Input value={parametres.nomCompagnie} onChange={(e) => setParametres({ ...parametres, nomCompagnie: e.target.value })} /></Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Field label="RBQ"><Input value={parametres.rbq} onChange={(e) => setParametres({ ...parametres, rbq: e.target.value })} /></Field>
+                <Field label="Courriel"><Input type="email" value={parametres.email} onChange={(e) => setParametres({ ...parametres, email: e.target.value })} /></Field>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Field label="Téléphone"><Input type="tel" value={parametres.telephone} onChange={(e) => setParametres({ ...parametres, telephone: e.target.value })} /></Field>
+                <Field label="Site web"><Input value={parametres.siteWeb} onChange={(e) => setParametres({ ...parametres, siteWeb: e.target.value })} /></Field>
+              </div>
+              <Field label="Max heures par semaine"><Input type="number" step="0.5" value={parametres.maxHeuresParSemaine} onChange={(e) => setParametres({ ...parametres, maxHeuresParSemaine: parseFloat(e.target.value) })} /></Field>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Field label="Marge initiale de cédule (jours ouvrables)"><Input type="number" min="0" step="1" value={parametres.margeCeduleJours} onChange={(e) => setParametres({ ...parametres, margeCeduleJours: parseInt(e.target.value, 10) || 0 })} /></Field>
+                <Field label="Tolérance de décalage par défaut (jours)"><Input type="number" min="0" step="1" value={parametres.toleranceDefautJours} onChange={(e) => setParametres({ ...parametres, toleranceDefautJours: parseInt(e.target.value, 10) || 0 })} /></Field>
+              </div>
+              <Button onClick={handleSaveParametres} disabled={saving} style={{ width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Button>
             </div>
-          ) : null}
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Paramètres généraux</h2>
-            <div style={{ display: 'grid', gap: '16px' }}>
-            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom de la compagnie</label><input value={parametres.nomCompagnie} onChange={(e) => setParametres({ ...parametres, nomCompagnie: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>RBQ</label><input value={parametres.rbq} onChange={(e) => setParametres({ ...parametres, rbq: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={parametres.email} onChange={(e) => setParametres({ ...parametres, email: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Téléphone</label><input type="tel" value={parametres.telephone} onChange={(e) => setParametres({ ...parametres, telephone: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Site web</label><input value={parametres.siteWeb} onChange={(e) => setParametres({ ...parametres, siteWeb: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-            </div>
-            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Max heures par semaine</label><input type="number" step="0.5" value={parametres.maxHeuresParSemaine} onChange={(e) => setParametres({ ...parametres, maxHeuresParSemaine: parseFloat(e.target.value) })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Marge initiale de cédule (jours ouvrables)</label><input type="number" min="0" step="1" value={parametres.margeCeduleJours} onChange={(e) => setParametres({ ...parametres, margeCeduleJours: parseInt(e.target.value, 10) || 0 })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Tolérance de décalage par défaut (jours)</label><input type="number" min="0" step="1" value={parametres.toleranceDefautJours} onChange={(e) => setParametres({ ...parametres, toleranceDefautJours: parseInt(e.target.value, 10) || 0 })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-            </div>
-            <button onClick={handleSaveParametres} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
-            </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {activeTab === 'compte' && currentUser && (
-        <div style={{ maxWidth: '600px' }}>
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Mon compte</h2>
-            <div style={{ display: 'grid', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label><input value={editUser.prenom} onChange={(e) => setEditUser({ ...editUser, prenom: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={editUser.nom} onChange={(e) => setEditUser({ ...editUser, nom: e.target.value })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+        <div style={{ maxWidth: 640 }}>
+          <Card>
+            <CardHeader title="Mon compte" />
+            <div style={{ padding: 16, display: 'grid', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Field label="Prénom"><Input value={editUser.prenom} onChange={(e) => setEditUser({ ...editUser, prenom: e.target.value })} /></Field>
+                <Field label="Nom"><Input value={editUser.nom} onChange={(e) => setEditUser({ ...editUser, nom: e.target.value })} /></Field>
+              </div>
+              <Field label="Courriel"><Input type="email" value={currentUser.email} disabled /></Field>
+              <Button onClick={handleSaveUser} disabled={saving} style={{ width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Button>
+              <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Changer le mot de passe</div>
+              <form onSubmit={handleChangePassword} style={{ display: 'grid', gap: 12 }}>
+                <Field label="Nouveau mot de passe"><Input type="password" value={passwordForm.nouveau} onChange={(e) => setPasswordForm({ ...passwordForm, nouveau: e.target.value })} required /></Field>
+                <Field label="Confirmer le mot de passe"><Input type="password" value={passwordForm.confirmer} onChange={(e) => setPasswordForm({ ...passwordForm, confirmer: e.target.value })} required /></Field>
+                <Button type="submit" disabled={saving || !passwordForm.nouveau} style={{ width: 'fit-content' }}>{saving ? 'Mise à jour...' : 'Sauvegarder'}</Button>
+              </form>
             </div>
-            <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={currentUser.email} disabled style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px', background: 'var(--color-background-secondary)' }} /></div>
-            <button onClick={handleSaveUser} disabled={saving} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</button>
-            <hr style={{ borderColor: '#E5E7EB', margin: '16px 0' }} />
-            <h3 style={{ fontSize: '14px', fontWeight: 500 }}>Changer le mot de passe</h3>
-            <form onSubmit={handleChangePassword} style={{ display: 'grid', gap: '12px' }}>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nouveau mot de passe</label><input type="password" value={passwordForm.nouveau} onChange={(e) => setPasswordForm({ ...passwordForm, nouveau: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Confirmer le mot de passe</label><input type="password" value={passwordForm.confirmer} onChange={(e) => setPasswordForm({ ...passwordForm, confirmer: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-              <button type="submit" disabled={saving || !passwordForm.nouveau} style={{ padding: '10px 16px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving || !passwordForm.nouveau ? 0.6 : 1, width: 'fit-content' }}>{saving ? 'Mise à jour...' : 'Sauvegarder'}</button>
-            </form>
-            </div>
-          </div>
+          </Card>
         </div>
       )}
 
-      {activeTab === 'utilisateurs' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (
-        <div>
-          <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '20px', background: '#FAFAFA' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Utilisateurs ({users.length})</h2>
-              <button onClick={() => setInviteOpen(true)} style={{ padding: '8px 12px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 500, cursor: 'pointer' }}>+ Inviter</button>
-            </div>
+      {activeTab === 'utilisateurs' && estAdminDev && (
+        <Card>
+          <CardHeader title={`Utilisateurs (${users.length})`} action={<Button onClick={() => setInviteOpen(true)} style={{ padding: '6px 12px', fontSize: 12 }}><i className="ti ti-plus" aria-hidden="true" />Inviter</Button>} />
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+                <th style={dgTH}>Utilisateur</th>
+                <th style={dgTH}>Rôle</th>
+                <th style={{ ...dgTH, textAlign: 'center' }}>Statut</th>
+                <th style={{ ...dgTH, textAlign: 'right' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user, i) => (
+                <tr key={user.id} style={{ borderBottom: i < users.length - 1 ? '1px solid var(--divider)' : 'none' }}>
+                  <td style={dgTD}>
+                    <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{user.prenom} {user.nom}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{user.email}</div>
+                  </td>
+                  <td style={dgTD}>
+                    <Select value={user.role} onChange={(e) => handleChangeRole(user.id, e.target.value as Role)} style={{ width: 'auto', fontSize: 12, padding: '5px 8px', color: roleColor(user.role), fontWeight: 600 }}>
+                      {(['ADMIN', 'COMPTABILITE', 'VENDEUR', 'CHARGE_PROJET', 'DEVELOPPEUR'] as Role[]).map(r => (
+                        <option key={r} value={r}>{roleLabel(r)}</option>
+                      ))}
+                    </Select>
+                  </td>
+                  <td style={{ ...dgTD, textAlign: 'center' }}><Badge tone={user.actif ? 'success' : 'danger'}>{user.actif ? 'Actif' : 'Inactif'}</Badge></td>
+                  <td style={{ ...dgTD, textAlign: 'right' }}>
+                    <Button variant={user.actif ? 'danger' : 'outline'} onClick={() => handleToggleUser(user.id, user.actif)} style={{ fontSize: 12, padding: '6px 10px' }}>{user.actif ? 'Désactiver' : 'Activer'}</Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {inviteOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
-              <div style={{ background: 'var(--color-background-primary)', borderRadius: '8px', padding: '24px', width: '90%', maxWidth: '400px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Inviter un utilisateur</h3>
-                <form onSubmit={handleInvite} style={{ display: 'grid', gap: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Prénom</label><input value={inviteForm.prenom} onChange={(e) => setInviteForm({ ...inviteForm, prenom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-                    <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Nom</label><input value={inviteForm.nom} onChange={(e) => setInviteForm({ ...inviteForm, nom: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }} onClick={() => setInviteOpen(false)}>
+              <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 'var(--radius-xl)', padding: 24, width: '100%', maxWidth: 420, boxShadow: 'var(--shadow-lg)' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>Inviter un utilisateur</h3>
+                <form onSubmit={handleInvite} style={{ display: 'grid', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <Field label="Prénom"><Input value={inviteForm.prenom} onChange={(e) => setInviteForm({ ...inviteForm, prenom: e.target.value })} required /></Field>
+                    <Field label="Nom"><Input value={inviteForm.nom} onChange={(e) => setInviteForm({ ...inviteForm, nom: e.target.value })} required /></Field>
                   </div>
-                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Courriel</label><input type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} required style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }} /></div>
-                  <div><label style={{ fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Rôle</label><select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as Role })} style={{ width: '100%', padding: '8px 10px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}><option value="ADMIN">Admin</option><option value="COMPTABILITE">Comptabilité</option><option value="VENDEUR">Vendeur</option><option value="CHARGE_PROJET">Chargé de projet</option><option value="DEVELOPPEUR">Développeur</option></select></div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="submit" disabled={saving} style={{ flex: 1, padding: '10px', background: '#ea1c24', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Invitation...' : 'Inviter'}</button>
-                    <button type="button" onClick={() => setInviteOpen(false)} style={{ flex: 1, padding: '10px', background: '#E5E7EB', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
+                  <Field label="Courriel"><Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} required /></Field>
+                  <Field label="Rôle">
+                    <Select value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as Role })}>
+                      <option value="ADMIN">Admin</option><option value="COMPTABILITE">Comptabilité</option><option value="VENDEUR">Vendeur</option><option value="CHARGE_PROJET">Chargé de projet</option><option value="DEVELOPPEUR">Développeur</option>
+                    </Select>
+                  </Field>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                    <Button type="submit" disabled={saving} style={{ flex: 1 }}>{saving ? 'Invitation...' : 'Inviter'}</Button>
+                    <Button type="button" variant="outline" onClick={() => setInviteOpen(false)} style={{ flex: 1 }}>Annuler</Button>
                   </div>
                 </form>
               </div>
             </div>
           )}
-
-            <div style={{ border: '1px solid #E5E7EB', borderRadius: '6px', overflow: 'hidden', marginTop: '12px' }}>
-              {users.map((user, i) => (
-                <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '1fr 150px 100px 80px', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: i < users.length - 1 ? '1px solid #E5E7EB' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
-                  <div><p style={{ fontSize: '13px', fontWeight: 500 }}>{user.prenom} {user.nom}</p><p style={{ fontSize: '11px', color: '#6B7280' }}>{user.email}</p></div>
-                  <select value={user.role} onChange={(e) => handleChangeRole(user.id, e.target.value as Role)} style={{ fontSize: '11px', padding: '4px 6px', borderRadius: '4px', border: '1px solid #E5E7EB', color: roleColor(user.role), fontWeight: 500, cursor: 'pointer', background: 'white' }}>
-                    {(['ADMIN', 'COMPTABILITE', 'VENDEUR', 'CHARGE_PROJET', 'DEVELOPPEUR'] as Role[]).map(r => (
-                      <option key={r} value={r}>{roleLabel(r)}</option>
-                    ))}
-                  </select>
-                  <span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '4px', background: user.actif ? '#EAF3DE' : '#FCEBEB', color: user.actif ? '#3B6D11' : '#A32D2D', fontWeight: 500, textAlign: 'center' }}>{user.actif ? 'Actif' : 'Inactif'}</span>
-                  <button onClick={() => handleToggleUser(user.id, user.actif)} style={{ padding: '6px 10px', background: user.actif ? '#FCEBEB' : '#EAF3DE', color: user.actif ? '#A32D2D' : '#3B6D11', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' }}>{user.actif ? 'Désactiver' : 'Activer'}</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        </Card>
       )}
 
       {activeTab === 'acces' && (currentUser?.role === 'ADMIN' || currentUser?.role === 'DEVELOPPEUR') && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/dg';
 import { Input } from '@/components/ui/input';
 import { Trash2, Plus, GripVertical, ArrowLeft } from 'lucide-react';
 
@@ -144,7 +144,7 @@ export default function TemplateEditClient({ id }: { id: string }) {
         ))}
       </div>
 
-      <Button onClick={addEtape} variant="outline" className="w-full gap-2 mt-3">
+      <Button onClick={addEtape} variant="outline" style={{ width: '100%', marginTop: 12 }}>
         <Plus className="w-4 h-4" /> Ajouter une étape
       </Button>
 

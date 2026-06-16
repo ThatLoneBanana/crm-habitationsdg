@@ -786,6 +786,7 @@ export default function NouveauProjetPage() {
                 interne: e.interne,
               })) : undefined}
               typeProjet={typeProjet as any}
+              templateId={selectedTemplateId}
               dateLivraison={new Date(dateLivraison)}
               fournisseurs={fournisseurs}
               margeCeduleJours={margeCeduleJours}
