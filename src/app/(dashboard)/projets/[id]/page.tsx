@@ -15,8 +15,30 @@ import { DocumentsTab } from '@/components/projets/documents-tab';
 import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
 import { GCRTab } from '@/components/projets/gcr-tab';
 import { formatDate, formatMontant } from '@/lib/utils';
-import { Printer, Send, Eye, MapPin, FileText, Calendar, Trash2 } from 'lucide-react';
+import { calculateTaskStatus } from '@/lib/task-status';
 import { useRouter } from 'next/navigation';
+
+const PHASES: Record<string, { label: string; tint: string; ink: string; bar: string }> = {
+  SIGNE:       { label: 'Signé',       tint: 'var(--phase-signe-tint)',       ink: 'var(--phase-signe-ink)',       bar: 'var(--phase-signe-bar)' },
+  PREPARATION: { label: 'Préparation', tint: 'var(--phase-preparation-tint)', ink: 'var(--phase-preparation-ink)', bar: 'var(--phase-preparation-bar)' },
+  CHANTIER:    { label: 'Chantier',    tint: 'var(--phase-chantier-tint)',    ink: 'var(--phase-chantier-ink)',    bar: 'var(--phase-chantier-bar)' },
+  LIVRAISON:   { label: 'Livraison',   tint: 'var(--phase-livraison-tint)',   ink: 'var(--phase-livraison-ink)',   bar: 'var(--phase-livraison-bar)' },
+  TERMINE:     { label: 'Terminé',     tint: 'var(--phase-termine-tint)',     ink: 'var(--phase-termine-ink)',     bar: 'var(--phase-termine-bar)' },
+};
+const phaseBar = (phase: string | null | undefined) => (PHASES[phase ?? 'SIGNE'] ?? PHASES.SIGNE).bar;
+const dateCourt = (d: Date | string) => new Date(d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+const eyebrow: React.CSSProperties = { fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' };
+const statVal: React.CSSProperties = { fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' };
+
+function PhaseBadge({ phase }: { phase: string | null | undefined }) {
+  const p = PHASES[phase ?? 'SIGNE'] ?? PHASES.SIGNE;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--text-2xs)', fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap', padding: '3px 8px', borderRadius: 'var(--radius-full)', background: p.tint, color: p.ink }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: p.bar, flex: '0 0 auto' }} />
+      {p.label}
+    </span>
+  );
+}
 
 interface ProjetPageProps {
   params: Promise<{ id: string }>;
@@ -238,127 +260,115 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
       )
     : null;
 
-  const totalExtrasSignes = projet.extras
-    .filter((e: any) => e.statut === 'SIGNE')
-    .reduce((sum: number, e: any) => sum + e.montant, 0);
+  // Étapes complétées — même base que l'avancement (statut COMPLETE), pour l'affichage X/Y.
+  const etapesCompletes = projet.taches.filter((t: any) => t.statut === 'COMPLETE').length;
 
-  const phaseColors: Record<string, string> = {
-    SIGNE: 'bg-blue-100 text-blue-800',
-    VENTE: 'bg-blue-100 text-blue-800',
-    ADMIN: 'bg-purple-100 text-purple-800',
-    PREPARATION: 'bg-yellow-100 text-yellow-800',
-    CHANTIER: 'bg-orange-100 text-orange-800',
-    LIVRAISON: 'bg-green-100 text-green-800',
-    CLOTURE: 'bg-gray-100 text-gray-800',
-  };
+  // Prochaine étape (présentation) — par dates depuis la cédule (comme la vue client).
+  const sortedTaches = [...projet.taches].sort((a: any, b: any) => (a.ordre ?? 0) - (b.ordre ?? 0));
+  const statutTache = (t: any) => calculateTaskStatus(t.dateDebut, t.dateFin).status;
+  const prochaineEtape =
+    sortedTaches.find((t: any) => statutTache(t) === 'inProgress') ||
+    sortedTaches.find((t: any) => statutTache(t) === 'preparation') ||
+    sortedTaches.find((t: any) => statutTache(t) === 'noneStarted');
 
-  const phaseLabels: Record<string, string> = {
-    SIGNE: 'Signé',
-    VENTE: 'Vente',
-    ADMIN: 'Admin',
-    PREPARATION: 'Préparation',
-    CHANTIER: 'Chantier',
-    LIVRAISON: 'Livraison',
-    CLOTURE: 'Clôturé',
-  };
-
-  const getPhaseColor = (phase: string | null | undefined) => phaseColors[phase || 'SIGNE'] || phaseColors['SIGNE'];
-  const getPhaseLabel = (phase: string | null | undefined) => phaseLabels[phase || 'SIGNE'] || phaseLabels['SIGNE'];
-
-  const isUrgent = joursRestants !== null && joursRestants < 30;
-  const isOverdue = joursRestants !== null && joursRestants < 0;
+  // Solde restant à percevoir (paiements non reçus) — pour l'alerte livraison imminente.
+  const soldeRestant = projet.paiements
+    .filter((p: any) => !p.recu)
+    .reduce((sum: number, p: any) => sum + Number(p.montant), 0);
 
   return (
     <div className="p-8 space-y-8">
-      {/* Boutons d'action */}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" className="gap-2" onClick={() => setModifierOpen(true)}>
-          <i className='ti ti-edit' aria-hidden='true'></i>
-          Modifier
-        </Button>
-        <Button variant="outline" className="gap-2" onClick={() => window.open(`/p/${projet.slug}`, '_blank')}>
-          <Eye className="w-4 h-4" />
-          Vue client
-        </Button>
-        <Button variant="outline" className="gap-2" onClick={() => setPrintDialogOpen(true)}>
-          <Printer className="w-4 h-4" />
-          Imprimer
-        </Button>
-        <Button variant="outline" className="gap-2" disabled title="Bientôt disponible">
-          <Send className="w-4 h-4" />
-          Envoyer au client
-        </Button>
-        <Button
-          variant="outline"
-          className="gap-2 text-red-600 hover:bg-red-50"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          <Trash2 className="w-4 h-4" />
-          {deleting ? 'Suppression...' : 'Supprimer'}
-        </Button>
-      </div>
+      {/* En-tête fiche projet (REF ProjectPage) — présentation uniquement */}
+      <div>
+        {/* Breadcrumb */}
+        <button onClick={() => router.push('/projets')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 12, padding: 0, marginBottom: 12, fontFamily: 'var(--font-sans)' }}>
+          <i className="ti ti-chevron-left" aria-hidden="true" style={{ fontSize: 14 }} />Tous les projets
+        </button>
 
-      {/* Entête */}
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-gray-900">{projet.adresse}, {projet.ville}</h1>
-            <div className="flex items-center gap-2 text-gray-600 text-sm">
-              <MapPin className="w-4 h-4" />
-              <span>Client: {projet.client.prenom} {projet.client.nom}</span>
+        {/* Titre + actions */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>{projet.adresse}</h1>
+              <PhaseBadge phase={projet.phase} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+              <span>{projet.ville}</span>
+              <span style={{ color: 'var(--text-disabled)' }}>·</span>
+              <i className="ti ti-user" aria-hidden="true" style={{ fontSize: 14 }} />
+              <span>{projet.client.prenom} {projet.client.nom}</span>
+              <span style={{ color: 'var(--text-disabled)' }}>·</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-2xs)', fontWeight: 600, padding: '3px 8px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{projet.typeContrat === 'PRELIMINAIRE' ? 'Préliminaire' : 'Entreprise'}</span>
             </div>
           </div>
-          <div className="text-right space-y-2">
-            <Badge className={getPhaseColor(projet.phase)}>
-              {getPhaseLabel(projet.phase)}
-            </Badge>
-            {isOverdue && <Badge className="bg-red-100 text-red-800">EN RETARD</Badge>}
-            {isUrgent && !isOverdue && <Badge className="bg-orange-100 text-orange-800">URGENT</Badge>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Button variant="outline" className="gap-2" onClick={() => setModifierOpen(true)}>
+              <i className="ti ti-pencil" aria-hidden="true" />Modifier
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => window.open(`/p/${projet.slug}`, '_blank')}>
+              <i className="ti ti-eye" aria-hidden="true" />Vue client
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => setPrintDialogOpen(true)}>
+              <i className="ti ti-printer" aria-hidden="true" />Imprimer
+            </Button>
+            {/* Action principale (rouge) — désactivée tant que la fonctionnalité n'est pas livrée */}
+            <Button className="gap-2" disabled title="Bientôt disponible">
+              <i className="ti ti-send" aria-hidden="true" />Envoyer au client
+            </Button>
+            <Button variant="outline" className="gap-2 text-red-600 hover:bg-red-50" onClick={handleDelete} disabled={deleting}>
+              <i className="ti ti-trash" aria-hidden="true" />{deleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
           </div>
         </div>
 
-        {/* Vue d'ensemble — 4 stats (style REF : hairlines, eyebrow + valeur) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+        {/* Vue d'ensemble — bande compacte 4 cellules (hairlines) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 1, background: 'var(--border)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', margin: '18px 0 4px' }}>
+          {/* Avancement global */}
           <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Client</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{projet.client.prenom} {projet.client.nom}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{projet.client.email}</div>
+            <div style={eyebrow}>Avancement global</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 5 }}>
+              <span style={{ fontSize: 22, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{avancement}%</span>
+              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{etapesCompletes}/{projet.taches.length} étapes</span>
+            </div>
+            <div style={{ marginTop: 8, height: 5, background: 'var(--n-100)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${avancement}%`, background: phaseBar(projet.phase), borderRadius: 'var(--radius-full)' }} />
+            </div>
           </div>
+          {/* Montant du contrat */}
           <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Vendeur</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{projet.vendeur ? `${projet.vendeur.prenom} ${projet.vendeur.nom}` : 'Non assigné'}</div>
+            <div style={eyebrow}>Montant du contrat</div>
+            <div style={statVal}>{formatMontant(Number(projet.montantTotal), 0)}</div>
           </div>
+          {/* Livraison */}
           <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Chargé de projet</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{projet.chargeProjet ? `${projet.chargeProjet.prenom} ${projet.chargeProjet.nom}` : 'Non assigné'}</div>
-          </div>
-          <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>Livraison</div>
-            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, color: joursRestants !== null && joursRestants < 14 ? 'var(--danger)' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatDate(projet.dateLivraison)}</div>
+            <div style={eyebrow}>Livraison</div>
+            <div style={{ ...statVal, color: joursRestants !== null && joursRestants <= 14 ? 'var(--danger)' : 'var(--text-primary)' }}>{formatDate(projet.dateLivraison)}</div>
             {joursRestants !== null && (
-              <div style={{ fontSize: 11, marginTop: 1, color: joursRestants < 0 ? 'var(--danger)' : 'var(--text-tertiary)' }}>
-                {joursRestants < 0 ? `${Math.abs(joursRestants)} j. en retard` : `${joursRestants} j. restants`}
-              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{joursRestants < 0 ? `${Math.abs(joursRestants)} jours de retard` : `${joursRestants} jours restants`}</div>
+            )}
+          </div>
+          {/* Prochaine étape */}
+          <div style={{ background: 'var(--surface)', padding: '14px 16px' }}>
+            <div style={eyebrow}>Prochaine étape</div>
+            <div style={{ ...statVal, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prochaineEtape ? prochaineEtape.nom : '—'}</div>
+            {prochaineEtape && (
+              <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{prochaineEtape.assigneA || 'Interne'} · {dateCourt(prochaineEtape.dateDebut)}</div>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Métriques — cards sobres (tokens DG, plus de bleu plein) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-        {[
-          { label: 'Avancement', value: `${avancement}%` },
-          { label: 'Étapes', value: projet.taches.length },
-          { label: 'Extras', value: projet.extras.length },
-          { label: 'Extras signés', value: formatMontant(totalExtrasSignes) },
-          { label: 'Paiements', value: projet.paiements.length },
-        ].map((m, i) => (
-          <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '13px 15px' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 7 }}>{m.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.15, letterSpacing: '-0.018em', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{m.value}</div>
+        {/* Alerte projet contextuelle */}
+        {joursRestants !== null && joursRestants <= 14 ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--danger-tint)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginTop: 12, fontSize: 12.5, color: 'var(--danger-text)' }}>
+            <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
+            <span><span style={{ fontWeight: 600 }}>Livraison imminente</span> — {joursRestants < 0 ? `livraison dépassée de ${Math.abs(joursRestants)} jours` : `remise des clés dans ${joursRestants} jours`}.{soldeRestant > 0 ? ` Solde de ${formatMontant(soldeRestant, 0)} à percevoir.` : ''}</span>
           </div>
-        ))}
+        ) : prochaineEtape ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, background: 'var(--info-tint)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginTop: 12, fontSize: 12.5, color: 'var(--info-text)' }}>
+            <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
+            <span><span style={{ fontWeight: 600 }}>{prochaineEtape.nom}</span> en cours — {prochaineEtape.assigneA || 'Interne'} · à coordonner d'ici le {dateCourt(prochaineEtape.dateDebut)}.</span>
+          </div>
+        ) : null}
       </div>
 
       {/* Onglets */}
