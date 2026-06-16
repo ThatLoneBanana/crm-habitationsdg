@@ -160,6 +160,111 @@ function paiementsPour(typeContrat: string, total: number) {
     { description: 'Remise des clés (15 %)', montant: total * 0.15, pourcentage: 15 as number | null, recu: false },
   ];
 }
+// ── Couches financières (feuilles de temps + dépenses) — proportionnelles à
+//    l'avancement, calibrées sur une marge FINALE réaliste par projet. ─────────
+
+// Marge finale cible (à 100 %) par projet, alignée sur l'ordre de PROJETS.
+// Variété : la plupart 15-22 % « sain » ; quelques projets quasi terminés à
+// 7-9 % « à surveiller » ; 1 « sous pression » à 5 %.
+const MARGES_FINALES = [20, 18, 7, 19, 20, 16, 22, 15, 18, 17, 21, 9, 19, 16, 20, 18, 22, 17, 5, 21];
+
+interface Item { description: string; fournisseur: string }
+const FOURN_MAT = ['Bomat', 'Canac', 'Rona', 'BMR'];
+const ITEMS_MAT: Item[] = [
+  'Bois de charpente 2x6', 'Bois de charpente 2x4', 'Gypse 4x8 — 120 feuilles', 'Béton fondation — 14 m³',
+  'Bardeaux de toiture', 'Fenêtres PVC — lot', 'Portes intérieures', 'Isolant R-24', 'Revêtement extérieur (canexel)',
+  'Plancher ingénierie', 'Comptoir quartz', 'Céramique salle de bain', 'Quincaillerie et attaches', 'Membrane de toiture',
+].map((d, k) => ({ description: d, fournisseur: FOURN_MAT[k % FOURN_MAT.length] }));
+const ITEMS_SOUS: Item[] = ([
+  ['Sous-traitance plomberie — rough', 'Plomberie Côté'], ['Plomberie — finition', 'Plomberie Côté'],
+  ['Électricité — filage', 'Élec. Vachon'], ['Électricité — finition', 'Élec. Vachon'],
+  ['Pose et tirage de gypse', 'Gypse Beauce'], ['Peinture intérieure', 'Peinture Martin'],
+  ['Céramique — pose', 'Céramique Plus'], ['Armoires — installation', 'Cuisines Beauce'],
+  ["Ventilation / échangeur d'air", 'Ventil. Express'],
+] as [string, string][]).map(([description, fournisseur]) => ({ description, fournisseur }));
+const ITEMS_EQUIP: Item[] = ([
+  ['Location nacelle', 'Location Beauce'], ['Location pompe à béton', 'Location Beauce'],
+  ['Location échafaudage', 'Loca-Outils'], ['Chauffage temporaire de chantier', 'Loca-Outils'],
+] as [string, string][]).map(([description, fournisseur]) => ({ description, fournisseur }));
+const ITEMS_AUTRE: Item[] = ([
+  ['Permis municipal', 'Municipalité'], ['Conteneur à déchets', 'Services Sanitaires'],
+  ['Branchement Hydro temporaire', 'Hydro-Québec'], ["Frais d'arpentage", 'Arpentage Bernard'],
+] as [string, string][]).map(([description, fournisseur]) => ({ description, fournisseur }));
+
+// PRNG déterministe (mulberry32) → données stables d'une exécution à l'autre.
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function startOfDay(d: Date): Date { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function mondayOnOrBefore(d: Date): Date { const x = startOfDay(d); const day = x.getDay(); x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day)); return x; }
+function lundisEcoules(debut: Date, now: Date): Date[] {
+  const out: Date[] = [];
+  let m = mondayOnOrBefore(debut);
+  while (m.getTime() <= now.getTime()) { out.push(new Date(m)); m = new Date(m.getTime() + 7 * 86400000); }
+  return out;
+}
+
+interface Emp { id: string; tauxHoraire: number }
+type FeuilleRow = { projetId: string; employeId: string; date: Date; heures: number; tauxHoraire: number; notes: string | null; approuve: boolean };
+type DepRow = { projetId: string; categorie: 'MATERIAUX' | 'SOUS_TRAITANT' | 'EQUIPEMENT' | 'AUTRE'; description: string; fournisseur: string; montant: number; dateDepense: Date; facture: string | null; notes: string | null };
+
+// Feuilles de temps réalistes (7 h/jour ouvrable ≤ max), réparties sur les
+// semaines écoulées. 1-3 employés selon avancement/taille. Retourne aussi le
+// coût main-d'œuvre réel (Σ heures × taux figé).
+function genFeuilles(projetId: string, offset: number, A: number, montant: number, debut: Date, now: Date, employes: Emp[], maxHeures: number): { rows: FeuilleRow[]; coutMO: number } {
+  const rows: FeuilleRow[] = [];
+  let coutMO = 0;
+  if (employes.length === 0 || A <= 0) return { rows, coutMO };
+  const nbEmp = Math.max(1, Math.min(3, 1 + (A > 0.5 ? 1 : 0) + (montant > 580000 ? 1 : 0)));
+  const heuresJour = Math.min(7, maxHeures / 5); // ≤ max/semaine
+  const debut0 = startOfDay(debut).getTime();
+  for (let k = 0; k < nbEmp; k++) {
+    const emp = employes[(offset + k) % employes.length];
+    for (const lundi of lundisEcoules(debut, now)) {
+      for (let dj = 0; dj < 5; dj++) {
+        const jour = new Date(lundi.getTime() + dj * 86400000);
+        if (jour.getTime() < debut0 || jour.getTime() > now.getTime()) continue;
+        rows.push({ projetId, employeId: emp.id, date: jour, heures: heuresJour, tauxHoraire: emp.tauxHoraire, notes: null, approuve: true });
+        coutMO += heuresJour * emp.tauxHoraire;
+      }
+    }
+  }
+  return { rows, coutMO };
+}
+
+// Lignes de dépenses (hors main-d'œuvre) totalisant `budget`, réparties par
+// catégorie et dans le passé.
+function genDepenses(projetId: string, A: number, budget: number, debut: Date, now: Date, rng: () => number): DepRow[] {
+  const rows: DepRow[] = [];
+  if (budget <= 0) return rows;
+  const span = Math.max(1, now.getTime() - startOfDay(debut).getTime());
+  const cats: { categorie: DepRow['categorie']; part: number; items: Item[]; count: number }[] = [
+    { categorie: 'MATERIAUX', part: 0.62, items: ITEMS_MAT, count: Math.max(4, Math.min(16, Math.round(8 + A * 8))) },
+    { categorie: 'SOUS_TRAITANT', part: 0.28, items: ITEMS_SOUS, count: Math.max(2, Math.min(8, Math.round(3 + A * 5))) },
+    { categorie: 'EQUIPEMENT', part: 0.07, items: ITEMS_EQUIP, count: Math.max(1, Math.min(3, Math.round(1 + A * 2))) },
+    { categorie: 'AUTRE', part: 0.03, items: ITEMS_AUTRE, count: Math.max(1, Math.min(2, Math.round(1 + A))) },
+  ];
+  for (const c of cats) {
+    const catBudget = budget * c.part;
+    const poids: number[] = [];
+    let somme = 0;
+    for (let n = 0; n < c.count; n++) { const w = 0.6 + rng(); poids.push(w); somme += w; }
+    for (let n = 0; n < c.count; n++) {
+      const montant = Math.round((catBudget * poids[n] / somme) / 5) * 5;
+      if (montant <= 0) continue;
+      const it = c.items[n % c.items.length];
+      const dateDepense = new Date(startOfDay(debut).getTime() + Math.floor(rng() * span));
+      rows.push({ projetId, categorie: c.categorie, description: it.description, fournisseur: it.fournisseur, montant, dateDepense, facture: null, notes: null });
+    }
+  }
+  return rows;
+}
+
 // Étapes de base (depuis un template, jamais hardcodées).
 function baseDepuisTemplate(etapes: { nom: string; ordre: number; joursDefaut: number; assigneA: string | null; visibleClient: boolean; interne: boolean }[]): EtapeEditable[] {
   return etapes.map((te) => ({
@@ -198,6 +303,9 @@ async function main() {
 
   const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
   const marge = parametres?.margeCeduleJours ?? 5;
+  const maxHeures = parametres?.maxHeuresParSemaine ?? 36.5;
+  // Employés existants (lus, JAMAIS créés ici) → main-d'œuvre des feuilles.
+  const employes: Emp[] = (await prisma.employe.findMany({ where: { actif: true }, orderBy: { tauxHoraire: 'asc' } })).map((e) => ({ id: e.id, tauxHoraire: e.tauxHoraire }));
 
   const baseParType: Record<TypeP, EtapeEditable[]> = {
     JUMELE: baseDepuisTemplate(tplJumele!.etapes),
@@ -226,6 +334,9 @@ async function main() {
   // 3) + 4) Projets + cédule depuis le template de leur type
   type Ligne = { type: string; phase: string; avancement: number; ville: string; adresse: string; livraison: Date; slug: string; coords: string; etapes: number };
   const resume: Ligne[] = [];
+  let totalFeuilles = 0;
+  let totalDepenses = 0;
+  const costing: { adresse: string; revenu: number; depenses: number; marge: number }[] = [];
 
   for (let i = 0; i < PROJETS.length; i++) {
     const p = PROJETS[i];
@@ -283,6 +394,31 @@ async function main() {
       data: paiementsPour(p.typeContrat, p.montant).map((pp) => ({ projetId: projet.id, ...pp })),
     });
 
+    // Couche financière — proportionnelle à l'avancement A, calibrée sur la marge
+    // FINALE du projet. Main-d'œuvre (feuilles) + dépenses (matériaux/sous-traitants/
+    // équipement/autre). Rien si avancement nul (projets SIGNE).
+    const A = passees / nbEtapes;
+    let depTotal = 0;
+    if (A > 0) {
+      const margeFinale = MARGES_FINALES[i] ?? 18;
+      const fullBudget = p.montant * (1 - margeFinale / 100);
+      // Coûts engagés proportionnels à l'avancement, avec un plancher
+      // « mobilisation » (~21 % du contrat) dès que le chantier est lancé
+      // (≥ 15 %) : fondation/charpente/matériaux sont front-loadés. Garde la
+      // marge affichée < 80 % sur les chantiers actifs sans gonfler les projets
+      // à peine commencés (PREPARATION).
+      const engagedProp = A * fullBudget;
+      const engaged = A >= 0.15 ? Math.max(engagedProp, p.montant * 0.21) : engagedProp;
+      const { rows: feuilles, coutMO } = genFeuilles(projet.id, i, A, p.montant, premierDebut, now, employes, maxHeures);
+      const nonLabor = Math.max(0, engaged - coutMO);
+      const deps = genDepenses(projet.id, A, nonLabor, premierDebut, now, mulberry32(i + 1));
+      if (feuilles.length > 0) { await prisma.feuilleTemps.createMany({ data: feuilles }); totalFeuilles += feuilles.length; }
+      if (deps.length > 0) { await prisma.depense.createMany({ data: deps }); totalDepenses += deps.length; }
+      depTotal = coutMO + deps.reduce((s, d) => s + d.montant, 0);
+    }
+    const margeAffichee = p.montant > 0 ? Math.round(((p.montant - depTotal) / p.montant) * 100) : 0;
+    costing.push({ adresse: `${p.adresse}, ${p.ville}`, revenu: p.montant, depenses: Math.round(depTotal), marge: margeAffichee });
+
     resume.push({ type: p.type, phase: p.phase, avancement, ville: p.ville, adresse: p.adresse, livraison, slug, coords: `${lat}, ${lng}`, etapes: cedule.length });
   }
 
@@ -302,6 +438,20 @@ async function main() {
   console.log(`\nPlage de livraisons : ${span} jours (~${Math.round(span / 30)} mois) → Gantt avec chevauchements.`);
   console.log(`Carte : ${tousCoords ? 'OK — 20 projets géocodés.' : '⚠ coordonnées manquantes.'}`);
   console.log(`Vue client : ${tousSlug ? 'OK — 20 slugs.' : '⚠ slug manquant.'}`);
+
+  // Financier
+  console.log(`\nFinancier : ${totalFeuilles} feuilles de temps, ${totalDepenses} dépenses fournisseurs.`);
+  const sain = costing.filter((c) => c.marge >= 20).sort((a, b) => b.depenses - a.depenses)[0];
+  const surveiller = costing.filter((c) => c.marge >= 10 && c.marge < 20).sort((a, b) => a.marge - b.marge)[0];
+  const pression = costing.filter((c) => c.marge < 10).sort((a, b) => a.marge - b.marge)[0];
+  console.log('Costing — exemples (revenu / dépenses engagées / marge affichée) :');
+  for (const ex of [sain, surveiller, pression]) {
+    if (ex) {
+      const sante = ex.marge >= 20 ? 'sain' : ex.marge >= 10 ? 'à surveiller' : 'sous pression';
+      console.log(`  ${ex.adresse} : ${ex.revenu.toLocaleString('fr-CA')} $ / ${ex.depenses.toLocaleString('fr-CA')} $ / ${ex.marge}% (${sante})`);
+    }
+  }
+  console.log(`Santé : ${costing.filter((c) => c.marge >= 20).length} sains · ${costing.filter((c) => c.marge >= 10 && c.marge < 20).length} à surveiller · ${costing.filter((c) => c.marge < 10).length} sous pression.`);
 }
 
 main()
