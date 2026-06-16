@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { ProjetWithRelations } from '@/types';
 import { ProjetsGantt } from '@/components/projets/ProjetsGantt';
+import { ProjetIdentite } from '@/components/projets/ProjetIdentite';
 
 /* — Primitives DG (tokens uniquement, aucune couleur hardcodée) —
    Alignées sur le design system (cf. DashboardClient) et la maquette
@@ -311,8 +312,7 @@ export default function ProjetListPage() {
                     >
                       {/* Projet */}
                       <td style={{ padding: '11px 14px' }}>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.adresse}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{p.ville} · {p.client.prenom} {p.client.nom}</div>
+                        <ProjetIdentite adresse={p.adresse} ville={p.ville} client={`${p.client.prenom} ${p.client.nom}`} />
                       </td>
                       {/* Phase */}
                       <td style={{ padding: '11px 14px' }}><PhaseBadge phase={p.phase} /></td>

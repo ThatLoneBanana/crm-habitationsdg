@@ -126,13 +126,6 @@ function removeAccents(str: string) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-function generateSlug(prenom: string, nom: string, adresse: string) {
-  const cleanPrenom = removeAccents(prenom).toLowerCase().replace(/\s+/g, '');
-  const cleanNom = removeAccents(nom).toLowerCase().replace(/\s+/g, '');
-  const cleanAdresse = removeAccents(adresse).toLowerCase().replace(/\s+/g, '-');
-  return `${cleanPrenom}${cleanNom}-${cleanAdresse}`;
-}
-
 function calculateWorkingDays(startDate: Date, endDate: Date) {
   let count = 0;
   let current = new Date(startDate);
@@ -166,17 +159,22 @@ function subtractWorkingDays(date: Date, daysToSubtract: number) {
 }
 
 async function generateSlugUnique(prenom: string, nom: string, adresse: string): Promise<string> {
-  const normalize = (str: string) => str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]/g, '');
-
+  // Format : {nomclient}-{numerocivique}-{rue} (ex. catherinenadeau-47-sainte-anne).
+  //  nomclient : prénom+nom collés, accents retirés, minuscule, alphanumérique.
+  //  rue       : TOUS les mots de la rue (« rue », « chemin »… conservés),
+  //              accents retirés, minuscule, espaces → tirets, tirets existants
+  //              préservés, collapse des tirets multiples.
+  const slugAccents = (str: string) => removeAccents(str).toLowerCase();
+  const nomclient = slugAccents(`${prenom}${nom}`).replace(/[^a-z0-9]/g, '');
   const numAdresse = adresse.match(/^\d+/)?.[0] || '';
-  const premierMot = adresse.replace(/^\d+\s*/, '').split(/[\s-]/)[0];
-  const rueClean = normalize(premierMot);
+  const reste = adresse.replace(/^\d+\s*/, '');
+  const rueClean = slugAccents(reste)
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
-  const baseSlug = `${normalize(prenom)}${normalize(nom)}-${numAdresse}-${rueClean}`;
+  const baseSlug = [nomclient, numAdresse, rueClean].filter(Boolean).join('-');
 
   // Vérifie si le slug existe déjà
   const existing = await prisma.projet.findUnique({ where: { slug: baseSlug } });

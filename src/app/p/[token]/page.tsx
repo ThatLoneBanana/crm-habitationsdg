@@ -82,8 +82,6 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
 
   const extrasSignes = projet.extras.filter((e: any) => e.statut === 'SIGNE');
   const totalExtrasSignes = extrasSignes.reduce((s: number, e: any) => s + Number(e.montant), 0);
-  const totalRecu = projet.paiements.filter((p: any) => p.recu).reduce((s: number, p: any) => s + Number(p.montant), 0);
-  const totalPlanifie = projet.paiements.reduce((s: number, p: any) => s + Number(p.montant), 0);
 
   const nomCompagnie = parametres?.nomCompagnie ?? 'Habitations DG';
   const siteWeb = parametres?.siteWeb ?? 'habitations-dg.com';
@@ -170,26 +168,6 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0 0', marginTop: 4, borderTop: '1px solid var(--divider)', fontSize: 12.5, fontWeight: 600 }}>
             <span>Total</span>
             <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--success-text)' }}>{formatMontant(totalExtrasSignes)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Échéancier de paiement (info client déjà exposée par l'API) */}
-      {projet.paiements.length > 0 && (
-        <div style={{ padding: '4px 18px 14px', borderTop: '1px solid var(--divider)' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', margin: '12px 0 10px' }}>Échéancier de paiement</div>
-          {projet.paiements.map((p: any) => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '6px 0', fontSize: 12.5 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', flex: '0 0 auto', background: p.recu ? 'var(--success)' : 'var(--warning)' }} />
-                <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.description}</span>
-              </span>
-              <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: p.recu ? 'var(--success-text)' : 'var(--text-primary)', whiteSpace: 'nowrap' }}>{formatMontant(Number(p.montant))}</span>
-            </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0 0', marginTop: 4, borderTop: '1px solid var(--divider)', fontSize: 12.5, fontWeight: 600 }}>
-            <span>Reçu à ce jour</span>
-            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatMontant(totalRecu)} / {formatMontant(totalPlanifie)}</span>
           </div>
         </div>
       )}

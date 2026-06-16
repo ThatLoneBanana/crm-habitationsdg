@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatMontant, formatMontantCourt } from '@/lib/utils'
+import { ProjetIdentite } from '@/components/projets/ProjetIdentite'
 
 const PHASES: Record<string, { label: string; tint: string; ink: string; bar: string }> = {
   SIGNE:       { label: 'Signé',       tint: 'var(--phase-signe-tint)',       ink: 'var(--phase-signe-ink)',       bar: 'var(--phase-signe-bar)' },
@@ -118,7 +119,7 @@ export default function DashboardClient({
 }: any) {
   const router = useRouter()
   const now = new Date()
-  const joursLabels = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
+  const joursLabels = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi']
   const moisLabels = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
   const nbEtapes = agendaSemaine.reduce((s: number, j: any) => s + j.etapes.length, 0)
@@ -178,7 +179,7 @@ export default function DashboardClient({
 
           {/* Agenda */}
           <Card>
-            <CardHeader icon="ti-calendar-week" iconColor="var(--info)" title="Agenda de la semaine" action={<span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{nbEtapes} étapes</span>} />
+            <CardHeader icon="ti-calendar-week" iconColor="var(--dg-red)" title="Agenda de la semaine" action={<span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{nbEtapes} étapes</span>} />
             {agendaSemaine.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 }}>
                 Aucune étape planifiée cette semaine
@@ -186,7 +187,7 @@ export default function DashboardClient({
             ) : agendaSemaine.map((jour: any, ji: number) => (
               <div key={ji}>
                 <div style={{ display: 'flex', alignItems: 'center', padding: '6px 14px', background: 'var(--surface-subtle)', borderBottom: '1px solid var(--divider)', borderTop: ji > 0 ? '1px solid var(--divider)' : 'none', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  <span style={{ textTransform: 'capitalize' }}>{jour.label}</span>
+                  <span>{jour.label}</span>
                 </div>
                 {jour.etapes.map((e: any, ei: number) => {
                   const estInterne = !e.assigneA || e.assigneA === 'Interne'
@@ -216,8 +217,7 @@ export default function DashboardClient({
             <Row key={i} last={i === projets.length - 1} onClick={() => router.push(`/projets/${p.slug || p.id}`)}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 14px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.client.prenom} {p.client.nom}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.adresse}</div>
+                  <ProjetIdentite adresse={p.adresse} ville={p.ville} client={`${p.client.prenom} ${p.client.nom}`} />
                   {p.prochaineEtape && (
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>↳ {p.prochaineEtape.nom}</div>
                   )}

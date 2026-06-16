@@ -84,7 +84,7 @@ export default async function DashboardPage() {
     })
 
     const agendaSemaine: any[] = []
-    const joursLabels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+    const joursLabels = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam']
     const moisLabels = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc']
     for (let i = 0; i < 7; i++) {
       const jour = new Date(aujourd_hui)
@@ -156,7 +156,7 @@ export default async function DashboardPage() {
     console.error('Dashboard error:', error)
     return (
       <div style={{ padding: '24px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px' }}>Dashboard</h1>
+        <h1 style={{ fontSize: '18px', fontWeight: 500, marginBottom: '8px' }}>Tableau de bord</h1>
         <p style={{ color: 'red', fontSize: '12px', marginBottom: '12px' }}>Erreur: {String(error)}</p>
         <a href='/projets' style={{ color: '#1D9E75', fontSize: '13px' }}>→ Voir les projets</a>
       </div>
