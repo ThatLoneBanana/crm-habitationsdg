@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { formatMontant, formatDate } from '@/lib/utils';
 import { ProjetWithRelations } from '@/types';
+import { ProjetsGantt } from '@/components/projets/ProjetsGantt';
 
 /* — Primitives DG (tokens uniquement, aucune couleur hardcodée) —
    Alignées sur le design system (cf. DashboardClient) et la maquette
@@ -89,6 +90,26 @@ function Avatar({ name, assigned }: { name: string; assigned: boolean }) {
   );
 }
 
+function SegmentedControl<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: string; icon: string }[] }) {
+  return (
+    <div style={{ display: 'inline-flex', padding: 3, gap: 2, background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <button key={o.value} onClick={() => onChange(o.value)} style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, padding: '0 10px', fontSize: 12, fontWeight: 600,
+            border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+            background: active ? 'var(--surface)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+            boxShadow: active ? 'var(--shadow-sm)' : 'none',
+          }}>
+            <i className={`ti ti-${o.icon}`} aria-hidden="true" style={{ fontSize: 14 }} />{o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function EmptyState({ icon, title, message }: { icon: string; title: string; message: string }) {
   return (
     <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
@@ -127,10 +148,11 @@ export default function ProjetListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // État de présentation — filtre/recherche/tri en mémoire, AUCUN appel API supplémentaire.
+  // État de présentation — filtre/recherche/tri/vue en mémoire, AUCUN appel API supplémentaire.
   const [phase, setPhase] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<'livraison' | 'avancement' | 'montant'>('livraison');
+  const [vue, setVue] = useState<'liste' | 'gantt'>('liste');
 
   // Fetch unique de tous les projets (logique de données inchangée : même endpoint,
   // mêmes calculs serveur d'avancement et de phase).
@@ -163,14 +185,19 @@ export default function ProjetListPage() {
     [projets]
   );
 
-  const rows = useMemo(() => {
+  // Filtre commun aux deux vues (phase + recherche).
+  const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const filtered = projets.filter((p) => {
+    return projets.filter((p) => {
       if (phase && p.phase !== phase) return false;
       if (!term) return true;
       const hay = `${p.client?.prenom ?? ''} ${p.client?.nom ?? ''} ${p.adresse ?? ''} ${p.ville ?? ''}`.toLowerCase();
       return hay.includes(term);
     });
+  }, [projets, phase, q]);
+
+  // Liste : tri configurable. (Le Gantt trie toujours par livraison, en interne.)
+  const rows = useMemo(() => {
     return [...filtered].sort((a, b) => {
       if (sort === 'avancement') return ((b as any).avancement ?? 0) - ((a as any).avancement ?? 0);
       if (sort === 'montant') return Number(b.montantTotal ?? 0) - Number(a.montantTotal ?? 0);
@@ -179,7 +206,7 @@ export default function ProjetListPage() {
       const db = b.dateLivraison ? new Date(b.dateLivraison).getTime() : Infinity;
       return da - db;
     });
-  }, [projets, phase, q, sort]);
+  }, [filtered, sort]);
 
   // Suppression — mutation câblée préservée (DELETE + confirmation).
   const handleDelete = async (p: ProjetWithRelations, e: React.MouseEvent) => {
@@ -230,27 +257,37 @@ export default function ProjetListPage() {
               style={{ height: 32, width: 250, padding: '0 10px 0 30px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-sans)', background: 'var(--surface)', color: 'var(--text-primary)' }}
             />
           </div>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as 'livraison' | 'avancement' | 'montant')}
-            style={{ height: 32, padding: '0 10px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', cursor: 'pointer' }}
-          >
-            <option value="livraison">Trier : livraison</option>
-            <option value="avancement">Trier : avancement</option>
-            <option value="montant">Trier : montant</option>
-          </select>
+          {vue === 'liste' && (
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as 'livraison' | 'avancement' | 'montant')}
+              style={{ height: 32, padding: '0 10px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            >
+              <option value="livraison">Trier : livraison</option>
+              <option value="avancement">Trier : avancement</option>
+              <option value="montant">Trier : montant</option>
+            </select>
+          )}
+          <SegmentedControl<'liste' | 'gantt'>
+            value={vue}
+            onChange={setVue}
+            options={[{ value: 'liste', label: 'Liste', icon: 'list' }, { value: 'gantt', label: 'Gantt', icon: 'timeline' }]}
+          />
         </div>
       </div>
 
-      {/* Tableau */}
-      <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
-        {error ? (
+      {/* Vue : Liste (tableau) ou Gantt macro multi-projets */}
+      {error ? (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
           <EmptyState icon="alert-triangle" title="Erreur de chargement" message={error} />
-        ) : loading ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Chargement…</div>
-        ) : (
-          <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+        </div>
+      ) : loading ? (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface)', padding: '48px 24px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>Chargement…</div>
+      ) : vue === 'gantt' ? (
+        <ProjetsGantt projets={filtered} onOpen={(slug) => router.push(`/projets/${slug}`)} />
+      ) : (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
                   {HEAD.map((h, i) => (
@@ -337,9 +374,8 @@ export default function ProjetListPage() {
                 message={projets.length === 0 ? "Aucun projet n'a encore été créé." : 'Aucun projet ne correspond à ce filtre ou à cette recherche.'}
               />
             )}
-          </>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
