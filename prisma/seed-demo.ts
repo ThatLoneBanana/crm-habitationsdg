@@ -99,13 +99,26 @@ const PROJETS: ProjetDemo[] = [
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function normalize(str: string): string {
-  return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+function slugAccents(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
-function buildSlug(prenom: string, nom: string, adresse: string): string {
-  const numAdresse = adresse.match(/^\d+/)?.[0] ?? '';
-  const premierMot = adresse.replace(/^\d+\s*/, '').split(/[\s-]/)[0] ?? '';
-  return `${normalize(prenom)}${normalize(nom)}-${numAdresse}-${normalize(premierMot)}`;
+// Slug au format {nomclient}-{numero}-{nomrue} :
+//  nomclient = prénom+nom collés (accents retirés, alphanumérique uniquement)
+//  numero    = numéro civique tel quel
+//  nomrue    = TOUS les mots de la rue (« rue », « chemin »… inclus), accents
+//              retirés, espaces→tirets, tirets existants conservés, collapse.
+//  Ex. Catherine Nadeau, 47 Sainte-Anne     → catherinenadeau-47-sainte-anne
+//      Jason Gagné, 5 rue Amanda-Gustave     → jasongagne-5-rue-amanda-gustave
+function genererSlug(prenom: string, nom: string, adresse: string): string {
+  const nomclient = slugAccents(`${prenom}${nom}`).replace(/[^a-z0-9]/g, '');
+  const numero = adresse.match(/^\d+/)?.[0] ?? '';
+  const reste = adresse.replace(/^\d+\s*/, '');
+  const nomrue = slugAccents(reste)
+    .replace(/\s+/g, '-')        // espaces → tirets
+    .replace(/[^a-z0-9-]/g, '')  // retire non-alphanum sauf tirets
+    .replace(/-+/g, '-')         // collapse tirets multiples
+    .replace(/^-|-$/g, '');      // trim tirets aux bords
+  return [nomclient, numero, nomrue].filter(Boolean).join('-');
 }
 function coordsPour(ville: string, idx: number): [number, number] {
   const base = CITIES[ville] ?? [46.6, -70.95];
@@ -147,17 +160,29 @@ function trouverLivraison(base: EtapeEditable[], marge: number, cibleN: number, 
   }
   return best;
 }
-function paiementsPour(typeContrat: string, total: number) {
+type PaiementRow = { description: string; montant: number; pourcentage: number | null; recu: boolean; dateRecu: Date | null; datePrevu: Date | null };
+// Paiements selon le type de contrat ET l'avancement (A = fraction 0..1).
+//  Préliminaire : acompte 15 000 $ (reçu si chantier commencé) + solde via
+//    notaire (reçu seulement si livré ~100 %).
+//  Entreprise : 3 jalons reçus selon des seuils d'avancement — toiture ~38 %,
+//    gypse ~62 %, remise des clés ~98 %.
+function paiementsPour(typeContrat: string, total: number, A: number, now: Date): PaiementRow[] {
+  const passe = (jours: number) => dayPlus(now, -jours); // dateRecu dans le passé
   if (typeContrat === 'PRELIMINAIRE') {
+    const acompteRecu = A > 0;
+    const soldeRecu = A >= 0.98;
     return [
-      { description: 'Acompte', montant: 15000, pourcentage: null as number | null, recu: false },
-      { description: 'Solde — notaire', montant: total - 15000, pourcentage: null as number | null, recu: false },
+      { description: 'Acompte', montant: 15000, pourcentage: null, recu: acompteRecu, dateRecu: acompteRecu ? passe(110) : null, datePrevu: null },
+      { description: 'Solde — notaire', montant: total - 15000, pourcentage: null, recu: soldeRecu, dateRecu: soldeRecu ? passe(7) : null, datePrevu: null },
     ];
   }
+  const toitureRecu = A >= 0.38;
+  const gypseRecu = A >= 0.62;
+  const remiseRecu = A >= 0.98;
   return [
-    { description: 'Toiture (50 %)', montant: total * 0.5, pourcentage: 50 as number | null, recu: false },
-    { description: 'Gypse (35 %)', montant: total * 0.35, pourcentage: 35 as number | null, recu: false },
-    { description: 'Remise des clés (15 %)', montant: total * 0.15, pourcentage: 15 as number | null, recu: false },
+    { description: 'Toiture (50 %)', montant: total * 0.5, pourcentage: 50, recu: toitureRecu, dateRecu: toitureRecu ? passe(90) : null, datePrevu: null },
+    { description: 'Gypse (35 %)', montant: total * 0.35, pourcentage: 35, recu: gypseRecu, dateRecu: gypseRecu ? passe(45) : null, datePrevu: null },
+    { description: 'Remise des clés (15 %)', montant: total * 0.15, pourcentage: 15, recu: remiseRecu, dateRecu: remiseRecu ? passe(7) : null, datePrevu: null },
   ];
 }
 // ── Couches financières (feuilles de temps + dépenses) — proportionnelles à
@@ -336,7 +361,10 @@ async function main() {
   const resume: Ligne[] = [];
   let totalFeuilles = 0;
   let totalDepenses = 0;
+  let totalAttendu = 0;
   const costing: { adresse: string; revenu: number; depenses: number; marge: number }[] = [];
+  const usedSlugs = new Set<string>();
+  let exempleEntreprise: { adresse: string; avancement: number; jalons: string[] } | null = null;
 
   for (let i = 0; i < PROJETS.length; i++) {
     const p = PROJETS[i];
@@ -349,7 +377,11 @@ async function main() {
     const passees = cedule.filter((e) => estPassee(e.dateFin, now)).length;
     const avancement = Math.round((passees / nbEtapes) * 100);
 
-    const slug = buildSlug(CLIENTS[i].prenom, CLIENTS[i].nom, p.adresse);
+    const A = passees / nbEtapes;
+    // Slug {nomclient}-{numero}-{nomrue}, unique (suffixe -2, -3… si collision).
+    let slug = genererSlug(CLIENTS[i].prenom, CLIENTS[i].nom, p.adresse);
+    if (usedSlugs.has(slug)) { let n = 2; while (usedSlugs.has(`${slug}-${n}`)) n++; slug = `${slug}-${n}`; }
+    usedSlugs.add(slug);
     const premierDebut = cedule[0]?.dateDebut ?? now;
     const ancre = premierDebut.getTime() < now.getTime() ? premierDebut : now;
     const dateContrat = dayPlus(ancre, -21);
@@ -390,14 +422,18 @@ async function main() {
       })),
     });
 
+    const paiements = paiementsPour(p.typeContrat, p.montant, A, now);
     await prisma.paiement.createMany({
-      data: paiementsPour(p.typeContrat, p.montant).map((pp) => ({ projetId: projet.id, ...pp })),
+      data: paiements.map((pp) => ({ projetId: projet.id, ...pp })),
     });
+    totalAttendu += paiements.filter((pp) => !pp.recu).reduce((s, pp) => s + pp.montant, 0);
+    if (!exempleEntreprise && p.typeContrat === 'ENTREPRISE' && avancement >= 45 && avancement <= 60) {
+      exempleEntreprise = { adresse: `${p.adresse}, ${p.ville}`, avancement, jalons: paiements.map((pp) => `${pp.description} — ${pp.recu ? 'reçu' : 'attendu'}`) };
+    }
 
     // Couche financière — proportionnelle à l'avancement A, calibrée sur la marge
     // FINALE du projet. Main-d'œuvre (feuilles) + dépenses (matériaux/sous-traitants/
     // équipement/autre). Rien si avancement nul (projets SIGNE).
-    const A = passees / nbEtapes;
     let depTotal = 0;
     if (A > 0) {
       const margeFinale = MARGES_FINALES[i] ?? 18;
@@ -452,6 +488,15 @@ async function main() {
     }
   }
   console.log(`Santé : ${costing.filter((c) => c.marge >= 20).length} sains · ${costing.filter((c) => c.marge >= 10 && c.marge < 20).length} à surveiller · ${costing.filter((c) => c.marge < 10).length} sous pression.`);
+
+  // Slugs + paiements
+  console.log('\nSlugs (exemples) :');
+  for (const r of resume.slice(0, 3)) console.log(`  ${r.adresse} → ${r.slug}`);
+  console.log(`\nPaiements — total « attendu » (non reçus) = ${Math.round(totalAttendu).toLocaleString('fr-CA')} $.`);
+  if (exempleEntreprise) {
+    console.log(`Exemple Entreprise à ~${exempleEntreprise.avancement}% (${exempleEntreprise.adresse}) :`);
+    for (const j of exempleEntreprise.jalons) console.log(`  ${j}`);
+  }
 }
 
 main()
