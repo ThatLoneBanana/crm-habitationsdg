@@ -245,13 +245,13 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
     }
   };
 
-  // Calculs
+  // Calculs — avancement par DATES (étape terminée ⇔ dateFin passée), cohérent
+  // avec la liste, la carte et la vue client. On réutilise calculateTaskStatus
+  // (task-status.ts) : statut 'completed' = dateFin passée. Pas de 2e calcul.
+  const statutTache = (t: any) => calculateTaskStatus(t.dateDebut, t.dateFin).status;
+  const etapesCompletes = projet.taches.filter((t: any) => statutTache(t) === 'completed').length;
   const avancement = projet.taches.length > 0
-    ? Math.round(
-        (projet.taches.filter((t: any) => t.statut === 'COMPLETE').length /
-          projet.taches.length) *
-          100
-      )
+    ? Math.round((etapesCompletes / projet.taches.length) * 100)
     : 0;
 
   const joursRestants = projet.dateLivraison
@@ -261,12 +261,8 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
       )
     : null;
 
-  // Étapes complétées — même base que l'avancement (statut COMPLETE), pour l'affichage X/Y.
-  const etapesCompletes = projet.taches.filter((t: any) => t.statut === 'COMPLETE').length;
-
   // Prochaine étape (présentation) — par dates depuis la cédule (comme la vue client).
   const sortedTaches = [...projet.taches].sort((a: any, b: any) => (a.ordre ?? 0) - (b.ordre ?? 0));
-  const statutTache = (t: any) => calculateTaskStatus(t.dateDebut, t.dateFin).status;
   const prochaineEtape =
     sortedTaches.find((t: any) => statutTache(t) === 'inProgress') ||
     sortedTaches.find((t: any) => statutTache(t) === 'preparation') ||
