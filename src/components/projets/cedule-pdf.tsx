@@ -95,6 +95,13 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
 
   const ganttWidth = totalDays * pixelPerDay;
 
+  // Hauteur de rangée FIXE et identique pour les deux colonnes (étapes à gauche,
+  // grille de l'échéancier à droite) — évite la désync due à minHeight (auto) à
+  // gauche vs height:'100%' à droite. Présentation seulement.
+  const ROW_H = 12;
+  const BAR_H = 6;
+  const BAR_TOP = (ROW_H - BAR_H) / 2; // barre centrée verticalement dans la rangée
+
   // Calculer position d'une étape
   const getTaskPosition = (dateDebut: Date) => {
     let dayIndex = 0;
@@ -217,9 +224,9 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
     },
     ganttBar: {
       position: 'absolute',
-      height: 6,
+      height: BAR_H,
       borderRadius: 1,
-      top: 2,
+      top: BAR_TOP,
     },
     footer: {
       flexDirection: 'row',
@@ -362,13 +369,13 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
 
           {/* Lignes */}
           {tachesWithDates.map((tache: any, idx: number) => (
-            <View key={tache.id} style={styles.tableRow}>
+            <View key={tache.id} style={[styles.tableRow, { height: ROW_H }]}>
               <Text style={styles.colTache}>
                 {tache.ordre}. {tache.nom?.substring(0, 30)}
               </Text>
               <Text style={styles.colDuree}>{tache.dureeJours}j</Text>
               <Text style={styles.colAssigne}>{tache.assigneA?.substring(0, 12) || '-'}</Text>
-              <View style={[styles.ganttContainer, { width: ganttWidth + 20 }]}>
+              <View style={[styles.ganttContainer, { width: ganttWidth + 20, height: ROW_H }]}>
                 {/* Grille alternée */}
                 {dateColumns.map((date, i) => (
                   <View
@@ -376,7 +383,7 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
                     style={{
                       position: 'absolute',
                       width: pixelPerDay,
-                      height: '100%',
+                      height: ROW_H,
                       left: i * pixelPerDay,
                       backgroundColor: i % 2 === 0 ? '#f9f9f9' : '#fff',
                       borderRightWidth: 0.3,
@@ -405,7 +412,7 @@ export function CedulePDF({ projet, logoBase64: initialLogo, parametres }: Cedul
                     style={{
                       position: 'absolute',
                       width: 0.5,
-                      height: '100%',
+                      height: ROW_H,
                       left: getTaskPosition(today),
                       backgroundColor: '#ff0000',
                       zIndex: 10,
