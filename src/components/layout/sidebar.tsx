@@ -4,9 +4,6 @@ import { createClient } from '@/lib/supabase/client'
 import { LayoutDashboard, Building2, Map, Users, Truck, Clock, BarChart3, Settings, LogOut } from 'lucide-react'
 import { useState } from 'react'
 
-const settingsIcon = Settings
-const logoutIcon = LogOut
-
 const navItems = [
   { href: '/', label: 'Dashboard', Icon: LayoutDashboard },
   { href: '/projets', label: 'Projets', Icon: Building2, showCount: true },
@@ -150,7 +147,7 @@ export default function Sidebar({ projetsCount, userPrenom, userEmail, estAdminO
           onMouseEnter={e => e.currentTarget.style.background = pathname === '/parametres' ? '#fff0f0' : '#ffe8e8'}
           onMouseLeave={e => e.currentTarget.style.background = pathname === '/parametres' ? '#fff0f0' : 'transparent'}
         >
-          <settingsIcon size={18} style={{ color: pathname === '/parametres' ? '#ea1c24' : '#6B7280' }} />
+          <Settings size={18} style={{ color: pathname === '/parametres' ? '#ea1c24' : '#6B7280' }} />
           <span>Paramètres</span>
         </a>
       </div>
