@@ -1,12 +1,35 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import { formatDate, formatMontant } from '@/lib/utils';
+import { formatMontant } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
-import { Phone, Mail } from 'lucide-react';
+
+/* Vue client publique — mobile-first, lecture seule (REF VueClient.jsx).
+   Données via l'API PUBLIQUE filtrée /api/projets-by-slug uniquement.
+   Aucune donnée interne/financière sensible n'est demandée ni affichée
+   au-delà de ce que l'API expose déjà (sécurité Cat1-R3 intacte). */
+
+// Statut d'étape (par dates) → libellé + couleur de la timeline.
+const STATUT: Record<string, { label: string; color: string }> = {
+  completed:   { label: 'Terminé',  color: 'var(--task-termine)' },
+  inProgress:  { label: 'En cours', color: 'var(--task-encours)' },
+  preparation: { label: 'Bientôt',  color: 'var(--task-demain)' },
+  noneStarted: { label: 'À venir',  color: 'var(--task-avenir)' },
+};
+const statutOf = (t: any): string => calculateTaskStatus(t.dateDebut, t.dateFin).status || 'noneStarted';
+
+const dateCourt = (d: Date | string) =>
+  new Date(d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+
+function PhoneFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '28px 20px 40px', background: 'var(--bg-canvas)', minHeight: '100vh' }}>
+      <div style={{ width: 390, maxWidth: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', alignSelf: 'flex-start' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function VueClientPage({ params: paramPromise }: { params: Promise<{ token: string }> }) {
   const params = use(paramPromise);
@@ -15,6 +38,7 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch unique de l'API publique filtrée — logique de données inchangée.
   useEffect(() => {
     const fetchProjet = async () => {
       try {
@@ -33,167 +57,147 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
     fetchProjet();
   }, [params.token]);
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-600">Chargement...</div>;
-  if (error || !projet) return <div className="flex items-center justify-center min-h-screen text-red-600">Erreur: {error}</div>;
+  if (loading) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', color: 'var(--text-secondary)', fontSize: 13 }}>Chargement…</div>;
+  }
+  if (error || !projet) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', color: 'var(--danger)', fontSize: 13 }}>Erreur : {error}</div>;
+  }
 
+  // Calculs (présentation) — préservés tels quels.
   const tachesClient = projet.taches.filter((t: any) => t.visibleClient);
+  const sched = [...tachesClient].sort(
+    (a: any, b: any) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime()
+  );
+  const done = sched.filter((t: any) => statutOf(t) === 'completed').length;
+  const avancement = sched.length > 0 ? Math.round((done / sched.length) * 100) : 0;
+  const next =
+    sched.find((t: any) => statutOf(t) === 'inProgress') ||
+    sched.find((t: any) => statutOf(t) === 'preparation') ||
+    sched.find((t: any) => statutOf(t) === 'noneStarted');
+
+  const jr = projet.dateLivraison
+    ? Math.ceil((new Date(projet.dateLivraison).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
   const extrasSignes = projet.extras.filter((e: any) => e.statut === 'SIGNE');
-  const totalExtrasSignes = extrasSignes.reduce((sum: number, e: any) => sum + e.montant, 0);
-  const totalRecu = projet.paiements.filter((p: any) => p.recu).reduce((sum: number, p: any) => sum + p.montant, 0);
-  const totalPlanifie = projet.paiements.reduce((sum: number, p: any) => sum + p.montant, 0);
-  const progressionPercent = tachesClient.length > 0
-    ? Math.round((tachesClient.filter((t: any) => {
-        const status = calculateTaskStatus(t.dateDebut, t.dateFin);
-        return status.status === 'completed';
-      }).length / tachesClient.length) * 100)
-    : 0;
+  const totalExtrasSignes = extrasSignes.reduce((s: number, e: any) => s + Number(e.montant), 0);
+  const totalRecu = projet.paiements.filter((p: any) => p.recu).reduce((s: number, p: any) => s + Number(p.montant), 0);
+  const totalPlanifie = projet.paiements.reduce((s: number, p: any) => s + Number(p.montant), 0);
+
+  const nomCompagnie = parametres?.nomCompagnie ?? 'Habitations DG';
+  const siteWeb = parametres?.siteWeb ?? 'habitations-dg.com';
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Entête mobile-first */}
-      <header className="border-b border-gray-200 py-4 px-4 sm:py-6 sm:px-6">
-        <div className="max-w-md mx-auto space-y-4">
-          <Link href="/">
-            <Image src="/habitationsdg.svg" alt="Habitations DG" width={80} height={40} className="object-contain" />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{projet.adresse}</h1>
-            <p className="text-sm text-gray-600">{projet.ville}</p>
-          </div>
-          <div className="text-sm text-gray-700 space-y-1">
-            <p><strong>Client:</strong> {projet.client.prenom} {projet.client.nom}</p>
-            <p><strong>Livraison prévue:</strong> {formatDate(projet.dateLivraison)}</p>
-          </div>
+    <PhoneFrame>
+      {/* En-tête de marque */}
+      <div style={{ background: 'var(--n-900)', color: '#fff', padding: '16px 18px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/habitationsdg-icon.svg" alt="Habitations DG" style={{ height: 26 }} />
+          <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 'var(--text-2xs)', fontWeight: 600, padding: '3px 9px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}>Espace client</span>
         </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-4 py-6 sm:px-6 space-y-6">
-        {/* Barre de progression */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Avancement global</h2>
-            <span className="text-lg font-bold text-blue-600">{progressionPercent}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div
-              className="bg-blue-600 h-full transition-all duration-300"
-              style={{ width: `${progressionPercent}%` }}
-            />
-          </div>
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 11, opacity: 0.7 }}>Votre projet</div>
+          <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em', marginTop: 2 }}>{projet.adresse}</div>
+          <div style={{ fontSize: 12.5, opacity: 0.75, marginTop: 2 }}>{projet.ville}</div>
         </div>
+      </div>
 
-        {/* Note explicative */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <p className="text-xs italic text-gray-600">
-            Les dates indiquées sont prévisionnelles et peuvent être ajustées selon l'avancement du chantier. Elles vous sont communiquées à titre indicatif pour vous permettre de suivre l'évolution de votre projet.
-          </p>
+      {/* Bloc statut */}
+      <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--divider)' }}>
+        {jr !== null && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: jr <= 14 ? 'var(--danger)' : 'var(--success-text)', fontVariantNumeric: 'tabular-nums' }}>
+              {jr > 0 ? `Livraison dans ${jr} jours` : jr === 0 ? "Livraison aujourd'hui" : 'Livré'}
+            </span>
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
+          <span style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.018em', fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{avancement}%</span>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>complété · {done}/{sched.length} étapes</span>
         </div>
-
-        {/* Tableau des étapes */}
-        {tachesClient.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="font-semibold text-gray-900">Cédule des travaux</h2>
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Étape</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Début</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Fin</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tachesClient.map((t: any, idx: number) => (
-                    <tr key={t.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-3 py-2 text-gray-900">{t.nom}</td>
-                      <td className="px-3 py-2 text-gray-600 text-xs">{formatDate(t.dateDebut)}</td>
-                      <td className="px-3 py-2 text-gray-600 text-xs">{formatDate(t.dateFin)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div style={{ height: 6, background: 'var(--n-100)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${avancement}%`, background: 'var(--task-encours)', borderRadius: 'var(--radius-full)' }} />
+        </div>
+        {next && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 12px', background: 'var(--info-tint)', borderRadius: 'var(--radius-md)' }}>
+            <i className="ti ti-arrow-right" aria-hidden="true" style={{ fontSize: 16, color: 'var(--info)' }} />
+            <div style={{ fontSize: 12.5 }}>
+              <span style={{ color: 'var(--text-tertiary)' }}>Prochaine étape :</span> <b style={{ fontWeight: 600 }}>{next.nom}</b>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Extras signés */}
-        {extrasSignes.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="font-semibold text-gray-900">Travaux additionnels signés</h2>
-            <div className="space-y-2">
-              {extrasSignes.map((e: any) => (
-                <div key={e.id} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <div className="flex justify-between items-start">
-                    <p className="font-medium text-gray-900 text-sm">{e.description}</p>
-                    <p className="font-semibold text-green-700">{formatMontant(e.montant)}</p>
-                  </div>
+      {/* Timeline des étapes visibles client */}
+      <div style={{ padding: '14px 18px' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 10 }}>Étapes de votre construction</div>
+        <div style={{ position: 'relative', paddingLeft: 18 }}>
+          <div style={{ position: 'absolute', left: 4, top: 6, bottom: 6, width: 2, background: 'var(--divider)' }} />
+          {sched.map((t: any, i: number) => {
+            const st = statutOf(t);
+            const c = STATUT[st]?.color ?? 'var(--task-avenir)';
+            return (
+              <div key={t.id ?? i} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 0' }}>
+                <span style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 10, height: 10, borderRadius: '50%', background: c, border: '2px solid var(--surface)', boxShadow: `0 0 0 1.5px ${c}` }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: st === 'noneStarted' ? 'var(--text-secondary)' : 'var(--text-primary)' }}>{t.nom}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{dateCourt(t.dateDebut)} – {dateCourt(t.dateFin)}</div>
                 </div>
-              ))}
-              <div className="bg-green-100 border border-green-300 rounded-lg p-3 flex justify-between items-center">
-                <p className="font-semibold text-green-900">Total extras</p>
-                <p className="font-bold text-green-900">{formatMontant(totalExtrasSignes)}</p>
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: c, whiteSpace: 'nowrap' }}>{STATUT[st]?.label ?? 'À venir'}</span>
               </div>
+            );
+          })}
+          {sched.length === 0 && (
+            <div style={{ fontSize: 12.5, color: 'var(--text-tertiary)', padding: '6px 0' }}>La cédule de votre projet sera bientôt disponible.</div>
+          )}
+        </div>
+      </div>
+
+      {/* Travaux additionnels signés (info client déjà exposée par l'API) */}
+      {extrasSignes.length > 0 && (
+        <div style={{ padding: '4px 18px 14px', borderTop: '1px solid var(--divider)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', margin: '12px 0 10px' }}>Travaux additionnels signés</div>
+          {extrasSignes.map((e: any) => (
+            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '6px 0', fontSize: 12.5 }}>
+              <span style={{ color: 'var(--text-primary)' }}>{e.description}</span>
+              <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--success-text)', whiteSpace: 'nowrap' }}>{formatMontant(Number(e.montant))}</span>
             </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0 0', marginTop: 4, borderTop: '1px solid var(--divider)', fontSize: 12.5, fontWeight: 600 }}>
+            <span>Total</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--success-text)' }}>{formatMontant(totalExtrasSignes)}</span>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Paiements */}
-        <div className="space-y-3">
-          <h2 className="font-semibold text-gray-900">Statut des paiements</h2>
-          <div className="space-y-2">
-            {projet.paiements.map((p: any) => (
-              <div key={p.id} className={`border rounded-lg p-3 ${p.recu ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-                <div className="flex justify-between items-start mb-1">
-                  <p className="font-medium text-gray-900 text-sm">{p.description}</p>
-                  <Badge className={p.recu ? 'bg-green-100 text-green-800 text-xs' : 'bg-yellow-100 text-yellow-800 text-xs'}>
-                    {p.recu ? 'Reçu' : 'Attente'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-xs text-gray-600">{p.pourcentage}%</p>
-                  <p className="font-semibold text-gray-900">{formatMontant(p.montant)}</p>
-                </div>
-              </div>
-            ))}
-            <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
-              <div className="flex justify-between items-center">
-                <p className="font-semibold text-blue-900">Total reçu</p>
-                <p className="font-bold text-blue-900">{formatMontant(totalRecu)} / {formatMontant(totalPlanifie)}</p>
-              </div>
+      {/* Échéancier de paiement (info client déjà exposée par l'API) */}
+      {projet.paiements.length > 0 && (
+        <div style={{ padding: '4px 18px 14px', borderTop: '1px solid var(--divider)' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', margin: '12px 0 10px' }}>Échéancier de paiement</div>
+          {projet.paiements.map((p: any) => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '6px 0', fontSize: 12.5 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', flex: '0 0 auto', background: p.recu ? 'var(--success)' : 'var(--warning)' }} />
+                <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.description}</span>
+              </span>
+              <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: p.recu ? 'var(--success-text)' : 'var(--text-primary)', whiteSpace: 'nowrap' }}>{formatMontant(Number(p.montant))}</span>
             </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0 0', marginTop: 4, borderTop: '1px solid var(--divider)', fontSize: 12.5, fontWeight: 600 }}>
+            <span>Reçu à ce jour</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatMontant(totalRecu)} / {formatMontant(totalPlanifie)}</span>
           </div>
         </div>
+      )}
 
-        {/* Contact */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-          <h2 className="font-semibold text-gray-900">Nous contacter</h2>
-          <div className="space-y-2 text-sm">
-            {projet.client.telephone && (
-              <a href={`tel:${projet.client.telephone}`} className="flex items-center gap-2 text-blue-600 hover:underline">
-                <Phone className="w-4 h-4" />
-                {projet.client.telephone}
-              </a>
-            )}
-            {projet.client.email && (
-              <a href={`mailto:${projet.client.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
-                <Mail className="w-4 h-4" />
-                {projet.client.email}
-              </a>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Pied de page */}
-      <footer className="border-t border-gray-200 mt-8 py-6 text-center text-xs text-gray-500">
-        <div className="max-w-md mx-auto px-4 space-y-2">
-          <p className="font-semibold">{parametres?.nomCompagnie ?? 'Habitations DG'}</p>
-          <p>RBQ: {parametres?.rbq ?? '5856-1036-01'}</p>
-          <a href={`https://${parametres?.siteWeb ?? 'habitations-dg.com'}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            {parametres?.siteWeb ?? 'habitations-dg.com'}
-          </a>
-        </div>
-      </footer>
-    </div>
+      {/* Pied — contact */}
+      <div style={{ padding: '14px 18px 18px', borderTop: '1px solid var(--divider)', textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Une question sur votre projet&nbsp;?</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)' }}>{nomCompagnie}</div>
+        <a href={`https://${siteWeb}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--info-text)', textDecoration: 'none' }}>{siteWeb}</a>
+      </div>
+    </PhoneFrame>
   );
 }
