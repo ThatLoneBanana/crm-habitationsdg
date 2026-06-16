@@ -13,6 +13,8 @@ import { ExtrasTab } from '@/components/projets/extras-tab';
 import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
 import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
+import { EcheancierTableauDialog } from '@/components/projets/echeancier-tableau-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GCRTab } from '@/components/projets/gcr-tab';
 import { CostingTab } from '@/components/projets/costing-tab';
 import { formatDate, formatMontant } from '@/lib/utils';
@@ -51,6 +53,7 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
   const [projet, setProjet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [tableauVariant, setTableauVariant] = useState<'client' | 'soustraitant' | null>(null);
   const [modifierOpen, setModifierOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [utilisateurs, setUtilisateurs] = useState<any[]>([]);
@@ -308,6 +311,21 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
             <Button variant="outline" className="gap-2" onClick={() => setPrintDialogOpen(true)}>
               <i className="ti ti-printer" aria-hidden="true" />Imprimer
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <i className="ti ti-table" aria-hidden="true" />Échéancier PDF
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTableauVariant('client')}>
+                  <i className="ti ti-user" aria-hidden="true" style={{ marginRight: 6 }} />Client (sans fournisseur)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTableauVariant('soustraitant')}>
+                  <i className="ti ti-tools" aria-hidden="true" style={{ marginRight: 6 }} />Sous-traitant (avec fournisseur)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {/* Action principale (rouge) — désactivée tant que la fonctionnalité n'est pas livrée */}
             <Button className="gap-2" disabled title="Bientôt disponible">
               <i className="ti ti-send" aria-hidden="true" />Envoyer au client
@@ -673,6 +691,15 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
         onOpenChange={setPrintDialogOpen}
         projet={projet}
         parametres={parametresEntreprise}
+      />
+
+      {/* #10 — Nouvel échéancier en tableau (Client / Sous-traitant), moteur séparé du Gantt */}
+      <EcheancierTableauDialog
+        open={tableauVariant !== null}
+        onOpenChange={(o) => { if (!o) setTableauVariant(null); }}
+        projet={projet}
+        parametres={parametresEntreprise}
+        variant={tableauVariant ?? 'client'}
       />
     </div>
   );
