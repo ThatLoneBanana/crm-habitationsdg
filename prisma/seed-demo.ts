@@ -1,15 +1,23 @@
 /**
- * Seed DÉMO idempotent et re-runnable.
+ * Seed DÉMO idempotent et re-runnable — LE seed démo canonique du projet.
  * Lancer : npx tsx prisma/seed-demo.ts   (ou : npm run seed:demo)
+ *
+ * CHAÎNE DE SEED (pour repartir de zéro, dans l'ordre) :
+ *   1. npm run seed:jumele   → template JUMELE (38 étapes officielles)
+ *   2. npm run seed:maison   → template MAISON (copie de JUMELE)
+ *   3. npm run seed:users    → 3 utilisateurs d'authentification (table User)
+ *   4. npm run seed:demo     → CE fichier : 20 projets + données complètes
  *
  * Remplace les données de test (projets + clients + leurs dépendances) par
  * 20 projets jumelés/maison réalistes, géocodés en Chaudière-Appalaches, avec
  * une cédule générée à partir du template de leur TYPE (JUMELE → template
  * JUMELE, MAISON → template MAISON) — jamais hardcodée.
  *
+ * Autosuffisant : crée les EMPLOYÉS (à neuf, sans doublon) et garantit la ligne
+ * Parametres. Ne dépend donc plus d'un état préexistant pour ceux-ci.
  * Idempotent : à chaque exécution, on WIPE puis on recrée proprement.
- * Ne touche PAS : User, Employe, Fournisseur, Parametres, Template/
- * TemplateEtape, RolePermission.
+ * Ne touche PAS : User (→ seed:users), Fournisseur, Template/TemplateEtape,
+ * RolePermission. Parametres : créée avec défauts si absente, sinon laissée.
  *
  * Garde-fou : si un template (JUMELE ou MAISON) est absent/vide, on s'arrête
  * AVANT tout wipe (npm run seed:jumele / npm run seed:maison d'abord).
@@ -346,6 +354,15 @@ function baseDepuisTemplate(etapes: { nom: string; ordre: number; joursDefaut: n
   }));
 }
 
+// ── Employés (recréés à neuf à chaque seed → jamais de doublon) ──────────────
+// Mêmes taux que l'historique (la calibration financière en dépend).
+const EMPLOYES = [
+  { prenom: 'Jason', nom: 'Turmel', email: 'jason@sideways.media', telephone: '418-555-0001', tauxHoraire: 42, actif: true },
+  { prenom: 'Nicolas', nom: 'Savard', email: 'nicolas.savard@habitationsdg.com', telephone: '418-555-0002', tauxHoraire: 45, actif: true },
+  { prenom: 'Louis', nom: 'Bellavance', email: 'louis.bellavance@habitationsdg.com', telephone: '418-555-0003', tauxHoraire: 32, actif: true },
+  { prenom: 'Sophie-Rose', nom: 'Dion', email: 'sophie-rose.dion@habitationsdg.com', telephone: '418-555-0004', tauxHoraire: 38, actif: true },
+];
+
 // ── Programme principal ──────────────────────────────────────────────────────
 async function main() {
   const now = new Date();
@@ -367,20 +384,27 @@ async function main() {
     return;
   }
 
-  const parametres = await prisma.parametres.findUnique({ where: { id: 'singleton' } });
-  const marge = parametres?.margeCeduleJours ?? 5;
-  const maxHeures = parametres?.maxHeuresParSemaine ?? 36.5;
-  // Employés existants (lus, JAMAIS créés ici) → main-d'œuvre des feuilles.
-  const employes: Emp[] = (await prisma.employe.findMany({ where: { actif: true }, orderBy: { tauxHoraire: 'asc' } })).map((e) => ({ id: e.id, tauxHoraire: e.tauxHoraire }));
+  // Parametres : garantir la ligne singleton (créée avec défauts si absente,
+  // sinon laissée intacte — seed-demo n'écrase pas une config existante).
+  const parametres = await prisma.parametres.upsert({
+    where: { id: 'singleton' },
+    update: {},
+    create: { id: 'singleton' },
+  });
+  const marge = parametres.margeCeduleJours;
+  const maxHeures = parametres.maxHeuresParSemaine;
 
   const baseParType: Record<TypeP, EtapeEditable[]> = {
     JUMELE: baseDepuisTemplate(tplJumele!.etapes),
     MAISON: baseDepuisTemplate(tplMaison!.etapes),
   };
 
-  // 1) WIPE (ordre FK : enfants → Projet → Client). Transaction.
+  // 1) WIPE (ordre FK : enfants → Projet → Client ; Employe APRÈS feuilleTemps).
+  //    Employe inclus → recréation à neuf ci-dessous (corrige le bug de
+  //    duplication de l'ancien seed, qui créait les employés sans les wiper).
   await prisma.$transaction([
     prisma.feuilleTemps.deleteMany({}),
+    prisma.employe.deleteMany({}),
     prisma.depense.deleteMany({}),
     prisma.projetFournisseur.deleteMany({}),
     prisma.tache.deleteMany({}),
@@ -389,6 +413,10 @@ async function main() {
     prisma.projet.deleteMany({}),
     prisma.client.deleteMany({}),
   ]);
+
+  // Employés recréés à neuf (jamais de doublon) → main-d'œuvre des feuilles.
+  await prisma.employe.createMany({ data: EMPLOYES });
+  const employes: Emp[] = (await prisma.employe.findMany({ where: { actif: true }, orderBy: { tauxHoraire: 'asc' } })).map((e) => ({ id: e.id, tauxHoraire: e.tauxHoraire }));
 
   // 2) Clients
   const clientIds: string[] = [];

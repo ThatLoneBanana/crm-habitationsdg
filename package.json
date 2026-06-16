@@ -7,13 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prisma:seed": "ts-node prisma/seed.ts",
     "seed:jumele": "node prisma/seed-template-jumele.mjs",
     "seed:maison": "node prisma/seed-template-maison.mjs",
+    "seed:users": "npx --yes tsx prisma/seed-users.ts",
     "seed:demo": "npx --yes tsx prisma/seed-demo.ts"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
