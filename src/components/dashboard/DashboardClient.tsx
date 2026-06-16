@@ -122,12 +122,10 @@ export default function DashboardClient({
   const moisLabels = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
   const nbEtapes = agendaSemaine.reduce((s: number, j: any) => s + j.etapes.length, 0)
-  const nbUrgentes = alertes.filter((a: any) => a.type === 'urgent').length
 
   const metrics: { icon: string; label: string; value: React.ReactNode; sub: string; tone: Tone }[] = [
     { icon: 'ti-building-community', label: 'Projets actifs',     value: projetsActifs,                  sub: `${livraisonsCeMois} livraison(s) ce mois`,              tone: 'neutral' },
     { icon: 'ti-currency-dollar',    label: 'En chantier',        value: formatMontantCourt(montantTotal), sub: 'valeur totale active',                                     tone: 'success' },
-    { icon: 'ti-alert-triangle',     label: 'Alertes',            value: alertes.length,                   sub: `${nbUrgentes} urgente(s)`,                                 tone: alertes.length > 0 ? 'danger' : 'neutral' },
     { icon: 'ti-receipt',            label: 'Extras non signés',  value: extrasNonSignes,                  sub: `${formatMontant(montantExtrasNonSignes, 0)} à confirmer`,   tone: extrasNonSignes > 0 ? 'warning' : 'neutral' },
     { icon: 'ti-cash',               label: 'Paiements attendus', value: paiementsAttendus,                sub: `${formatMontant(montantPaiementsAttendus, 0)} à recevoir`,  tone: paiementsAttendus > 0 ? 'info' : 'neutral' },
   ]
@@ -144,13 +142,10 @@ export default function DashboardClient({
             {joursLabels[now.getDay()]} {now.getDate()} {moisLabels[now.getMonth()]} {now.getFullYear()}
           </p>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{projetsActifs}</span> projets actifs
-        </div>
       </div>
 
-      {/* Métriques — 5 colonnes */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10, marginBottom: 20 }}>
+      {/* Métriques — 4 colonnes */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 20 }}>
         {metrics.map((m, i) => (
           <MetricCard key={i} icon={m.icon} label={m.label} value={m.value} sub={m.sub} tone={m.tone} />
         ))}
