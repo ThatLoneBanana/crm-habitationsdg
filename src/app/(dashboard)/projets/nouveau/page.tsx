@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +22,12 @@ interface Client {
 
 interface Template {
   id: string;
+  nom: string;
+  type: 'JUMELE' | 'MAISON' | 'MULTILOGEMENT';
   etapes: any[];
 }
+
+const TYPE_LABEL_TPL: Record<string, string> = { JUMELE: 'Jumelé', MAISON: 'Maison', MULTILOGEMENT: 'Multilogement' };
 
 interface EtapeCedule {
   ordre: number;
@@ -75,6 +79,8 @@ export default function NouveauProjetPage() {
   const [step, setStep] = useState(1);
   const [clients, setClients] = useState<Client[]>([]);
   const [templates, setTemplates] = useState<Record<string, Template>>({});
+  const [allTemplates, setAllTemplates] = useState<Template[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,6 +143,7 @@ export default function NouveauProjetPage() {
           templatesByType[t.type] = t;
         });
         setTemplates(templatesByType);
+        setAllTemplates(templateData.templates || []);
       } catch (err) {
         console.error('Erreur chargement:', err);
       } finally {
@@ -156,71 +163,53 @@ export default function NouveauProjetPage() {
     }
   };
 
-  // Charger le template UNE SEULE FOIS quand on arrive à l'étape Cédule
+  // #9-A — Génère la cédule depuis le TEMPLATE CHOISI explicitement (aucun défaut
+  //   présélectionné). Régénère uniquement quand le template sélectionné change ;
+  //   le garde-fou lastGenTpl évite d'écraser des éditions manuelles si on revient
+  //   sur l'étape. Le calcul des dates (cascade à rebours depuis la livraison) est
+  //   INCHANGÉ — seule la source passe du type au choix explicite.
+  const lastGenTpl = useRef<string | null>(null);
   useEffect(() => {
-    if (step === 3 && !templateCharge && etapes.length === 0 && dateLivraison && typeProjet) {
-      const chargerTemplate = async () => {
-        try {
-          const res = await fetch(`/api/templates?type=${typeProjet}`);
-          const template = await res.json();
+    if (step !== 3 || !selectedTemplateId || !dateLivraison) return;
+    if (lastGenTpl.current === selectedTemplateId) return;
 
-          if (!template || !template.etapes || template.etapes.length === 0) {
-            console.error('Template vide');
-            return;
-          }
+    const template = allTemplates.find((t) => t.id === selectedTemplateId);
+    if (!template || !template.etapes || template.etapes.length === 0) { setEtapes([]); return; }
 
-          const livraison = new Date(dateLivraison);
-          let cursor = subJoursOuvrables(livraison, margeCeduleJours);
+    const livraison = new Date(dateLivraison);
+    let cursor = subJoursOuvrables(livraison, margeCeduleJours);
 
-          const tempEtapes = template.etapes.map((e: any) => ({
-            ordre: e.ordre,
-            nom: e.nom,
-            joursDefaut: e.joursDefaut,
-            assigneA: e.assigneA,
-            visibleClient: e.visibleClient,
-            buffer: 0,
-          }));
+    const tempEtapes = template.etapes.map((e: any) => ({
+      ordre: e.ordre,
+      nom: e.nom,
+      joursDefaut: e.joursDefaut,
+      assigneA: e.assigneA,
+      visibleClient: e.visibleClient,
+      interne: e.interne,
+      buffer: 0,
+    }));
 
-          const calculatedEtapes: EtapeCedule[] = [];
-          for (let i = tempEtapes.length - 1; i >= 0; i--) {
-            const e = tempEtapes[i];
-            const dateFin = new Date(cursor);
-            const dateDebut = e.joursDefaut <= 1
-              ? new Date(cursor)
-              : subJoursOuvrables(cursor, e.joursDefaut - 1);
+    const calculatedEtapes: EtapeCedule[] = [];
+    for (let i = tempEtapes.length - 1; i >= 0; i--) {
+      const e = tempEtapes[i];
+      const dateFin = new Date(cursor);
+      const dateDebut = e.joursDefaut <= 1
+        ? new Date(cursor)
+        : subJoursOuvrables(cursor, e.joursDefaut - 1);
 
-            const bufferActuel = e.buffer || 0;
-            cursor = subJoursOuvrables(dateDebut, 1 + bufferActuel);
+      const bufferActuel = e.buffer || 0;
+      cursor = subJoursOuvrables(dateDebut, 1 + bufferActuel);
 
-            calculatedEtapes.unshift({
-              ...e,
-              dateDebut,
-              dateFin,
-            });
-          }
-
-          setEtapes(calculatedEtapes);
-          if (calculatedEtapes.length > 0) {
-            setProjetDebut(calculatedEtapes[0].dateDebut);
-          }
-          setConflits(detecterConflits(calculatedEtapes));
-          setTemplateCharge(true);
-        } catch (err) {
-          console.error('Erreur chargement template:', err);
-        }
-      };
-
-      chargerTemplate();
+      calculatedEtapes.unshift({ ...e, dateDebut, dateFin });
     }
-  }, [step, templateCharge, etapes.length, dateLivraison, typeProjet]);
 
-  // Reset du template si le type de projet change
-  useEffect(() => {
-    if (templateCharge && typeProjet) {
-      setEtapes([]);
-      setTemplateCharge(false);
-    }
-  }, [typeProjet]);
+    setEtapes(calculatedEtapes);
+    if (calculatedEtapes.length > 0) setProjetDebut(calculatedEtapes[0].dateDebut);
+    setConflits(detecterConflits(calculatedEtapes));
+    setTemplateCharge(true);
+    lastGenTpl.current = selectedTemplateId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selectedTemplateId]);
 
   // Recalculer les dates si dateLivraison change (mais garder les durées modifiées)
   useEffect(() => {
@@ -760,8 +749,30 @@ export default function NouveauProjetPage() {
         {/* ÉTAPE 3: CÉDULE */}
         {step === 3 && dateLivraison && (
           <div className="space-y-6">
+            {allTemplates.length === 0 ? (
+              <div className="rounded-lg border p-6 text-center" style={{ background: 'var(--warning-tint)', borderColor: 'var(--border)' }}>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Aucun template de cédule disponible.</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Créez d'abord un template dans Paramètres → Cédules types, ou passez cette étape.</p>
+              </div>
+            ) : (
+              <>
+                {/* #9-A — Choix explicite du template (aucun présélectionné). Le type du
+                    projet (étape 2) reste sa propre source : il n'est PAS dérivé d'ici. */}
+                <div>
+                  <Label>Template de cédule</Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger><SelectValue placeholder="Choisir un template…" /></SelectTrigger>
+                    <SelectContent>
+                      {allTemplates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.nom} — {TYPE_LABEL_TPL[t.type] || t.type} ({t.etapes.length} étapes)</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedTemplateId && etapes.length > 0 ? (
             <CedulaEditor
-              key="cedula-editor-stable"
+              key={`cedula-editor-${selectedTemplateId}`}
               etapesInitiales={etapes.length > 0 ? etapes.map(e => ({
                 id: undefined,
                 ordre: e.ordre,
@@ -803,6 +814,13 @@ export default function NouveauProjetPage() {
                 }
               }}
             />
+                ) : (
+                  <div className="rounded-lg border p-6 text-center" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                    Choisissez un template pour générer la cédule.
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Barre de boutons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', alignItems: 'center' }}>

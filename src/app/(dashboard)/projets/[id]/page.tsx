@@ -422,6 +422,8 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
                 taches={projet.taches}
                 projectId={projet.id}
                 toleranceJours={projet.toleranceJours}
+                dateLivraison={projet.dateLivraison}
+                margeCeduleJours={margeCeduleJours}
                 onModifierClick={() => setModifierCedulaOpen(true)}
               />
             )}

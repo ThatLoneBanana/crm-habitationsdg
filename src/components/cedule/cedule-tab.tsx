@@ -8,15 +8,18 @@ import { GanttChart } from './gantt-chart';
 import { TacheDialog } from './tache-dialog';
 import { Plus, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { calculateTaskStatus } from '@/lib/task-status';
+import { subJoursOuvrables } from '@/lib/template-utils';
 
 interface CeduleTabProps {
   taches: Tache[];
   projectId: string;
   toleranceJours?: number;
+  dateLivraison?: string | Date | null;
+  margeCeduleJours?: number;
   onModifierClick?: () => void;
 }
 
-export function CeduleTab({ taches, projectId, toleranceJours, onModifierClick }: CeduleTabProps) {
+export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, margeCeduleJours, onModifierClick }: CeduleTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTache, setSelectedTache] = useState<any>(null);
   const [insertAfterOrdre, setInsertAfterOrdre] = useState<number | null>(null);
@@ -24,6 +27,71 @@ export function CeduleTab({ taches, projectId, toleranceJours, onModifierClick }
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<any>(null);
   const [modeEdition, setModeEdition] = useState(false);
+
+  // #9-B — Changer le template d'une cédule existante
+  const [showChangeTemplate, setShowChangeTemplate] = useState(false);
+  const [changeStep, setChangeStep] = useState<'select' | 'warn'>('select');
+  const [availableTemplates, setAvailableTemplates] = useState<any[]>([]);
+  const [chosenTemplateId, setChosenTemplateId] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
+
+  const TYPE_LABEL: Record<string, string> = { JUMELE: 'Jumelé', MAISON: 'Maison', MULTILOGEMENT: 'Multilogement' };
+
+  const openChangeTemplate = async () => {
+    setChosenTemplateId('');
+    setChangeStep('select');
+    setShowChangeTemplate(true);
+    try {
+      const res = await fetch('/api/templates');
+      const data = await res.json();
+      setAvailableTemplates(data.templates || []);
+    } catch {
+      setAvailableTemplates([]);
+    }
+  };
+
+  // Régénère les Tache du projet depuis le template choisi (cascade à rebours
+  // depuis la livraison). Les feuilles de temps et dépenses ne sont PAS touchées
+  // (aucune FK vers Tache) — l'historique financier est préservé.
+  const regenererDepuisTemplate = async () => {
+    const template = availableTemplates.find((t) => t.id === chosenTemplateId);
+    if (!template || !dateLivraison) return;
+    setRegenerating(true);
+    try {
+      const livraison = new Date(dateLivraison);
+      const marge = margeCeduleJours ?? 5;
+      let cursor = subJoursOuvrables(livraison, marge);
+      const src = [...template.etapes].sort((a: any, b: any) => a.ordre - b.ordre);
+      const computed: any[] = [];
+      for (let i = src.length - 1; i >= 0; i--) {
+        const e = src[i];
+        const dateFin = new Date(cursor);
+        const dateDebut = e.joursDefaut <= 1 ? new Date(cursor) : subJoursOuvrables(cursor, e.joursDefaut - 1);
+        cursor = subJoursOuvrables(dateDebut, 1);
+        computed.unshift({
+          nom: e.nom,
+          ordre: e.ordre,
+          dureeJours: e.joursDefaut,
+          dateDebut: dateDebut.toISOString(),
+          dateFin: dateFin.toISOString(),
+          assigneA: e.assigneA ?? null,
+          visibleClient: e.visibleClient,
+          interne: e.interne,
+          buffer: 0,
+        });
+      }
+      const res = await fetch(`/api/projets/${projectId}/cedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ etapes: computed }),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Échec de la régénération'); }
+      window.location.reload();
+    } catch (err: any) {
+      alert('Erreur : ' + err.message);
+      setRegenerating(false);
+    }
+  };
 
   const handleAddTache = () => {
     setSelectedTache(null);
@@ -111,29 +179,51 @@ export function CeduleTab({ taches, projectId, toleranceJours, onModifierClick }
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-900">Détail des étapes</h3>
-          {onModifierClick && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
-              onClick={onModifierClick}
+              onClick={openChangeTemplate}
               style={{
                 padding: '8px 14px',
-                background: '#DC2626',
-                color: 'white',
-                border: 'none',
+                background: 'white',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border)',
                 borderRadius: '6px',
                 fontSize: '13px',
                 fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px'
               }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-subtle)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'white'}
             >
-              <i className='ti ti-edit' /> Modifier la cédule
+              <i className='ti ti-template' /> Changer le template
             </button>
-          )}
+            {onModifierClick && (
+              <button
+                onClick={onModifierClick}
+                style={{
+                  padding: '8px 14px',
+                  background: '#DC2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
+                <i className='ti ti-edit' /> Modifier la cédule
+              </button>
+            )}
+          </div>
         </div>
 
         {taches.length === 0 ? (
@@ -406,6 +496,66 @@ export function CeduleTab({ taches, projectId, toleranceJours, onModifierClick }
         projectId={projectId}
         onSave={handleSaveTache}
       />
+
+      {/* #9-B — Changer le template (sélection → avertissement → régénération) */}
+      {showChangeTemplate && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}
+          onClick={() => { if (!regenerating) setShowChangeTemplate(false); }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: 14, padding: 24, maxWidth: 480, width: '100%', boxShadow: 'var(--shadow-lg)' }}>
+            {changeStep === 'select' ? (
+              <>
+                <h3 className="text-lg font-bold text-gray-900">Changer le template de la cédule</h3>
+                <p className="text-sm text-gray-600 mt-2">Choisissez le template à appliquer. La cédule actuelle sera régénérée à l'étape suivante.</p>
+                {!dateLivraison ? (
+                  <p className="text-sm mt-4" style={{ color: 'var(--danger-text)' }}>
+                    Ce projet n'a pas de date de livraison : impossible de recalculer la cédule. Définissez-la d'abord.
+                  </p>
+                ) : (
+                  <select
+                    value={chosenTemplateId}
+                    onChange={(e) => setChosenTemplateId(e.target.value)}
+                    className="w-full mt-4 p-2 border border-gray-300 rounded"
+                  >
+                    <option value="">Choisir un template…</option>
+                    {availableTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.nom} — {TYPE_LABEL[t.type] || t.type} ({t.etapes?.length ?? 0} étapes)</option>
+                    ))}
+                  </select>
+                )}
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" onClick={() => setShowChangeTemplate(false)}>Annuler</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled={!chosenTemplateId || !dateLivraison} onClick={() => setChangeStep('warn')}>
+                    Continuer
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-bold text-gray-900">Confirmer la régénération</h3>
+                <p className="text-sm text-gray-600 mt-3">En appliquant ce template, ces éléments de la cédule seront <b>régénérés</b> :</p>
+                <ul className="text-sm text-gray-600 mt-2 list-disc pl-5 space-y-1">
+                  <li>les étapes (ajoutées / retirées selon le template) ;</li>
+                  <li>les dates de début et de fin (recalculées depuis la livraison) ;</li>
+                  <li>l'avancement (calculé d'après les nouvelles dates) ;</li>
+                  <li>les assignations de fournisseurs (reprises du template).</li>
+                </ul>
+                <p className="text-sm mt-3" style={{ color: 'var(--success-text)' }}>
+                  Conservés : les feuilles de temps et les dépenses déjà enregistrées (historique financier).
+                </p>
+                <p className="text-sm text-gray-500 mt-2">Action irréversible.</p>
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button variant="outline" disabled={regenerating} onClick={() => setChangeStep('select')}>Retour</Button>
+                  <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={regenerating} onClick={regenererDepuisTemplate}>
+                    {regenerating ? 'Régénération…' : 'Régénérer la cédule'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
