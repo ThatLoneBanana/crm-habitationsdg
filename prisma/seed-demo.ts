@@ -11,7 +11,9 @@
  * Remplace les données de test (projets + clients + leurs dépendances) par
  * 20 projets jumelés/maison réalistes, géocodés en Chaudière-Appalaches, avec
  * une cédule générée à partir du template de leur TYPE (JUMELE → template
- * JUMELE, MAISON → template MAISON) — jamais hardcodée.
+ * JUMELE, MAISON → template MAISON) — jamais hardcodée. Chaque étape est
+ * assignée à un fournisseur réel selon son corps de métier (cf. METIERS) ;
+ * les étapes faites par DG restent internes (assigneA = null).
  *
  * Autosuffisant : crée les EMPLOYÉS (à neuf, sans doublon) et garantit la ligne
  * Parametres. Ne dépend donc plus d'un état préexistant pour ceux-ci.
@@ -363,6 +365,38 @@ const EMPLOYES = [
   { prenom: 'Sophie-Rose', nom: 'Dion', email: 'sophie-rose.dion@habitationsdg.com', telephone: '418-555-0004', tauxHoraire: 38, actif: true },
 ];
 
+// ── Attribution des étapes à un fournisseur (corps de métier) ────────────────
+// Mappe le NOM d'une étape (template) vers l'un des 7 fournisseurs réels. Les
+// étapes faites par DG (mesures, livraisons, entrées, finitions internes,
+// ménage…) → null : le tableau de bord affichera « Habitations DG ». On
+// n'invente JAMAIS de fournisseur : si le métier n'a pas de fournisseur dans la
+// base, l'étape reste interne (null).
+const ETAPES_INTERNES = [
+  'mesure', 'livraison', 'entrée', 'entree', 'ménage', 'menage', 'inspection',
+  'service', 'isolation', 'couler plancher', 'intérieur division', 'interieur division',
+  'final menuiserie', 'pose finition', 'pose plancher', 'pose escalier', 'pose tapis',
+  'pose miroir', 'petite finition', 'porte de douche',
+];
+const METIERS: { motsCles: string[]; fournisseur: string }[] = [
+  { motsCles: ['plomb'], fournisseur: 'Plomberie Côté' },
+  { motsCles: ['électr', 'electr', 't.v.'], fournisseur: 'Élec. Vachon' },
+  { motsCles: ['gypse', 'tireur de joints'], fournisseur: 'Gypse Beauce' },
+  { motsCles: ['peinture'], fournisseur: 'Peinture Martin' },
+  { motsCles: ['céramique', 'ceramique', 'coulis'], fournisseur: 'Céramique Plus' },
+  { motsCles: ['armoire', 'dosseret'], fournisseur: 'Cuisines Beauce' },
+  { motsCles: ['climatisé', 'climatise', 'échangeur', 'echangeur', 'ventil', 'foyer'], fournisseur: 'Ventil. Express' },
+];
+function fournisseurPourEtape(nom: string, dispo: Set<string>): string | null {
+  const n = nom.toLowerCase();
+  if (ETAPES_INTERNES.some((k) => n.includes(k))) return null; // étape interne (DG)
+  for (const m of METIERS) {
+    if (m.motsCles.some((k) => n.includes(k))) {
+      return dispo.has(m.fournisseur) ? m.fournisseur : null; // ne jamais inventer
+    }
+  }
+  return null; // par défaut : interne
+}
+
 // ── Programme principal ──────────────────────────────────────────────────────
 async function main() {
   const now = new Date();
@@ -418,6 +452,10 @@ async function main() {
   await prisma.employe.createMany({ data: EMPLOYES });
   const employes: Emp[] = (await prisma.employe.findMany({ where: { actif: true }, orderBy: { tauxHoraire: 'asc' } })).map((e) => ({ id: e.id, tauxHoraire: e.tauxHoraire }));
 
+  // Fournisseurs réels (lus, JAMAIS créés ici) → assignation des étapes.
+  const fournisseurs = await prisma.fournisseur.findMany({ where: { actif: true } });
+  const fournNoms = new Set(fournisseurs.map((f) => f.nom));
+
   // 2) Clients
   const clientIds: string[] = [];
   for (const c of CLIENTS) {
@@ -433,6 +471,8 @@ async function main() {
   let totalAttendu = 0;
   let totalExtras = 0;
   let extrasSignesN = 0, extrasSignesM = 0, extrasAttenteN = 0, extrasAttenteM = 0;
+  const assignTally: Record<string, number> = {};
+  let interneCount = 0;
   const costing: { adresse: string; revenu: number; depenses: number; marge: number }[] = [];
   const usedSlugs = new Set<string>();
   let exempleEntreprise: { adresse: string; avancement: number; jalons: string[] } | null = null;
@@ -479,18 +519,23 @@ async function main() {
     });
 
     await prisma.tache.createMany({
-      data: cedule.map((e) => ({
-        projetId: projet.id,
-        nom: e.nom,
-        ordre: e.ordre,
-        dateDebut: e.dateDebut,
-        dateFin: e.dateFin,
-        dureeJours: e.jours,
-        assigneA: e.assigneA ? e.assigneA : null,
-        visibleClient: e.visibleClient,
-        interne: e.interne,
-        buffer: 0,
-      })),
+      data: cedule.map((e) => {
+        const assigneA = fournisseurPourEtape(e.nom, fournNoms);
+        if (assigneA) assignTally[assigneA] = (assignTally[assigneA] || 0) + 1;
+        else interneCount++;
+        return {
+          projetId: projet.id,
+          nom: e.nom,
+          ordre: e.ordre,
+          dateDebut: e.dateDebut,
+          dateFin: e.dateFin,
+          dureeJours: e.jours,
+          assigneA,
+          visibleClient: e.visibleClient,
+          interne: e.interne,
+          buffer: 0,
+        };
+      }),
     });
 
     const paiements = paiementsPour(p.typeContrat, p.montant, A, now);
@@ -585,6 +630,11 @@ async function main() {
   }
 
   console.log(`\nExtras : ${totalExtras} créés — ${extrasSignesN} signés (${Math.round(extrasSignesM).toLocaleString('fr-CA')} $, ajoutés au revenu costing), ${extrasAttenteN} en attente (${Math.round(extrasAttenteM).toLocaleString('fr-CA')} $ → « Extras non signés »).`);
+
+  // Attribution des étapes aux fournisseurs
+  console.log('\nÉtapes assignées aux fournisseurs :');
+  for (const [f, n] of Object.entries(assignTally).sort((a, b) => b[1] - a[1])) console.log(`  ${f.padEnd(16)} ${n}`);
+  console.log(`  ${'(interne / DG)'.padEnd(16)} ${interneCount}`);
 }
 
 main()
