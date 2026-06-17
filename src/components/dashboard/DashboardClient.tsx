@@ -146,18 +146,25 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {/* Métriques — 4 colonnes */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 20 }}>
-        {metrics.map((m, i) => (
-          <MetricCard key={i} icon={m.icon} label={m.label} value={m.value} sub={m.sub} tone={m.tone} />
-        ))}
-      </div>
+      {/* Grille EXTERNE (CSS-lift) : région principale (flexible) | colonne Notes
+          (320px, pleine hauteur). Mobile (< md) → une colonne, colonne Notes masquée. */}
+      <div className="grid-cols-1 md:grid-cols-[minmax(0,1fr)_320px]" style={{ display: 'grid', gap: 20 }}>
 
-      {/* Grid principal — 1fr gauche, 340px droite */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
+        {/* RÉGION PRINCIPALE — KPI + grille interne */}
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Métriques (CSS-lift : 2 col mobile → 4 col desktop) */}
+          <div className="grid-cols-2 md:grid-cols-4" style={{ display: 'grid', gap: 10 }}>
+            {metrics.map((m, i) => (
+              <MetricCard key={i} icon={m.icon} label={m.label} value={m.value} sub={m.sub} tone={m.tone} />
+            ))}
+          </div>
+
+          {/* Grille INTERNE (CSS-lift) : alertes + agenda (1fr) | Tous les projets (340px) */}
+          <div className="grid-cols-1 md:grid-cols-[1fr_340px]" style={{ display: 'grid', gap: 20, alignItems: 'start' }}>
 
         {/* COLONNE GAUCHE — Alertes + Agenda */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Alertes */}
           {alertes.length > 0 && (
             <Card>
@@ -211,8 +218,7 @@ export default function DashboardClient({
           </Card>
         </div>
 
-        {/* COLONNE DROITE — Projets + Notes (rail 340px) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* COLONNE — Tous les projets (340px) */}
         <Card>
           <CardHeader icon="ti-list" title="Tous les projets" action={<span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{projets.length}</span>} />
           {projets.map((p: any, i: number) => (
@@ -237,7 +243,16 @@ export default function DashboardClient({
           ))}
         </Card>
 
-        <NotesPanel notesInitiales={notes || []} projets={projetsPourTag || []} />
+          </div>
+          {/* fin grille interne */}
+
+        </div>
+        {/* fin région principale */}
+
+        {/* COLONNE NOTES — extrême droite, pleine hauteur (desktop seulement ;
+            sur mobile, Notes = destination /notes du bottombar). */}
+        <div className="hidden md:block">
+          <NotesPanel notesInitiales={notes || []} projets={projetsPourTag || []} />
         </div>
 
       </div>
