@@ -118,6 +118,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
           assigneA: t.assigneA || 'Interne',
           visibleClient: t.visibleClient,
           interne: t.interne,
+          groupeId: t.groupeId ?? null,
         }));
       setEtapesModifiees(etapesProjet);
     }
@@ -189,7 +190,8 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
     setSavingCedule('loading');
     try {
       const res = await fetch(`/api/projets/${projet.id}/cedule`, {
-        method: 'PUT',
+        // delete+recreate (route POST) — persiste groupeId par tâche.
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           etapes: etapesModifiees.map((e: any) => ({
@@ -203,6 +205,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
             visibleClient: e.visibleClient,
             interne: e.interne,
             buffer: e.buffer || 0,
+            groupeId: e.groupeId ?? null,
           }))
         })
       });
@@ -590,6 +593,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
                         visibleClient: e.visibleClient,
                         interne: e.interne,
                         buffer: e.buffer || 0,
+                        groupeId: e.groupeId ?? null,
                       }))
                     })
                   });

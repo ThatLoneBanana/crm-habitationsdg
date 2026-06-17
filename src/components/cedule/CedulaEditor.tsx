@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Trash2, ChevronRight, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Trash2, ChevronRight, RefreshCw, Link2, Unlink } from 'lucide-react';
 import {
   EtapeEditable,
   detecterConflits,
@@ -43,7 +43,7 @@ export default function CedulaEditor({
 
   // Moteur conscient des vacances : helpers + cascade LIÉS au prédicat construit
   // depuis les périodes. Sans période → prédicat weekend → dates IDENTIQUES.
-  const { addJoursOuvrables, subJoursOuvrables, joursOuvrableEntre, cascadeVersBas, cascadeVersHaut } =
+  const { addJoursOuvrables, subJoursOuvrables, joursOuvrableEntre, cascadeVersBas, cascadeVersHaut, validerGroupes, genererGroupeId } =
     useMemo(() => creerMoteurCedule(periodes), [periodes]);
 
   console.log('CedulaEditor props:', { typeProjet, dateLivraison: dateLivraison.toISOString(), etapesCount: etapes.length });
@@ -166,10 +166,39 @@ export default function CedulaEditor({
   };
 
   const handleDeleteEtape = (idx: number) => {
-    const newEtapes = etapes.filter((_, i) => i !== idx).map((e, i) => ({ ...e, ordre: i + 1 }));
+    const filtered = etapes.filter((_, i) => i !== idx).map((e, i) => ({ ...e, ordre: i + 1 }));
+    // Une suppression peut faire retomber un groupe à 1 membre → nettoyer.
+    const newEtapes = validerGroupes(filtered);
     setEtapes(newEtapes);
     onChange(newEtapes);
     setShowDeleteConfirm(null);
+  };
+
+  // Une étape est « liée » (membre non-ancre) si elle partage le groupeId de la
+  // précédente : elle débute le même jour et n'est pas éditable séparément.
+  const estLiee = (idx: number) =>
+    idx > 0 && !!etapes[idx].groupeId && etapes[idx].groupeId === etapes[idx - 1].groupeId;
+
+  // Toggle « même jour que la précédente » (icône chaîne) sur la ligne idx.
+  // Cocher → joindre au bloc de idx-1 (créer un groupeId au besoin). Décocher →
+  // sortir du bloc (+ nettoyer si le groupe retombe à 1). La date du bloc reste
+  // pilotée par l'ancre ; on recascade depuis le bloc précédent.
+  const toggleLien = (idx: number) => {
+    if (idx < 1) return;
+    let next: EtapeEditable[] = etapes.map((e) => ({ ...e }));
+    if (estLiee(idx)) {
+      next[idx] = { ...next[idx], groupeId: null };
+      next = validerGroupes(next);
+    } else {
+      const gPrev = next[idx - 1].groupeId;
+      const g = gPrev || genererGroupeId();
+      if (!gPrev) next[idx - 1] = { ...next[idx - 1], groupeId: g };
+      next[idx] = { ...next[idx], groupeId: g };
+      next = validerGroupes(next);
+    }
+    const updated = cascadeVersBas(next, Math.max(0, idx - 1));
+    setEtapes(updated);
+    onChange(updated);
   };
 
   const formatDate = (date?: Date | string) => {
@@ -228,11 +257,13 @@ export default function CedulaEditor({
       interne: false,
     };
 
-    const newEtapes = [
+    const renum = [
       ...etapes.slice(0, apresIndex),
       nouvelleEtape,
       ...etapes.slice(apresIndex),
     ].map((e, i) => ({ ...e, ordre: i + 1 }));
+    // L'insertion peut casser la contiguïté d'un bloc → re-valider les groupes.
+    const newEtapes = validerGroupes(renum);
 
     cascadeVersBas(newEtapes, apresIndex);
     setEtapes(newEtapes);
@@ -388,6 +419,7 @@ export default function CedulaEditor({
             {/* Étapes avec tous les boutons */}
             {etapes.map((e, idx) => {
               const isConflict = conflits.includes(idx);
+              const estLie = estLiee(idx);
               return (
                 <Fragment key={`etape-${idx}`}>
                   <tr
@@ -421,11 +453,45 @@ export default function CedulaEditor({
                   className={`group ${isConflict ? 'bg-red-50 border-l-4 border-red-500' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                 >
                   <td style={{ width: '40px' }} className="px-3 py-2">{e.ordre}</td>
-                  <td style={{ width: '280px' }} className="px-3 py-2">{e.nom}</td>
+                  <td style={{ width: '280px' }} className="px-3 py-2">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {idx > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleLien(idx)}
+                          title={estLie ? 'Délier — redevient une étape indépendante' : 'Lier — même jour que la précédente'}
+                          aria-label={estLie ? 'Délier de la précédente' : 'Lier à la précédente'}
+                          style={{
+                            flex: '0 0 auto',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 22, height: 22, borderRadius: 4,
+                            color: estLie ? 'var(--phase-signe-ink)' : 'var(--text-disabled)',
+                            background: estLie ? 'var(--phase-signe-tint)' : 'transparent',
+                            cursor: 'pointer', border: 'none', padding: 0,
+                          }}
+                        >
+                          {estLie ? <Link2 className="w-3.5 h-3.5" /> : <Unlink className="w-3.5 h-3.5" />}
+                        </button>
+                      ) : (
+                        <span style={{ flex: '0 0 auto', width: 22 }} />
+                      )}
+                      <span style={{ color: estLie ? 'var(--text-secondary)' : 'inherit' }}>
+                        {estLie ? '↳ ' : ''}{e.nom}
+                      </span>
+                    </div>
+                  </td>
                   <td style={{ width: '70px' }} className="px-3 py-2">{e.jours}j</td>
 
-                  {/* Date début avec boutons */}
+                  {/* Date début avec boutons (membre lié = date pilotée par l'ancre, lecture seule) */}
                   <td style={{ width: '320px' }} className="px-3 py-2">
+                    {estLie ? (
+                      <div style={{ height: '28px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 12, fontStyle: 'italic' }} title="Date pilotée par l'étape ancre du bloc — modifiez l'ancre pour décaler tout le bloc.">
+                        <Link2 className="w-3.5 h-3.5" />
+                        {(e.dateDebut instanceof Date ? e.dateDebut : new Date(e.dateDebut)).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })} · même jour
+                      </div>
+                    ) : (
                     <div style={{
                       display: 'grid',
                       gridTemplateColumns: '28px 28px 28px 110px 28px 28px 28px',
@@ -457,10 +523,17 @@ export default function CedulaEditor({
                         </button>
                       ))}
                     </div>
+                    )}
                   </td>
 
-                  {/* Fin avec boutons */}
+                  {/* Fin avec boutons (membre lié = lecture seule ; durée propre conservée) */}
                   <td style={{ width: '320px' }} className="px-3 py-2">
+                    {estLie ? (
+                      <div style={{ height: '28px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 12, fontStyle: 'italic' }} title="Fin calculée d'après la durée propre de l'étape — le bloc est piloté par l'ancre.">
+                        <Link2 className="w-3.5 h-3.5" />
+                        {(e.dateFin instanceof Date ? e.dateFin : new Date(e.dateFin)).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                      </div>
+                    ) : (
                     <div style={{
                       display: 'grid',
                       gridTemplateColumns: '28px 28px 28px 110px 28px 28px 28px',
@@ -492,6 +565,7 @@ export default function CedulaEditor({
                         </button>
                       ))}
                     </div>
+                    )}
                   </td>
 
                   {/* Buffer avec -1 [valeur] +1 */}

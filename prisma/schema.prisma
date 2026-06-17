@@ -131,6 +131,11 @@ model Tache {
   interne       Boolean     @default(false)
   assigneA      String?
   buffer        Int         @default(0)
+  // Lien « même jour » (bloc parent/enfant) PER-PROJET : les tâches partageant
+  // le même groupeId forment un bloc débutant le même jour. Un groupe a >= 2
+  // membres ; s'il retombe à 1, son groupeId est vidé. Voir cedula-utils.ts
+  // (construireBlocs / validerGroupes) pour la cascade et l'exemption de conflit.
+  groupeId      String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 

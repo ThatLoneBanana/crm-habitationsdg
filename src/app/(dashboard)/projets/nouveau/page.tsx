@@ -39,6 +39,7 @@ interface EtapeCedule {
   dateDebut: Date;
   dateFin: Date;
   buffer: number; // jours vides APRÈS cette étape avant la suivante
+  groupeId?: string | null; // lien « même jour » (bloc) — facultatif
 }
 
 interface Fournisseur {
@@ -516,6 +517,7 @@ export default function NouveauProjetPage() {
         visibleClient: e.visibleClient,
         interne: e.interne,
         buffer: e.buffer || 0,
+        groupeId: e.groupeId ?? null,
       }));
 
       const res = await fetch('/api/projets', {
@@ -793,6 +795,7 @@ export default function NouveauProjetPage() {
                 dateFin: e.dateFin,
                 buffer: e.buffer,
                 interne: e.interne,
+                groupeId: e.groupeId ?? null,
               })) : undefined}
               typeProjet={typeProjet as any}
               templateId={selectedTemplateId}
@@ -812,6 +815,7 @@ export default function NouveauProjetPage() {
                   dateFin: e.dateFin instanceof Date ? e.dateFin : new Date(e.dateFin),
                   buffer: e.buffer,
                   interne: e.interne,
+                  groupeId: e.groupeId ?? null,
                 }));
                 setEtapes(converted as any);
                 setConflits(detecterConflits(converted as any));

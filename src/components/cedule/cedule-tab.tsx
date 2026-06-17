@@ -250,6 +250,9 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
             <div style={{ minWidth: 'min-content' }}>
               {taches.map((tache, idx) => {
                 const status = calculateTaskStatus(tache.dateDebut, tache.dateFin);
+                // Étape liée (membre d'un bloc « même jour ») : édition de date NON
+                // inline → routée vers le modal (la cascade y vit). Indicateur chaîne.
+                const estLiee = !!tache.groupeId;
                 const debutFr = tache.dateDebut ? new Date(tache.dateDebut as string | Date).toLocaleDateString('fr-FR', {
                   day: 'numeric',
                   month: 'short',
@@ -288,13 +291,24 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
                         {tache.ordre}
                       </div>
                       <div style={{ width: '220px', padding: '12px', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }} className="text-sm text-gray-900">
+                        {estLiee && (
+                          <i
+                            className="ti ti-link"
+                            title="Étape liée — même jour qu'une autre étape (bloc). Modifiez les dates via « Modifier la cédule »."
+                            style={{ marginRight: 6, color: 'var(--text-tertiary)' }}
+                          />
+                        )}
                         {tache.nom}
                       </div>
                       {/* Début */}
                       <div
                         style={{ width: '180px', padding: '12px', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}
-                        className="text-sm text-gray-600 cursor-text"
+                        className={`text-sm text-gray-600 ${estLiee ? 'cursor-not-allowed' : 'cursor-text'}`}
+                        title={estLiee ? 'Étape liée — modifiez la date via « Modifier la cédule ».' : undefined}
                         onDoubleClick={() => {
+                          // Étape liée : pas d'édition inline (la date est pilotée par
+                          // l'ancre du bloc) → ouvrir le modal de cédule.
+                          if (estLiee) { onModifierClick?.(); return; }
                           setEditingId(tache.id);
                           setEditingField('dateDebut');
                           setEditValue(tache.dateDebut);
@@ -328,8 +342,10 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
                       {/* Fin */}
                       <div
                         style={{ width: '180px', padding: '12px', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}
-                        className="text-sm text-gray-600 cursor-text"
+                        className={`text-sm text-gray-600 ${estLiee ? 'cursor-not-allowed' : 'cursor-text'}`}
+                        title={estLiee ? 'Étape liée — modifiez la date via « Modifier la cédule ».' : undefined}
                         onDoubleClick={() => {
+                          if (estLiee) { onModifierClick?.(); return; }
                           setEditingId(tache.id);
                           setEditingField('dateFin');
                           setEditValue(tache.dateFin);

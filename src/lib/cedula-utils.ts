@@ -20,6 +20,9 @@ export interface EtapeEditable {
   interne: boolean;
   statut?: 'termine' | 'encours' | 'avenir';
   verrouille?: boolean;
+  // Lien « même jour » : les étapes partageant le même groupeId forment un BLOC
+  // qui débute le même jour (cf. construireBlocs / cascade par blocs ci-dessous).
+  groupeId?: string | null;
 }
 
 export interface Periode {
@@ -98,35 +101,124 @@ export function joursOuvrableEntre(debut: Date, fin: Date, estOuvrable: EstOuvra
 // Alias historique (template-utils l'exposait sous ce nom).
 export const countJoursOuvrables = joursOuvrableEntre;
 
+// ─── Blocs « même jour » (lien parent/enfant) ──────────────────────────────
+// Un BLOC = suite CONTIGUË (par ordre du tableau) de tâches partageant le même
+// groupeId. Une tâche sans groupeId = un bloc de 1. Toute la cascade et le
+// back-calc itèrent sur les BLOCS : l'espacement +1 jour ouvrable (+ buffer,
+// conscient des vacances) s'applique ENTRE blocs, JAMAIS entre frères d'un même
+// bloc. SANS aucun groupe, chaque bloc est de taille 1 → comportement IDENTIQUE
+// à avant (régression préservée).
+
+// Découpe les étapes en blocs contigus. Robuste : un groupeId dont la
+// contiguïté est rompue (réordonnancement) retombe naturellement en blocs
+// séparés (validerGroupes nettoiera les fragments orphelins).
+export function construireBlocs(etapes: { groupeId?: string | null }[]): number[][] {
+  const blocs: number[][] = [];
+  let i = 0;
+  while (i < etapes.length) {
+    const g = etapes[i].groupeId;
+    if (!g) { blocs.push([i]); i++; continue; }
+    const indices = [i];
+    let j = i + 1;
+    while (j < etapes.length && etapes[j].groupeId === g) { indices.push(j); j++; }
+    blocs.push(indices);
+    i = j;
+  }
+  return blocs;
+}
+
+// Nettoie/scinde : tout fragment contigu de taille 1 portant encore un groupeId
+// est libéré (un groupe doit avoir >= 2 membres). À appeler après tout
+// réordonnancement (insertion/suppression/délien) dans l'éditeur.
+export function validerGroupes<T extends { groupeId?: string | null }>(etapes: T[]): T[] {
+  const blocs = construireBlocs(etapes);
+  const result = etapes.map((e) => ({ ...e }));
+  for (const bloc of blocs) {
+    if (bloc.length < 2 && result[bloc[0]].groupeId) {
+      result[bloc[0]] = { ...result[bloc[0]], groupeId: null };
+    }
+  }
+  return result;
+}
+
+// Jeton de groupe opaque (per-projet). UUID via crypto si disponible.
+export function genererGroupeId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return 'grp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+function blocDeIndex(blocs: number[][], idx: number): number {
+  for (let b = 0; b < blocs.length; b++) if (blocs[b].includes(idx)) return b;
+  return 0;
+}
+
+// Span du bloc = max(dateFin) de ses membres.
+function finBloc(etapes: EtapeEditable[], indices: number[]): Date {
+  let max = new Date(etapes[indices[0]].dateFin).getTime();
+  for (const k of indices) { const t = new Date(etapes[k].dateFin).getTime(); if (t > max) max = t; }
+  return new Date(max);
+}
+// Buffer du bloc = max(buffer) de ses membres.
+function bufferBloc(etapes: EtapeEditable[], indices: number[]): number {
+  let max = 0;
+  for (const k of indices) { const b = etapes[k].buffer || 0; if (b > max) max = b; }
+  return max;
+}
+function joursMaxBloc(etapes: EtapeEditable[], indices: number[]): number {
+  let max = 1;
+  for (const k of indices) { const j = etapes[k].jours || 1; if (j > max) max = j; }
+  return max;
+}
+
+// Aligne tous les membres d'un bloc sur la date de début de l'ANCRE (1er membre) ;
+// chaque membre conserve son propre dureeJours (sa dateFin peut différer).
+function alignerBloc(etapes: EtapeEditable[], indices: number[], estOuvrable: EstOuvrable): void {
+  const debut = new Date(etapes[indices[0]].dateDebut);
+  for (const k of indices) {
+    const jours = etapes[k].jours;
+    etapes[k].dateDebut = new Date(debut);
+    etapes[k].dateFin = jours <= 1 ? new Date(debut) : addJoursOuvrables(debut, jours - 1, estOuvrable);
+  }
+}
+
 export function cascadeVersBas(etapes: EtapeEditable[], fromIndex: number, estOuvrable: EstOuvrable = estOuvrableWeekend): EtapeEditable[] {
   const newEtapes = JSON.parse(JSON.stringify(etapes));
-  for (let i = fromIndex + 1; i < newEtapes.length; i++) {
-    const prev = newEtapes[i - 1];
-    const bufferPrev = prev.buffer || 0;
-    newEtapes[i].dateDebut = addJoursOuvrables(new Date(prev.dateFin), 1 + bufferPrev, estOuvrable);
-    newEtapes[i].dateFin = newEtapes[i].jours <= 1
-      ? new Date(newEtapes[i].dateDebut)
-      : addJoursOuvrables(new Date(newEtapes[i].dateDebut), newEtapes[i].jours - 1, estOuvrable);
+  const blocs = construireBlocs(newEtapes);
+  const bFrom = blocDeIndex(blocs, fromIndex);
+  // Le bloc de départ garde la date de son ancre ; ses membres s'y alignent.
+  alignerBloc(newEtapes, blocs[bFrom], estOuvrable);
+  for (let bi = bFrom + 1; bi < blocs.length; bi++) {
+    const prev = blocs[bi - 1];
+    const debut = addJoursOuvrables(finBloc(newEtapes, prev), 1 + bufferBloc(newEtapes, prev), estOuvrable);
+    newEtapes[blocs[bi][0]].dateDebut = debut;
+    alignerBloc(newEtapes, blocs[bi], estOuvrable);
   }
   return newEtapes;
 }
 
 export function cascadeVersHaut(etapes: EtapeEditable[], fromIndex: number, estOuvrable: EstOuvrable = estOuvrableWeekend): EtapeEditable[] {
   const newEtapes = JSON.parse(JSON.stringify(etapes));
-  for (let i = fromIndex - 1; i >= 0; i--) {
-    const next = newEtapes[i + 1];
-    const bufferCurrent = newEtapes[i].buffer || 0;
-    newEtapes[i].dateFin = subJoursOuvrables(new Date(next.dateDebut), 1 + bufferCurrent, estOuvrable);
-    newEtapes[i].dateDebut = newEtapes[i].jours <= 1
-      ? new Date(newEtapes[i].dateFin)
-      : subJoursOuvrables(new Date(newEtapes[i].dateFin), newEtapes[i].jours - 1, estOuvrable);
+  const blocs = construireBlocs(newEtapes);
+  const bFrom = blocDeIndex(blocs, fromIndex);
+  for (let bi = bFrom - 1; bi >= 0; bi--) {
+    const next = blocs[bi + 1];
+    const nextDebut = new Date(newEtapes[next[0]].dateDebut);
+    const fin = subJoursOuvrables(nextDebut, 1 + bufferBloc(newEtapes, blocs[bi]), estOuvrable);
+    const maxJours = joursMaxBloc(newEtapes, blocs[bi]);
+    const debut = maxJours <= 1 ? new Date(fin) : subJoursOuvrables(fin, maxJours - 1, estOuvrable);
+    newEtapes[blocs[bi][0]].dateDebut = debut;
+    alignerBloc(newEtapes, blocs[bi], estOuvrable);
   }
   return newEtapes;
 }
 
-export function detecterConflits(etapes: { dateFin: Date | string; dateDebut: Date | string }[]): number[] {
+export function detecterConflits(etapes: { dateFin: Date | string; dateDebut: Date | string; groupeId?: string | null }[]): number[] {
   const conflits: number[] = [];
   for (let i = 0; i < etapes.length - 1; i++) {
+    // Exemption : i et i+1 dans le même bloc (même groupeId) → chevauchement
+    // intentionnel (« même jour »), ce n'est PAS un conflit.
+    const g = etapes[i].groupeId;
+    if (g && g === etapes[i + 1].groupeId) continue;
     const d1 = new Date(etapes[i].dateFin);
     const d2 = new Date(etapes[i + 1].dateDebut);
     d1.setHours(0, 0, 0, 0);
@@ -149,16 +241,16 @@ export function calculerDepuisLivraison(
   const livraison = new Date(dateLivraison);
   let cursor = subJoursOuvrables(livraison, margeJours, estOuvrable);
 
-  for (let i = newEtapes.length - 1; i >= 0; i--) {
-    const e = newEtapes[i];
-    const dateFin = new Date(cursor);
-    const dateDebut = e.jours <= 1
-      ? new Date(cursor)
-      : subJoursOuvrables(cursor, e.jours - 1, estOuvrable);
-    const bufferActuel = e.buffer || 0;
-    cursor = subJoursOuvrables(dateDebut, 1 + bufferActuel, estOuvrable);
-
-    newEtapes[i] = { ...e, dateDebut, dateFin };
+  // Back-calc PAR BLOCS : le span du bloc (max dureeJours) finit au curseur ;
+  // l'espacement (+1 jour + buffer max) ne s'applique qu'ENTRE blocs.
+  const blocs = construireBlocs(newEtapes);
+  for (let bi = blocs.length - 1; bi >= 0; bi--) {
+    const indices = blocs[bi];
+    const maxJours = joursMaxBloc(newEtapes, indices);
+    const debut = maxJours <= 1 ? new Date(cursor) : subJoursOuvrables(cursor, maxJours - 1, estOuvrable);
+    newEtapes[indices[0]].dateDebut = debut;
+    alignerBloc(newEtapes, indices, estOuvrable);
+    cursor = subJoursOuvrables(debut, 1 + bufferBloc(newEtapes, indices), estOuvrable);
   }
 
   return newEtapes;
@@ -182,5 +274,10 @@ export function creerMoteurCedule(periodes?: Periode[] | null) {
     cascadeVersHaut: (etapes: EtapeEditable[], fromIndex: number) => cascadeVersHaut(etapes, fromIndex, estOuvrable),
     calculerDepuisLivraison: (etapes: EtapeEditable[], dateLivraison: Date, margeJours?: number) =>
       calculerDepuisLivraison(etapes, dateLivraison, margeJours ?? 5, estOuvrable),
+    // Helpers de blocs « même jour » — indépendants du prédicat ouvrable, exposés
+    // ici pour que les surfaces destructurent tout depuis le moteur.
+    construireBlocs,
+    validerGroupes,
+    genererGroupeId,
   };
 }

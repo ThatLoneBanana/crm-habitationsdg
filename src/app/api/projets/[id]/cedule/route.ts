@@ -13,7 +13,7 @@ export async function POST(
     // Supprime les étapes existantes si elles existent
     await prisma.tache.deleteMany({ where: { projetId: id } })
 
-    // Crée les nouvelles étapes
+    // Crée les nouvelles étapes (delete+recreate → groupeId persisté par tâche).
     await prisma.tache.createMany({
       data: etapes.map((e: any) => ({
         projetId: id,
@@ -26,6 +26,7 @@ export async function POST(
         visibleClient: e.visibleClient,
         interne: e.interne,
         buffer: e.buffer || 0,
+        groupeId: e.groupeId ?? null,
       }))
     })
 

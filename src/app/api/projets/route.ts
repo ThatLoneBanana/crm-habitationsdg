@@ -260,6 +260,7 @@ export async function POST(request: NextRequest) {
         visibleClient: e.visibleClient !== false,
         interne: e.interne || false,
         buffer: e.buffer || 0,
+        groupeId: e.groupeId ?? null,
       }));
 
       await prisma.tache.createMany({
