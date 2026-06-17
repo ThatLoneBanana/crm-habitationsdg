@@ -33,6 +33,41 @@ export async function getProjetComplet(idOrSlug: string) {
   return { ...projet, phase: phaseDerivee, phasePersistee };
 }
 
+/**
+ * Lecture PUBLIQUE de la vue client par token (= slug). Allowlist STRICTE : ne
+ * SELECT que ce qui est réellement rendu à l'écran client. AUCUN objet client
+ * (nom/email/téléphone), AUCUN paiement, aucun champ interne/financier ne quitte
+ * le serveur → la frontière public/privé est fermée à la racine (plus d'endpoint
+ * public, plus de gros JSON). Renvoie null si le token ne résout pas.
+ */
+export async function getProjetVueClient(token: string) {
+  const projet = await prisma.projet.findUnique({
+    where: { slug: token },
+    select: {
+      adresse: true,
+      ville: true,
+      dateLivraison: true,
+      taches: {
+        where: { visibleClient: true },
+        orderBy: { ordre: 'asc' },
+        select: { id: true, nom: true, dateDebut: true, dateFin: true },
+      },
+      extras: {
+        where: { statut: 'SIGNE' },
+        select: { description: true, montant: true },
+      },
+    },
+  });
+  if (!projet) return null;
+
+  const parametres = await prisma.parametres.findUnique({
+    where: { id: 'singleton' },
+    select: { nomCompagnie: true, rbq: true, siteWeb: true },
+  });
+
+  return { projet, parametres };
+}
+
 /** Paramètres d'entreprise (singleton). Lecture pure. */
 export async function getParametres() {
   return prisma.parametres.findUnique({ where: { id: 'singleton' } });

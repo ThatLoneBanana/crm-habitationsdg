@@ -1,13 +1,11 @@
-'use client';
-
-import { useEffect, useState, use } from 'react';
-import { formatMontant, formatDate } from '@/lib/utils';
+import { formatMontant } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
+import { getProjetVueClient } from '@/lib/projet-data';
 
 /* Vue client publique — mobile-first, lecture seule (REF VueClient.jsx).
-   Données via l'API PUBLIQUE filtrée /api/projets-by-slug uniquement.
-   Aucune donnée interne/financière sensible n'est demandée ni affichée
-   au-delà de ce que l'API expose déjà (sécurité Cat1-R3 intacte). */
+   Server Component : lecture serveur PUBLIC-SAFE (getProjetVueClient) — plus
+   d'endpoint public, aucune donnée interne/financière ni PII client dans le
+   HTML. /p/ reste exempté d'auth (le projet est résolu par le token = slug). */
 
 // Statut d'étape (par dates) → libellé + couleur de la timeline.
 const STATUT: Record<string, { label: string; color: string }> = {
@@ -18,7 +16,16 @@ const STATUT: Record<string, { label: string; color: string }> = {
 };
 const statutOf = (t: any): string => calculateTaskStatus(t.dateDebut, t.dateFin).status || 'noneStarted';
 
-const dateCourt = (d: Date | string) => formatDate(d);
+// Format de date HUMAIN dédié à la vue client (« 16 juin 2026 »), DISTINCT du
+// formatDate OQLF interne (yyyy-mm-dd). Composantes UTC (dates calendaires
+// stockées à minuit UTC) → aucun décalage de fuseau, identique en dev et prod.
+const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+function formatDateClient(d: Date | string | null): string {
+  if (!d) return '—';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  if (isNaN(date.getTime())) return '—';
+  return `${date.getUTCDate()} ${MOIS_FR[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -30,42 +37,18 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function VueClientPage({ params: paramPromise }: { params: Promise<{ token: string }> }) {
-  const params = use(paramPromise);
-  const [projet, setProjet] = useState<any>(null);
-  const [parametres, setParametres] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function VueClientPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const data = await getProjetVueClient(token);
 
-  // Fetch unique de l'API publique filtrée — logique de données inchangée.
-  useEffect(() => {
-    const fetchProjet = async () => {
-      try {
-        const res = await fetch(`/api/projets-by-slug?slug=${params.token}`);
-        if (!res.ok) throw new Error('Projet non trouvé');
-        const data = await res.json();
-        if (!data.projet) throw new Error('Projet non trouvé');
-        setProjet(data.projet);
-        setParametres(data.parametres || null);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjet();
-  }, [params.token]);
-
-  if (loading) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', color: 'var(--text-secondary)', fontSize: 13 }}>Chargement…</div>;
-  }
-  if (error || !projet) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', color: 'var(--danger)', fontSize: 13 }}>Erreur : {error}</div>;
+  if (!data) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', color: 'var(--danger)', fontSize: 13 }}>Projet introuvable.</div>;
   }
 
-  // Calculs (présentation) — préservés tels quels.
-  const tachesClient = projet.taches.filter((t: any) => t.visibleClient);
-  const sched = [...tachesClient].sort(
+  const { projet, parametres } = data;
+
+  // Calculs (présentation). Les tâches sont déjà filtrées visibleClient au serveur.
+  const sched = [...projet.taches].sort(
     (a: any, b: any) => new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime()
   );
   const done = sched.filter((t: any) => statutOf(t) === 'completed').length;
@@ -79,7 +62,7 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
     ? Math.ceil((new Date(projet.dateLivraison).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  const extrasSignes = projet.extras.filter((e: any) => e.statut === 'SIGNE');
+  const extrasSignes = projet.extras;
   const totalExtrasSignes = extrasSignes.reduce((s: number, e: any) => s + Number(e.montant), 0);
 
   const nomCompagnie = parametres?.nomCompagnie ?? 'Habitations DG';
@@ -142,7 +125,7 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
                 <span style={{ position: 'absolute', left: -18, top: '50%', transform: 'translateY(-50%)', width: 10, height: 10, borderRadius: '50%', background: c, border: '2px solid var(--surface)', boxShadow: `0 0 0 1.5px ${c}` }} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: st === 'noneStarted' ? 'var(--text-secondary)' : 'var(--text-primary)' }}>{t.nom}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{dateCourt(t.dateDebut)} – {dateCourt(t.dateFin)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>{formatDateClient(t.dateDebut)} – {formatDateClient(t.dateFin)}</div>
                 </div>
                 <span style={{ fontSize: 10.5, fontWeight: 600, color: c, whiteSpace: 'nowrap' }}>{STATUT[st]?.label ?? 'À venir'}</span>
               </div>
@@ -154,12 +137,12 @@ export default function VueClientPage({ params: paramPromise }: { params: Promis
         </div>
       </div>
 
-      {/* Travaux additionnels signés (info client déjà exposée par l'API) */}
+      {/* Travaux additionnels signés */}
       {extrasSignes.length > 0 && (
         <div style={{ padding: '4px 18px 14px', borderTop: '1px solid var(--divider)' }}>
           <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', margin: '12px 0 10px' }}>Travaux additionnels signés</div>
-          {extrasSignes.map((e: any) => (
-            <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '6px 0', fontSize: 12.5 }}>
+          {extrasSignes.map((e: any, i: number) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '6px 0', fontSize: 12.5 }}>
               <span style={{ color: 'var(--text-primary)' }}>{e.description}</span>
               <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--success-text)', whiteSpace: 'nowrap' }}>{formatMontant(Number(e.montant))}</span>
             </div>
