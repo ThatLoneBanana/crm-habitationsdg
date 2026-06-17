@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { etapes } = await request.json()
+    const { etapes, templateId } = await request.json()
 
     // Préserve les marqueurs d'ancrage existants, dédouble, et pose le défaut
     // par nom (« Pose gypse »/« Pose finition ») si un type n'est pas marqué.
@@ -39,6 +39,13 @@ export async function POST(
 
     // Garantit les inspections GCR du projet (idempotent).
     await ensureInspectionsGCR(id)
+
+    // Souvenir du template : seulement si l'appelant l'envoie explicitement
+    // (changement de template). Les autres sauvegardes de cédule (édition
+    // manuelle, création) ne touchent pas templateId.
+    if (templateId !== undefined) {
+      await prisma.projet.update({ where: { id }, data: { templateId: templateId || null } })
+    }
 
     // Invalide le cache de la page projet
     revalidatePath(`/projets/[id]`, 'page')

@@ -685,6 +685,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
                 fournisseurs={[]}
                 margeCeduleJours={margeCeduleJours}
                 toleranceJours={projet?.toleranceJours || 3}
+                templateId={projet?.templateId || undefined}
                 periodes={periodes}
                 onChange={setEtapesModifiees}
               />

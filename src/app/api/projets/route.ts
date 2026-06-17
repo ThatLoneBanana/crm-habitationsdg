@@ -159,7 +159,7 @@ async function generateSlugUnique(prenom: string, nom: string, adresse: string):
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { clientId, adresse, ville, typeProjet, typeContrat, montantTotal, dateContrat, dateLivraison, vendeurId, chargeProjetId, urlClient, etapes } = body;
+    const { clientId, adresse, ville, typeProjet, typeContrat, montantTotal, dateContrat, dateLivraison, vendeurId, chargeProjetId, urlClient, etapes, templateId } = body;
 
     if (!clientId || !adresse || !ville || !dateLivraison || !montantTotal) {
       return NextResponse.json(
@@ -199,6 +199,7 @@ export async function POST(request: NextRequest) {
         urlClient: urlClient || null,
         vendeurId: vendeurId || null,
         chargeProjetId: chargeProjetId || null,
+        templateId: templateId || null,
         toleranceJours: toleranceDefaut,
       },
     });

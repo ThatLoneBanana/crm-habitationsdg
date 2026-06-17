@@ -529,6 +529,7 @@ export default function NouveauProjetPage() {
           chargeProjet,
           urlClient: generatedUrl,
           etapes: etapesAEnvoyer,
+          templateId: selectedTemplateId || null,
         }),
       });
 

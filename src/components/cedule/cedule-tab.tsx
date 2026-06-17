@@ -88,7 +88,7 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
       const res = await fetch(`/api/projets/${projectId}/cedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ etapes: computed }),
+        body: JSON.stringify({ etapes: computed, templateId: chosenTemplateId }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Échec de la régénération'); }
       router.refresh();

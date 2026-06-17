@@ -269,12 +269,18 @@ export default function CedulaEditor({
     if (!confirm('Réinitialiser toutes les dates ? Les modifications seront perdues.')) return;
 
     try {
-      // #9 — réinitialise depuis le template CHOISI si fourni, sinon le défaut par type.
-      const url = templateId ? `/api/templates/${templateId}` : `/api/templates?type=${typeProjet}`;
-      const res = await fetch(url);
-      const data = res.ok ? await res.json() : null;
-      const template = templateId ? data?.template : data;
-      const dbEtapes: any[] = template?.etapes ?? [];
+      // Réinitialise depuis le template du projet (templateId) s'il résout vers
+      // un template existant ; sinon (null, ou template supprimé → 404/vide) →
+      // fallback gracieux sur le défaut par type.
+      let dbEtapes: any[] = [];
+      if (templateId) {
+        const res = await fetch(`/api/templates/${templateId}`);
+        if (res.ok) { const data = await res.json(); dbEtapes = data?.template?.etapes ?? []; }
+      }
+      if (dbEtapes.length === 0) {
+        const res = await fetch(`/api/templates?type=${typeProjet}`);
+        if (res.ok) { const data = await res.json(); dbEtapes = data?.etapes ?? []; }
+      }
 
       const nouvellesEtapes: EtapeEditable[] = dbEtapes.map((e: any, i: number) => ({
         id: undefined,
