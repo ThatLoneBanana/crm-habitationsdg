@@ -1,45 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calculerPhaseAutomatique } from '@/lib/phase-calculator';
+import { getProjetComplet } from '@/lib/projet-data';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
-    // Le paramètre peut être un id (UUID) OU un slug : route interne
-    // authentifiée qui renvoie les données COMPLÈTES du projet.
-    const projet = await prisma.projet.findFirst({
-      where: { OR: [{ id }, { slug: id }] },
-      include: {
-        client: true,
-        vendeur: true,
-        chargeProjet: true,
-        taches: { orderBy: { ordre: 'asc' } },
-        extras: true,
-        paiements: true,
-      },
-    });
-
+    // Lecture interne complète (id OU slug) via la fonction serveur partagée.
+    const projet = await getProjetComplet(id);
     if (!projet) {
-      return NextResponse.json(
-        { error: 'Projet non trouvé' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Projet non trouvé' }, { status: 404 });
     }
 
-    // Calculer la phase automatiquement
-    const nouvellePhase = calculerPhaseAutomatique(projet);
-
-    // Si la phase a changé, mettre à jour en DB (via l'id réel résolu)
-    if (nouvellePhase !== projet.phase) {
-      await prisma.projet.update({
-        where: { id: projet.id },
-        data: { phase: nouvellePhase }
-      });
-      projet.phase = nouvellePhase;
+    // Comportement historique conservé pour les AUTRES appelants de cette route :
+    // persister la phase dérivée si elle a changé. (Hors-rendu — le Server
+    // Component, lui, n'écrit jamais ; il utilise getProjetComplet en lecture pure.)
+    if (projet.phase !== projet.phasePersistee) {
+      await prisma.projet.update({ where: { id: projet.id }, data: { phase: projet.phase } });
     }
 
-    return NextResponse.json({ projet });
+    const { phasePersistee, ...projetOut } = projet;
+    return NextResponse.json({ projet: projetOut });
   } catch (error: any) {
     console.error('Erreur API projet:', error);
     return NextResponse.json(

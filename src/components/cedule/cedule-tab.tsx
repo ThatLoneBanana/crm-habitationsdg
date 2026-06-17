@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Tache } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ interface CeduleTabProps {
 }
 
 export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, margeCeduleJours, onModifierClick }: CeduleTabProps) {
+  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTache, setSelectedTache] = useState<any>(null);
   const [insertAfterOrdre, setInsertAfterOrdre] = useState<number | null>(null);
@@ -86,7 +88,7 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
         body: JSON.stringify({ etapes: computed }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Échec de la régénération'); }
-      window.location.reload();
+      router.refresh();
     } catch (err: any) {
       alert('Erreur : ' + err.message);
       setRegenerating(false);
@@ -137,8 +139,8 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
         throw new Error(errorData.error || 'Erreur lors de la sauvegarde');
       }
 
-      // Rafraîchir les données sans reload
-      window.location.reload();
+      // Rafraîchir via le Server Component (router.refresh) — plus de reload complet.
+      router.refresh();
       setDialogOpen(false);
     } catch (err: any) {
       alert('Erreur: ' + err.message);
