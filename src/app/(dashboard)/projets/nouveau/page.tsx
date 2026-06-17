@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
-import { subJoursOuvrables, addJoursOuvrables, countJoursOuvrables, genererSlug, detecterConflits } from '@/lib/template-utils';
+import { genererSlug } from '@/lib/template-utils';
 import CedulaEditor from '@/components/cedule/CedulaEditor';
-import type { EtapeEditable } from '@/lib/cedula-utils';
+import { detecterConflits, creerMoteurCedule, type EtapeEditable } from '@/lib/cedula-utils';
 
 interface Client {
   id: string;
@@ -81,6 +81,7 @@ export default function NouveauProjetPage() {
   const [templates, setTemplates] = useState<Record<string, Template>>({});
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [periodes, setPeriodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,15 +119,20 @@ export default function NouveauProjetPage() {
   // Flag pour charger le template une seule fois
   const [templateCharge, setTemplateCharge] = useState(false);
 
+  // Moteur conscient des vacances (helpers liés aux périodes). Déclaré avant les
+  // effets/cascade qui l'utilisent. Sans période → comportement identique.
+  const { addJoursOuvrables, subJoursOuvrables, countJoursOuvrables } = useMemo(() => creerMoteurCedule(periodes), [periodes]);
+
   // Charger clients, templates et fournisseurs
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientRes, templateRes, fournisseurRes, parametresRes] = await Promise.all([
+        const [clientRes, templateRes, fournisseurRes, parametresRes, periodesRes] = await Promise.all([
           fetch('/api/clients'),
           fetch('/api/templates'),
           fetch('/api/fournisseurs'),
           fetch('/api/parametres'),
+          fetch('/api/periodes-non-ouvrables'),
         ]);
         const clientData = await clientRes.json();
         const templateData = await templateRes.json();
@@ -144,6 +150,9 @@ export default function NouveauProjetPage() {
         });
         setTemplates(templatesByType);
         setAllTemplates(templateData.templates || []);
+
+        const periodesData = await periodesRes.json().catch(() => ({ periodes: [] }));
+        setPeriodes(periodesData.periodes || []);
       } catch (err) {
         console.error('Erreur chargement:', err);
       } finally {
@@ -790,6 +799,7 @@ export default function NouveauProjetPage() {
               dateLivraison={new Date(dateLivraison)}
               fournisseurs={fournisseurs}
               margeCeduleJours={margeCeduleJours}
+              periodes={periodes}
               mode="creation"
               onChange={(newEtapes) => {
                 const converted = newEtapes.map(e => ({

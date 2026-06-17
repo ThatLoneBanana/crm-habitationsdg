@@ -37,3 +37,9 @@ export async function getProjetComplet(idOrSlug: string) {
 export async function getParametres() {
   return prisma.parametres.findUnique({ where: { id: 'singleton' } });
 }
+
+/** Périodes non ouvrables GLOBALES (vacances/fériés). Lecture pure — alimentent
+ *  le moteur de cédule (jours ouvrables conscients des vacances). */
+export async function getPeriodesNonOuvrables() {
+  return prisma.periodeNonOuvrable.findMany({ orderBy: { dateDebut: 'asc' } });
+}

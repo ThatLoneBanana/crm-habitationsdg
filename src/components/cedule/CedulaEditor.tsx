@@ -1,17 +1,14 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, EyeOff, Trash2, ChevronRight, RefreshCw } from 'lucide-react';
 import {
   EtapeEditable,
-  addJoursOuvrables,
-  subJoursOuvrables,
-  joursOuvrableEntre,
-  cascadeVersBas,
-  cascadeVersHaut,
   detecterConflits,
+  creerMoteurCedule,
+  type Periode,
 } from '@/lib/cedula-utils';
 
 export interface CedulaEditorProps {
@@ -25,6 +22,7 @@ export interface CedulaEditorProps {
   margeCeduleJours?: number;
   toleranceJours?: number;
   templateId?: string; // #9 — si fourni, charge/réinitialise depuis CE template (sinon défaut par type)
+  periodes?: Periode[]; // jours non ouvrables (vacances/fériés) — moteur de cédule
 }
 
 export default function CedulaEditor({
@@ -37,10 +35,16 @@ export default function CedulaEditor({
   etapesInitiales = [],
   margeCeduleJours = 5,
   templateId,
+  periodes,
 }: CedulaEditorProps) {
   const [etapes, setEtapes] = useState<EtapeEditable[]>([]);
   const [conflits, setConflits] = useState<number[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+
+  // Moteur conscient des vacances : helpers + cascade LIÉS au prédicat construit
+  // depuis les périodes. Sans période → prédicat weekend → dates IDENTIQUES.
+  const { addJoursOuvrables, subJoursOuvrables, joursOuvrableEntre, cascadeVersBas, cascadeVersHaut } =
+    useMemo(() => creerMoteurCedule(periodes), [periodes]);
 
   console.log('CedulaEditor props:', { typeProjet, dateLivraison: dateLivraison.toISOString(), etapesCount: etapes.length });
 

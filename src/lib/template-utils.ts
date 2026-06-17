@@ -97,48 +97,9 @@ export const ETAPES_INTERNES = [
   'Installation foyer',
 ];
 
-export function subJoursOuvrables(date: Date, n: number): Date {
-  let d = new Date(date);
-  let count = 0;
-  while (count < n) {
-    d = new Date(d.getTime() - 86400000);
-    const dayOfWeek = d.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      count++;
-    }
-  }
-  return d;
-}
-
-export function addJoursOuvrables(date: Date, n: number): Date {
-  let d = new Date(date);
-  let count = 0;
-  while (count < n) {
-    d = new Date(d.getTime() + 86400000);
-    const dayOfWeek = d.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      count++;
-    }
-  }
-  return d;
-}
-
-export function countJoursOuvrables(dateDebut: Date, dateFin: Date): number {
-  let count = 0;
-  let current = new Date(dateDebut);
-  current.setHours(0, 0, 0, 0);
-  const fin = new Date(dateFin);
-  fin.setHours(0, 0, 0, 0);
-
-  while (current <= fin) {
-    const dayOfWeek = current.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      count++;
-    }
-    current.setDate(current.getDate() + 1);
-  }
-  return count;
-}
+// Helpers jours ouvrables + détection de conflits : SOURCE UNIQUE = cedula-utils.
+// Ré-exportés ici pour la compatibilité des imports historiques.
+export { addJoursOuvrables, subJoursOuvrables, joursOuvrableEntre, countJoursOuvrables, detecterConflits } from './cedula-utils';
 
 export function genererSlug(prenom: string, nom: string, adresse: string): string {
   const normalize = (str: string) =>
@@ -160,17 +121,4 @@ export function genererSlug(prenom: string, nom: string, adresse: string): strin
   return `${normalize(prenom)}${normalize(nom)}-${numAdresse}-${rueClean}`;
 }
 
-export function detecterConflits(etapes: any[]): number[] {
-  const conflits: number[] = [];
-  for (let i = 0; i < etapes.length - 1; i++) {
-    const d1 = new Date(etapes[i].dateFin);
-    const d2 = new Date(etapes[i + 1].dateDebut);
-    d1.setHours(0, 0, 0, 0);
-    d2.setHours(0, 0, 0, 0);
-    if (d1 >= d2) {
-      conflits.push(i);
-      conflits.push(i + 1);
-    }
-  }
-  return [...new Set(conflits)];
-}
+// detecterConflits : voir la ré-export en haut (source unique cedula-utils).

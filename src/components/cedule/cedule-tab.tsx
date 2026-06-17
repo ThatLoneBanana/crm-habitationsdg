@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tache } from '@prisma/client';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { GanttChart } from './gantt-chart';
 import { TacheDialog } from './tache-dialog';
 import { Plus, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { calculateTaskStatus } from '@/lib/task-status';
-import { subJoursOuvrables } from '@/lib/template-utils';
+import { creerMoteurCedule, type Periode } from '@/lib/cedula-utils';
 
 interface CeduleTabProps {
   taches: Tache[];
@@ -17,11 +17,13 @@ interface CeduleTabProps {
   toleranceJours?: number;
   dateLivraison?: string | Date | null;
   margeCeduleJours?: number;
+  periodes?: Periode[];
   onModifierClick?: () => void;
 }
 
-export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, margeCeduleJours, onModifierClick }: CeduleTabProps) {
+export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, margeCeduleJours, periodes, onModifierClick }: CeduleTabProps) {
   const router = useRouter();
+  const { subJoursOuvrables } = useMemo(() => creerMoteurCedule(periodes), [periodes]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTache, setSelectedTache] = useState<any>(null);
   const [insertAfterOrdre, setInsertAfterOrdre] = useState<number | null>(null);

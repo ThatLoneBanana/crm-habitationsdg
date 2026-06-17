@@ -230,6 +230,18 @@ model Parametres {
   updatedAt               DateTime @updatedAt
 }
 
+// Périodes non ouvrables GLOBALES (vacances de la construction ~2 sem., fériés
+// 1 jour, shutdowns custom). Le moteur de cédule saute ces dates comme les
+// week-ends. Voir lib/cedula-utils.ts (construireEstOuvrable).
+model PeriodeNonOuvrable {
+  id        String   @id @default(uuid())
+  nom       String
+  dateDebut DateTime
+  dateFin   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Employe {
   id            String   @id @default(uuid())
   prenom        String

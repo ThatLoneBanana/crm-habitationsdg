@@ -32,6 +32,8 @@ export default function ParametresPage() {
   const [passwordForm, setPasswordForm] = useState({ nouveau: '', confirmer: '' })
   const [parametres, setParametres] = useState({ nomCompagnie: 'Habitations DG', rbq: '5856-1036-01', email: 'info@habitations-dg.com', telephone: '', siteWeb: 'habitations-dg.com', maxHeuresParSemaine: 36.5, margeCeduleJours: 5, toleranceDefautJours: 3 })
   const [accessPerms, setAccessPerms] = useState<Record<string, Record<string, boolean>>>({})
+  const [periodes, setPeriodes] = useState<any[]>([])
+  const [periodeForm, setPeriodeForm] = useState({ nom: '', dateDebut: '', dateFin: '' })
 
   useEffect(() => {
     const loadData = async () => {
@@ -40,9 +42,10 @@ export default function ParametresPage() {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 5000)
 
-        const [meRes, paramRes] = await Promise.all([
+        const [meRes, paramRes, periodesRes] = await Promise.all([
           fetch('/api/me', { signal: controller.signal }).catch(() => null),
-          fetch('/api/parametres', { signal: controller.signal }).catch(() => null)
+          fetch('/api/parametres', { signal: controller.signal }).catch(() => null),
+          fetch('/api/periodes-non-ouvrables', { signal: controller.signal }).catch(() => null)
         ])
 
         clearTimeout(timeout)
@@ -86,6 +89,10 @@ export default function ParametresPage() {
           setParametres(data.parametres || data)
         }
 
+        if (periodesRes?.ok) {
+          setPeriodes((await periodesRes.json()).periodes || [])
+        }
+
         setLoading(false)
       } catch (err: any) {
         console.error('Erreur:', err)
@@ -94,6 +101,31 @@ export default function ParametresPage() {
     }
     loadData()
   }, [])
+
+  const reloadPeriodes = async () => {
+    const r = await fetch('/api/periodes-non-ouvrables')
+    if (r.ok) setPeriodes((await r.json()).periodes || [])
+  }
+  const handleAddPeriode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!periodeForm.nom || !periodeForm.dateDebut || !periodeForm.dateFin) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/periodes-non-ouvrables', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(periodeForm) })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Erreur') }
+      setPeriodeForm({ nom: '', dateDebut: '', dateFin: '' })
+      setSuccess('Période ajoutée')
+      await reloadPeriodes()
+    } catch (err: any) { setError(err.message) } finally { setSaving(false) }
+  }
+  const handleDeletePeriode = async (id: string) => {
+    try {
+      const res = await fetch(`/api/periodes-non-ouvrables/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Erreur suppression')
+      setSuccess('Période supprimée')
+      await reloadPeriodes()
+    } catch (err: any) { setError(err.message) }
+  }
 
   const handleSaveUser = async () => {
     setSaving(true)
@@ -291,6 +323,45 @@ export default function ParametresPage() {
                 <Field label="Tolérance de décalage par défaut (jours)"><Input type="number" min="0" step="1" value={parametres.toleranceDefautJours} onChange={(e) => setParametres({ ...parametres, toleranceDefautJours: parseInt(e.target.value, 10) || 0 })} /></Field>
               </div>
               <Button onClick={handleSaveParametres} disabled={saving} style={{ width: 'fit-content' }}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Button>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader title="Jours non ouvrables (vacances, fériés)" />
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Le calcul des cédules saute ces périodes comme les week-ends (vacances de la construction, fériés, arrêts de chantier).</p>
+              {periodes.length > 0 ? (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
+                      <th style={dgTH}>Nom</th>
+                      <th style={dgTH}>Début</th>
+                      <th style={dgTH}>Fin</th>
+                      <th style={{ ...dgTH, textAlign: 'right' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {periodes.map((p, i) => (
+                      <tr key={p.id} style={{ borderBottom: i < periodes.length - 1 ? '1px solid var(--divider)' : 'none' }}>
+                        <td style={dgTD}>{p.nom}</td>
+                        <td style={dgTD}>{new Date(p.dateDebut).toLocaleDateString('fr-CA')}</td>
+                        <td style={dgTD}>{new Date(p.dateFin).toLocaleDateString('fr-CA')}</td>
+                        <td style={{ ...dgTD, textAlign: 'right' }}>
+                          <Button variant="danger" onClick={() => handleDeletePeriode(p.id)} style={{ fontSize: 12, padding: '6px 10px' }}>Supprimer</Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Aucune période définie.</p>
+              )}
+              <form onSubmit={handleAddPeriode} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr auto', gap: 10, alignItems: 'end' }}>
+                <Field label="Nom"><Input value={periodeForm.nom} onChange={(e) => setPeriodeForm({ ...periodeForm, nom: e.target.value })} placeholder="Vacances de la construction" required /></Field>
+                <Field label="Début"><Input type="date" value={periodeForm.dateDebut} onChange={(e) => setPeriodeForm({ ...periodeForm, dateDebut: e.target.value })} required /></Field>
+                <Field label="Fin"><Input type="date" value={periodeForm.dateFin} onChange={(e) => setPeriodeForm({ ...periodeForm, dateFin: e.target.value })} required /></Field>
+                <Button type="submit" disabled={saving}>Ajouter</Button>
+              </form>
             </div>
           </Card>
         </div>

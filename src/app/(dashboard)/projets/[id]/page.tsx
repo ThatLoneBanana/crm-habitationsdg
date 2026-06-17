@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getAuthUser } from '@/lib/auth-guard';
-import { getProjetComplet, getParametres } from '@/lib/projet-data';
+import { getProjetComplet, getParametres, getPeriodesNonOuvrables } from '@/lib/projet-data';
 import ProjetDetailClient from './ProjetDetailClient';
 
 // Server Component : auth SERVEUR, puis lecture projet + parametres EN PARALLÈLE
@@ -13,13 +13,18 @@ export default async function ProjetDetailPage({ params }: { params: Promise<{ i
   if (!user || !user.actif) redirect('/login');
 
   const { id } = await params;
-  const [projetData, parametresData] = await Promise.all([getProjetComplet(id), getParametres()]);
+  const [projetData, parametresData, periodesData] = await Promise.all([
+    getProjetComplet(id),
+    getParametres(),
+    getPeriodesNonOuvrables(),
+  ]);
   if (!projetData) notFound();
 
   // Sérialiser Decimal/Date avant de passer au Client Component.
   const { phasePersistee, ...projetClean } = projetData;
   const projet = JSON.parse(JSON.stringify(projetClean));
   const parametres = parametresData ? JSON.parse(JSON.stringify(parametresData)) : null;
+  const periodes = JSON.parse(JSON.stringify(periodesData ?? []));
 
-  return <ProjetDetailClient projet={projet} parametres={parametres} />;
+  return <ProjetDetailClient projet={projet} parametres={parametres} periodes={periodes} />;
 }

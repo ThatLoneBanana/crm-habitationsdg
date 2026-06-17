@@ -51,6 +51,7 @@ function PhaseBadge({ phase }: { phase: string | null | undefined }) {
 interface ProjetDetailClientProps {
   projet: any;
   parametres: any;
+  periodes: any[];
 }
 
 // Composant client mince : reçoit projet + parametres en PROPS (fetchés côté
@@ -58,7 +59,7 @@ interface ProjetDetailClientProps {
 // (dialog Modifier / création de cédule) et costing (onglet Costing) sont
 // chargés PARESSEUSEMENT à l'interaction. Les mutations rafraîchissent via
 // router.refresh() — désormais EFFICACE car les données viennent du serveur.
-export default function ProjetDetailClient({ projet, parametres }: ProjetDetailClientProps) {
+export default function ProjetDetailClient({ projet, parametres, periodes }: ProjetDetailClientProps) {
   const router = useRouter();
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [tableauVariant, setTableauVariant] = useState<'client' | 'soustraitant' | null>(null);
@@ -412,6 +413,7 @@ export default function ProjetDetailClient({ projet, parametres }: ProjetDetailC
                 toleranceJours={projet.toleranceJours}
                 dateLivraison={projet.dateLivraison}
                 margeCeduleJours={margeCeduleJours}
+                periodes={periodes}
                 onModifierClick={() => setModifierCedulaOpen(true)}
               />
             )}
@@ -559,6 +561,7 @@ export default function ProjetDetailClient({ projet, parametres }: ProjetDetailC
               dateLivraison={new Date(projet?.dateLivraison)}
               fournisseurs={utilisateurs}
               margeCeduleJours={margeCeduleJours}
+              periodes={periodes}
               onChange={setNouvellesEtapes}
             />
           </div>
@@ -648,6 +651,7 @@ export default function ProjetDetailClient({ projet, parametres }: ProjetDetailC
                 fournisseurs={[]}
                 margeCeduleJours={margeCeduleJours}
                 toleranceJours={projet?.toleranceJours || 3}
+                periodes={periodes}
                 onChange={setEtapesModifiees}
               />
             )}
