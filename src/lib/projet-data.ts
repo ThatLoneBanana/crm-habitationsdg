@@ -56,6 +56,13 @@ export async function getProjetVueClient(token: string) {
         where: { statut: 'SIGNE' },
         select: { description: true, montant: true },
       },
+      // Fournisseurs CONFIRMÉS seulement (le booléen confirme sert de FILTRE et
+      // n'est PAS exposé). On n'expose QUE { nom, metier } — jamais budgetAlloue,
+      // confirme, contact, ids.
+      fournisseurs: {
+        where: { confirme: true },
+        select: { fournisseur: { select: { nom: true, metier: true } } },
+      },
     },
   });
   if (!projet) return null;
