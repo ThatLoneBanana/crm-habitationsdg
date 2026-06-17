@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/prisma'
 import Sidebar from '@/components/layout/sidebar'
+import Bottombar from '@/components/layout/bottombar'
 
 export default async function DashboardLayout({
   children,
@@ -22,15 +23,23 @@ export default async function DashboardLayout({
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
-      <Sidebar
-        projetsCount={projetsCount}
-        userPrenom={userPrisma?.prenom}
-        userEmail={user?.email}
-        estAdminOuDev={estAdminOuDev}
-      />
-      <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+      {/* Sidebar : desktop seulement (>= md). Wrapper class-gated pour ne pas
+          entrer en conflit avec le display:flex inline de la sidebar. */}
+      <div className="hidden md:block">
+        <Sidebar
+          projetsCount={projetsCount}
+          userPrenom={userPrisma?.prenom}
+          userEmail={user?.email}
+          estAdminOuDev={estAdminOuDev}
+        />
+      </div>
+      {/* pb-14 (= hauteur bottombar) sur mobile pour que rien ne soit caché
+          derrière la barre ; aucun padding sur desktop. */}
+      <main style={{ flex: 1, overflow: 'auto', minWidth: 0 }} className="pb-14 md:pb-0">
         {children}
       </main>
+      {/* Bottombar : mobile seulement (< md), fixée en bas. */}
+      <Bottombar />
     </div>
   )
 }

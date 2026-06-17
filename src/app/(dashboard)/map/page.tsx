@@ -28,7 +28,7 @@ export default async function MapPage() {
   });
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="h-[calc(100vh_-_56px)] md:h-screen" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* En-tête (REF Carte) */}
       <div style={{ padding: '18px 24px 14px' }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>Carte des chantiers</h1>
