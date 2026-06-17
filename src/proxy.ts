@@ -1,7 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+// Next 16 : la convention « middleware » est renommée « proxy » (fichier proxy.ts
+// + fonction proxy). Runtime Node (pas Edge). Logique d'auth INCHANGÉE : gating
+// non-connecté → /login, routes publiques (/login, /p/, /api/projets-by-slug,
+// /api/restore-taches) exemptées.
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
