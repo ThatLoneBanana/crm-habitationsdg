@@ -298,7 +298,9 @@ export default function ProjetListPage() {
       ) : vue === 'gantt' ? (
         <ProjetsGantt projets={filtered} onOpen={(slug) => router.push(`/projets/${slug}`)} />
       ) : (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
+        <>
+        {/* Desktop (>= md) : table 8 colonnes — INCHANGÉE */}
+        <div className="hidden md:block" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border)' }}>
@@ -386,6 +388,50 @@ export default function ProjetListPage() {
               />
             )}
         </div>
+
+        {/* Mobile (< md) : cartes — alimentées par le MÊME `rows` (tri/filtre cohérents) */}
+        <div className="flex flex-col md:hidden" style={{ gap: 10 }}>
+          {rows.length === 0 ? (
+            <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--surface)' }}>
+              <EmptyState
+                icon="search-off"
+                title={projets.length === 0 ? 'Aucun projet' : 'Aucun résultat'}
+                message={projets.length === 0 ? "Aucun projet n'a encore été créé." : 'Aucun projet ne correspond à ce filtre ou à cette recherche.'}
+              />
+            </div>
+          ) : rows.map((p) => {
+            const jr = joursRestants(p.dateLivraison);
+            const avancement = (p as any).avancement ?? 0;
+            return (
+              <div
+                key={p.id}
+                onClick={() => router.push(`/projets/${p.slug}`)}
+                style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface)', padding: '12px 14px', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <ProjetIdentite adresse={p.adresse} ville={p.ville} client={`${p.client.prenom} ${p.client.nom}`} />
+                  </div>
+                  <PhaseBadge phase={p.phase} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                    <i className="ti ti-calendar-event" aria-hidden="true" style={{ marginRight: 5, color: 'var(--text-tertiary)' }} />
+                    {formatDate(p.dateLivraison)}
+                    {jr !== null && (
+                      <span style={{ marginLeft: 6, color: jr <= 14 ? 'var(--danger)' : 'var(--text-tertiary)', fontWeight: jr <= 14 ? 600 : 400 }}>
+                        · {jr > 0 ? `${jr} j` : jr === 0 ? "aujourd'hui" : 'livré'}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{avancement}%</span>
+                </div>
+                <div style={{ marginTop: 8 }}><ProgressBar value={avancement} phase={p.phase} /></div>
+              </div>
+            );
+          })}
+        </div>
+        </>
       )}
     </div>
   );
