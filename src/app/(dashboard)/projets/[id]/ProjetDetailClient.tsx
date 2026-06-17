@@ -34,7 +34,7 @@ const PHASES: Record<string, { label: string; tint: string; ink: string; bar: st
   TERMINE:     { label: 'Terminé',     tint: 'var(--phase-termine-tint)',     ink: 'var(--phase-termine-ink)',     bar: 'var(--phase-termine-bar)' },
 };
 const phaseBar = (phase: string | null | undefined) => (PHASES[phase ?? 'SIGNE'] ?? PHASES.SIGNE).bar;
-const dateCourt = (d: Date | string) => new Date(d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+const dateCourt = (d: Date | string) => formatDate(d);
 const eyebrow: React.CSSProperties = { fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' };
 const statVal: React.CSSProperties = { fontSize: 14, fontWeight: 600, marginTop: 3, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' };
 

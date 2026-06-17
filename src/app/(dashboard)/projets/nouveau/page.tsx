@@ -11,6 +11,7 @@ import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
 import { genererSlug } from '@/lib/template-utils';
 import CedulaEditor from '@/components/cedule/CedulaEditor';
 import { detecterConflits, creerMoteurCedule, type EtapeEditable } from '@/lib/cedula-utils';
+import { formatDate } from '@/lib/utils';
 
 interface Client {
   id: string;
@@ -64,16 +65,6 @@ function formatPhase(phase: string): string {
     'CHANTIER': 'Chantier', 'LIVRAISON': 'Livraison', 'TERMINE': 'Terminé'
   };
   return map[phase] || phase;
-}
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '—';
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' });
-  } catch {
-    return '—';
-  }
 }
 
 export default function NouveauProjetPage() {
@@ -925,7 +916,7 @@ export default function NouveauProjetPage() {
                 ) : (
                   <>
                     <p style={{ fontSize: '13px' }}>Livraison : <strong>{formatDate(dateLivraison)}</strong></p>
-                    <p style={{ fontSize: '13px' }}>Début estimé : <strong>{etapes[0]?.dateDebut ? new Date(etapes[0].dateDebut).toLocaleDateString('fr-CA') : '—'}</strong></p>
+                    <p style={{ fontSize: '13px' }}>Début estimé : <strong>{formatDate(etapes[0]?.dateDebut)}</strong></p>
                     <p style={{ fontSize: '13px' }}>Total : <strong>{etapes.length} étapes</strong></p>
                     <p style={{ fontSize: '13px' }}>Durée : <strong>{etapes.length > 0 && dateLivraison ? countJoursOuvrables(etapes[0].dateDebut, new Date(dateLivraison)) : 0} j ouv.</strong></p>
                   </>

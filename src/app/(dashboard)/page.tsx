@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/dashboard/DashboardClient'
 import { calculerPhaseAutomatique } from '@/lib/phase-calculator'
+import { formatDate } from '@/lib/utils'
 
 export default async function DashboardPage() {
   try {
@@ -95,7 +96,7 @@ export default async function DashboardPage() {
         if (!ancre || !ancre.dateDebut) continue
         const jours = Math.ceil((new Date(ancre.dateDebut).getTime() - aujourd_hui.getTime()) / 86400000)
         if (jours > 21) continue
-        const dateAncre = new Date(ancre.dateDebut).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })
+        const dateAncre = formatDate(ancre.dateDebut)
         alertes.push({
           type: 'warning',
           titre: `Inspection GCR ${TYPE_INSP_LABEL[insp.type]} à réserver — ${p.client.prenom} ${p.client.nom}`,

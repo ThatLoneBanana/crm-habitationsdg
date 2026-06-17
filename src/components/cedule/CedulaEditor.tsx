@@ -10,6 +10,7 @@ import {
   creerMoteurCedule,
   type Periode,
 } from '@/lib/cedula-utils';
+import { formatDate } from '@/lib/utils';
 
 export interface CedulaEditorProps {
   typeProjet: 'MAISON' | 'JUMELE';
@@ -201,12 +202,6 @@ export default function CedulaEditor({
     onChange(updated);
   };
 
-  const formatDate = (date?: Date | string) => {
-    if (!date) return '—';
-    const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' });
-  };
-
   const adjustDebutChantier = (delta: number) => {
     const nouvelleDate = delta > 0
       ? addJoursOuvrables(etapes[0].dateDebut, delta)
@@ -321,15 +316,13 @@ export default function CedulaEditor({
         <div style={{ padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--success-tint)' }}>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Début estimé</p>
           <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--success-text)' }}>
-            {etapes.length > 0
-              ? (etapes[0].dateDebut instanceof Date ? etapes[0].dateDebut : new Date(etapes[0].dateDebut)).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })
-              : '—'}
+            {etapes.length > 0 ? formatDate(etapes[0].dateDebut) : '—'}
           </p>
         </div>
         <div style={{ padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-border)', background: 'var(--dg-red-50)' }}>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>Date de livraison</p>
           <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--dg-red-700)' }}>
-            {dateLivraison.toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+            {formatDate(dateLivraison)}
           </p>
         </div>
         <div style={{ padding: 16, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface-subtle)' }}>
@@ -489,7 +482,7 @@ export default function CedulaEditor({
                     {estLie ? (
                       <div style={{ height: '28px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 12, fontStyle: 'italic' }} title="Date pilotée par l'étape ancre du bloc — modifiez l'ancre pour décaler tout le bloc.">
                         <Link2 className="w-3.5 h-3.5" />
-                        {(e.dateDebut instanceof Date ? e.dateDebut : new Date(e.dateDebut)).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })} · même jour
+                        {formatDate(e.dateDebut)} · même jour
                       </div>
                     ) : (
                     <div style={{
@@ -510,7 +503,7 @@ export default function CedulaEditor({
                         </button>
                       ))}
                       <div className="text-xs text-center px-2 py-1 bg-blue-50 border border-blue-200 rounded font-semibold" style={{ height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {(e.dateDebut instanceof Date ? e.dateDebut : new Date(e.dateDebut)).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                        {formatDate(e.dateDebut)}
                       </div>
                       {[1, 3, 5].map(offset => (
                         <button
@@ -531,7 +524,7 @@ export default function CedulaEditor({
                     {estLie ? (
                       <div style={{ height: '28px', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-tertiary)', fontSize: 12, fontStyle: 'italic' }} title="Fin calculée d'après la durée propre de l'étape — le bloc est piloté par l'ancre.">
                         <Link2 className="w-3.5 h-3.5" />
-                        {(e.dateFin instanceof Date ? e.dateFin : new Date(e.dateFin)).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                        {formatDate(e.dateFin)}
                       </div>
                     ) : (
                     <div style={{
@@ -552,7 +545,7 @@ export default function CedulaEditor({
                         </button>
                       ))}
                       <div className="text-xs text-center px-2 py-1 bg-blue-50 border border-blue-200 rounded font-semibold" style={{ height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {(e.dateFin instanceof Date ? e.dateFin : new Date(e.dateFin)).toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })}
+                        {formatDate(e.dateFin)}
                       </div>
                       {[1, 3, 5].map(offset => (
                         <button

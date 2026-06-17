@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { formatDate } from '@/lib/utils';
 
 /* Gantt « macro » multi-projets pour /projets — une barre par projet.
    Ajout original (hors maquettes REF), tokens DG uniquement.
@@ -184,7 +185,7 @@ export function ProjetsGantt({ projets, onOpen }: { projets: any[]; onOpen: (slu
                 const barColor = PHASE_BAR[p.phase] ?? PHASE_BAR.SIGNE;
                 return (
                   <div key={p.id} style={{ position: 'absolute', top: i * ROW_H, left: 0, right: 0, height: ROW_H, borderBottom: i === items.length - 1 ? 'none' : '1px solid var(--divider)' }}>
-                    <div onClick={() => onOpen(p.slug)} title={`${p.adresse} — ${av}% · livraison ${p.dateLivraison ? new Date(p.dateLivraison).toLocaleDateString('fr-CA') : '—'}`}
+                    <div onClick={() => onOpen(p.slug)} title={`${p.adresse} — ${av}% · livraison ${formatDate(p.dateLivraison)}`}
                       style={{ position: 'absolute', left, top: (ROW_H - BAR_H) / 2, width, height: BAR_H, background: barColor, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                       {width > 32 ? <span style={{ fontSize: 9.5, fontWeight: 700, color: '#fff', padding: '0 5px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{av}%</span> : null}
                     </div>

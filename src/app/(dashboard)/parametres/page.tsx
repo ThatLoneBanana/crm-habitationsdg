@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PageHeader, Card, CardHeader, Field, Input, Select, Button, Badge, Banner, dgTH, dgTD } from '@/components/dg'
+import { formatDate } from '@/lib/utils'
 
 type Role = 'ADMIN' | 'COMPTABILITE' | 'VENDEUR' | 'CHARGE_PROJET' | 'DEVELOPPEUR'
 interface User { id: string; email: string; prenom: string; nom: string; role: Role; actif: boolean }
@@ -344,8 +345,8 @@ export default function ParametresPage() {
                     {periodes.map((p, i) => (
                       <tr key={p.id} style={{ borderBottom: i < periodes.length - 1 ? '1px solid var(--divider)' : 'none' }}>
                         <td style={dgTD}>{p.nom}</td>
-                        <td style={dgTD}>{new Date(p.dateDebut).toLocaleDateString('fr-CA')}</td>
-                        <td style={dgTD}>{new Date(p.dateFin).toLocaleDateString('fr-CA')}</td>
+                        <td style={dgTD}>{formatDate(p.dateDebut)}</td>
+                        <td style={dgTD}>{formatDate(p.dateFin)}</td>
                         <td style={{ ...dgTD, textAlign: 'right' }}>
                           <Button variant="danger" onClick={() => handleDeletePeriode(p.id)} style={{ fontSize: 12, padding: '6px 10px' }}>Supprimer</Button>
                         </td>

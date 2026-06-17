@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { formatMontant } from '@/lib/utils'
+import { formatMontant, formatDate } from '@/lib/utils'
 
 interface Employe { id: string; prenom: string; nom: string; email?: string; telephone?: string; metier?: string; tauxHoraire: number; actif: boolean }
 interface FeuilleTemps { id: string; employeId: string; projetId: string; date: string; heures: number; tauxHoraire: number; employe: { prenom: string; nom: string }; projet: { numero: string; adresse: string; ville?: string } }
@@ -435,7 +435,7 @@ export default function FeuillesDeTempsPage() {
                   <tr><td colSpan={6} style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Aucune heure saisie</td></tr>
                 ) : feuilles_filtrees.slice(0, 30).map((f) => (
                   <tr key={f.id} style={{ borderBottom: '1px solid var(--divider)' }}>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{new Date(f.date).toLocaleDateString('fr-CA')}</td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{formatDate(f.date)}</td>
                     <td style={{ padding: '10px 14px' }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><Avatar name={`${f.employe.prenom} ${f.employe.nom}`} /><span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{f.employe.prenom} {f.employe.nom}</span></span></td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{f.projet.adresse}{f.projet.ville ? `, ${f.projet.ville}` : ''}</td>
                     <td style={{ padding: '10px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-primary)' }}>{f.heures.toLocaleString('fr-CA', { maximumFractionDigits: 1 }).replace('.', ',')} h</td>
@@ -609,7 +609,7 @@ export default function FeuillesDeTempsPage() {
                   <tbody>
                     {depenses.slice(0, 10).map((d, i) => (
                       <tr key={d.id} style={{ borderBottom: i < 9 ? '1px solid #F3F4F6' : 'none', background: i % 2 === 0 ? 'white' : '#F9FAFB' }}>
-                        <td style={{ padding: '6px 8px' }}>{new Date(d.dateDepense).toLocaleDateString()}</td>
+                        <td style={{ padding: '6px 8px' }}>{formatDate(d.dateDepense)}</td>
                         <td style={{ padding: '6px 8px' }}>{d.description}</td>
                         <td style={{ padding: '6px 8px' }}>{d.projet.adresse}{d.projet.ville ? `, ${d.projet.ville}` : ''}</td>
                         <td style={{ padding: '6px 8px', textAlign: 'right' }}>${d.montant.toFixed(2)}</td>

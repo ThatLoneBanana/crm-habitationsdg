@@ -10,6 +10,7 @@ import { TacheDialog } from './tache-dialog';
 import { Plus, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { calculateTaskStatus } from '@/lib/task-status';
 import { creerMoteurCedule, type Periode } from '@/lib/cedula-utils';
+import { formatDate } from '@/lib/utils';
 
 interface CeduleTabProps {
   taches: Tache[];
@@ -253,14 +254,8 @@ export function CeduleTab({ taches, projectId, toleranceJours, dateLivraison, ma
                 // Étape liée (membre d'un bloc « même jour ») : édition de date NON
                 // inline → routée vers le modal (la cascade y vit). Indicateur chaîne.
                 const estLiee = !!tache.groupeId;
-                const debutFr = tache.dateDebut ? new Date(tache.dateDebut as string | Date).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'short',
-                }).replace('.', '').replace(' ', ' ') : '—';
-                const finFr = tache.dateFin ? new Date(tache.dateFin as string | Date).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'short',
-                }).replace('.', '').replace(' ', ' ') : '—';
+                const debutFr = formatDate(tache.dateDebut as string | Date | null);
+                const finFr = formatDate(tache.dateFin as string | Date | null);
 
                 return (
                   <div key={tache.id}>

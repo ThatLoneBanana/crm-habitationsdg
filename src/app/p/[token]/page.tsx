@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import { formatMontant } from '@/lib/utils';
+import { formatMontant, formatDate } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
 
 /* Vue client publique — mobile-first, lecture seule (REF VueClient.jsx).
@@ -18,8 +18,7 @@ const STATUT: Record<string, { label: string; color: string }> = {
 };
 const statutOf = (t: any): string => calculateTaskStatus(t.dateDebut, t.dateFin).status || 'noneStarted';
 
-const dateCourt = (d: Date | string) =>
-  new Date(d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+const dateCourt = (d: Date | string) => formatDate(d);
 
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (

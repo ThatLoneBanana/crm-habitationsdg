@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Extra } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { ExtraDialog } from './extra-dialog';
-import { formatMontant } from '@/lib/utils';
+import { formatMontant, formatDate } from '@/lib/utils';
 import { Plus, Edit2, CheckCircle } from 'lucide-react';
 
 interface ExtrasTabProps {
@@ -90,7 +90,7 @@ export function ExtrasTab({ extras, projectId }: ExtrasTabProps) {
     }
   };
 
-  const formatDateFr = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString('fr-CA') : '—');
+  const formatDateFr = (d: Date | string | null) => formatDate(d);
 
   return (
     <div className="space-y-4">
