@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -28,6 +28,10 @@ export const metadata: Metadata = {
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
+};
+
+// Next 16 : themeColor doit vivre dans l'export `viewport`, pas dans `metadata`.
+export const viewport: Viewport = {
   themeColor: "#ea1c24",
 };
 
