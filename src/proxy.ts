@@ -2,9 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Next 16 : la convention « middleware » est renommée « proxy » (fichier proxy.ts
-// + fonction proxy). Runtime Node (pas Edge). Logique d'auth INCHANGÉE : gating
-// non-connecté → /login, routes publiques (/login, /p/, /api/projets-by-slug,
-// /api/restore-taches) exemptées.
+// + fonction proxy). Runtime Node (pas Edge). Logique d'auth : gating
+// non-connecté → /login, routes publiques (/login, /p/, /api/projets-by-slug)
+// exemptées.
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -34,8 +34,7 @@ export async function proxy(request: NextRequest) {
   // elle est filtrée pour ne renvoyer que des données destinées au client.
   const isPublic = request.nextUrl.pathname.startsWith('/login') ||
                    request.nextUrl.pathname.startsWith('/p/') ||
-                   request.nextUrl.pathname.startsWith('/api/projets-by-slug') ||
-                   request.nextUrl.pathname.startsWith('/api/restore-taches')
+                   request.nextUrl.pathname.startsWith('/api/projets-by-slug')
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
