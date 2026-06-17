@@ -479,6 +479,8 @@ async function main() {
   let exempleEntreprise: { adresse: string; avancement: number; jalons: string[] } | null = null;
   // Dates d'ancre GCR par projet (pour créer les inspections après la boucle).
   const inspectionsPlan: { projetId: string; gypseDate: Date | null; finitionDate: Date | null }[] = [];
+  // Liens ProjetFournisseur à créer (après la boucle).
+  const projFournData: { projetId: string; fournisseurId: string; budgetAlloue: number; confirme: boolean }[] = [];
 
   for (let i = 0; i < PROJETS.length; i++) {
     const p = PROJETS[i];
@@ -548,6 +550,20 @@ async function main() {
       gypseDate: cedule.find((e) => e.nom === 'Pose gypse')?.dateDebut ?? null,
       finitionDate: cedule.find((e) => e.nom === 'Pose finition')?.dateDebut ?? null,
     });
+
+    // Liens fournisseurs : les sous-traitants assignés à la cédule de ce projet.
+    // Confirmés (= visibles côté client) dès que le chantier est lancé (A > 0.1).
+    const fournProjet = new Set(cedule.map((e) => fournisseurPourEtape(e.nom, fournNoms)).filter((x): x is string => !!x));
+    for (const nom of fournProjet) {
+      const f = fournisseurs.find((ff) => ff.nom === nom);
+      if (!f) continue;
+      projFournData.push({
+        projetId: projet.id,
+        fournisseurId: f.id,
+        budgetAlloue: Math.round((p.montant * 0.08) / 500) * 500,
+        confirme: A > 0.1,
+      });
+    }
 
     const paiements = paiementsPour(p.typeContrat, p.montant, A, now);
     await prisma.paiement.createMany({
@@ -624,6 +640,7 @@ async function main() {
     }
   }
   await prisma.inspectionGCR.createMany({ data: inspData });
+  await prisma.projetFournisseur.createMany({ data: projFournData });
 
   // 5) Résumé
   resume.sort((a, b) => a.livraison.getTime() - b.livraison.getTime());
@@ -668,6 +685,7 @@ async function main() {
   console.log(`\nExtras : ${totalExtras} créés — ${extrasSignesN} signés (${Math.round(extrasSignesM).toLocaleString('fr-CA')} $, ajoutés au revenu costing), ${extrasAttenteN} en attente (${Math.round(extrasAttenteM).toLocaleString('fr-CA')} $ → « Extras non signés »).`);
 
   console.log(`\nInspections GCR : ${inspData.length} créées — ${inspAReserver} « à réserver » (~alertes dashboard), ${inspData.length - inspAReserver} réservées.`);
+  console.log(`Liens fournisseurs : ${projFournData.length} créés (${projFournData.filter((l) => l.confirme).length} confirmés → visibles client).`);
 
   // Attribution des étapes aux fournisseurs
   console.log('\nÉtapes assignées aux fournisseurs :');

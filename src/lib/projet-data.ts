@@ -24,6 +24,17 @@ export async function getProjetComplet(idOrSlug: string) {
       taches: { orderBy: { ordre: 'asc' } },
       extras: true,
       paiements: true,
+      // Liens fournisseurs (lecture INTERNE — budgetAlloue/confirme OK ici ; la
+      // vue client a son propre allowlist public-safe, intact).
+      fournisseurs: {
+        select: {
+          id: true,
+          fournisseurId: true,
+          budgetAlloue: true,
+          confirme: true,
+          fournisseur: { select: { id: true, nom: true, metier: true } },
+        },
+      },
     },
   });
   if (!projet) return null;

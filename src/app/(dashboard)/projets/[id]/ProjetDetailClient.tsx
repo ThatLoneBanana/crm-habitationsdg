@@ -15,6 +15,7 @@ import { DocumentsTab } from '@/components/projets/documents-tab';
 import dynamic from 'next/dynamic';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ListesTab } from '@/components/projets/listes-tab';
+import { FournisseursTab } from '@/components/projets/fournisseurs-tab';
 import { CostingTab } from '@/components/projets/costing-tab';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
@@ -382,7 +383,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
 
       {/* Onglets */}
       <Tabs defaultValue="cedule" className="w-full" onValueChange={(v) => { if (v === 'costing') ensureCosting(); if (v === 'listes') ensureInspections(); }}>
-        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${peutVoirGCR ? 6 : 5}, minmax(0, 1fr))` }}>
+        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${peutVoirGCR ? 7 : 6}, minmax(0, 1fr))` }}>
           <TabsTrigger value="cedule">
             Cédule ({projet.taches.length})
           </TabsTrigger>
@@ -394,6 +395,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
           </TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="costing">Costing</TabsTrigger>
+          <TabsTrigger value="fournisseurs">Fournisseurs ({projet.fournisseurs?.length ?? 0})</TabsTrigger>
           {peutVoirGCR && <TabsTrigger value="listes">Listes</TabsTrigger>}
         </TabsList>
 
@@ -466,6 +468,10 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
             ) : (
               <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-tertiary)' }}>Données costing non disponibles</div>
             )}
+          </TabsContent>
+
+          <TabsContent value="fournisseurs" className="m-0">
+            <FournisseursTab projectId={projet.id} liens={projet.fournisseurs ?? []} />
           </TabsContent>
 
           {peutVoirGCR && (
