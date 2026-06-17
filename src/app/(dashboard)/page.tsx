@@ -23,7 +23,7 @@ export default async function DashboardPage() {
       }),
       user?.email ? prisma.user.findUnique({
         where: { email: user.email },
-        select: { prenom: true }
+        select: { id: true, prenom: true }
       }) : Promise.resolve(null)
     ])
 
@@ -42,6 +42,18 @@ export default async function DashboardPage() {
     }
 
     const data = JSON.parse(JSON.stringify(projets))
+
+    // #12 — notes privées de l'utilisateur courant (panneau dashboard) + liste
+    // courte des projets actifs pour le sélecteur de tag.
+    const notesData = userPrisma?.id
+      ? await prisma.note.findMany({
+          where: { userId: userPrisma.id },
+          orderBy: [{ fait: 'asc' }, { createdAt: 'desc' }],
+          include: { projet: { select: { id: true, adresse: true, ville: true } } },
+        })
+      : []
+    const notes = JSON.parse(JSON.stringify(notesData))
+    const projetsPourTag = data.map((p: any) => ({ id: p.id, adresse: p.adresse, ville: p.ville }))
 
     // DIAGNOSTIC: Vérifie les tâches
     console.log('Projets chargés:', projets.length)
@@ -174,6 +186,8 @@ export default async function DashboardPage() {
         paiementsAttendus={paiementsAttendus}
         montantPaiementsAttendus={montantPaiementsAttendus}
         prenomUser={prenomUser}
+        notes={notes}
+        projetsPourTag={projetsPourTag}
       />
     )
   } catch (error) {
