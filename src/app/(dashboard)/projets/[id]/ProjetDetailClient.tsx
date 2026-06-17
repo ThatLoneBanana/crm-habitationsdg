@@ -74,6 +74,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
   const [costingLoading, setCostingLoading] = useState(false);
   const [costingLoaded, setCostingLoaded] = useState(false);
   const [inspections, setInspections] = useState<any[] | null>(null);
+  const [listes, setListes] = useState<any[] | null>(null);
   const [inspectionsLoading, setInspectionsLoading] = useState(false);
   const [modifierCedulaOpen, setModifierCedulaOpen] = useState(false);
   const [etapesModifiees, setEtapesModifiees] = useState<any[]>([]);
@@ -105,15 +106,16 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
     setCostingLoaded(true);
   };
 
-  // inspections GCR : chargées paresseusement à l'ouverture de l'onglet Listes
-  // (pattern Costing). force=true → re-fetch après une mutation.
+  // Données de l'onglet Listes (inspections GCR + listes simples) : chargées
+  // paresseusement à l'ouverture du tab EN UN SEUL appel (pattern Costing).
+  // force=true → re-fetch après une mutation.
   const ensureInspections = async (force = false) => {
     if (inspectionsLoading) return;
     if (inspections !== null && !force) return;
     setInspectionsLoading(true);
     try {
       const res = await fetch(`/api/projets/${projet.id}/inspections`);
-      if (res.ok) { const d = await res.json(); setInspections(d.inspections || []); }
+      if (res.ok) { const d = await res.json(); setInspections(d.inspections || []); setListes(d.listes || []); }
     } catch { /* silencieux */ }
     setInspectionsLoading(false);
   };
@@ -472,6 +474,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes, peutV
                 projectId={projet.id}
                 taches={projet.taches}
                 inspections={inspections}
+                listes={listes}
                 loading={inspectionsLoading}
                 onRefresh={() => { ensureInspections(true); }}
               />

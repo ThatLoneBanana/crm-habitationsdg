@@ -78,6 +78,20 @@ enum StatutInspectionGCR {
   NON_CONFORME
 }
 
+// Listes simples de l'onglet Listes (Permis / Arpentage / Autres). Statut
+// générique partagé par les trois catégories (raffinable par catégorie plus tard).
+enum CategorieListe {
+  PERMIS
+  ARPENTAGE
+  AUTRE
+}
+
+enum StatutListe {
+  A_FAIRE
+  EN_COURS
+  COMPLETE
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -137,6 +151,7 @@ model Projet {
   feuillesTemps  FeuilleTemps[]
   depenses       Depense[]
   inspectionsGCR InspectionGCR[]
+  listeItems     ListeItem[]
 }
 
 model Tache {
@@ -338,6 +353,24 @@ model InspectionGCR {
   notes        String?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
+
+  projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+
+  @@index([projetId])
+}
+
+// Item de liste simple (Permis / Arpentage / Autres) de l'onglet Listes (Lot 2).
+// Indépendant des inspections GCR. Statut générique A_FAIRE/EN_COURS/COMPLETE.
+model ListeItem {
+  id        String         @id @default(uuid())
+  projetId  String
+  categorie CategorieListe
+  nom       String
+  statut    StatutListe    @default(A_FAIRE)
+  date      DateTime?
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
 
