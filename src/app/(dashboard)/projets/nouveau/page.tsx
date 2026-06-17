@@ -40,6 +40,7 @@ interface EtapeCedule {
   dateFin: Date;
   buffer: number; // jours vides APRÈS cette étape avant la suivante
   groupeId?: string | null; // lien « même jour » (bloc) — facultatif
+  ancrageInspection?: 'GYPSE' | 'FINITION' | null; // marqueur d'ancre GCR — facultatif
 }
 
 interface Fournisseur {
@@ -518,6 +519,7 @@ export default function NouveauProjetPage() {
         interne: e.interne,
         buffer: e.buffer || 0,
         groupeId: e.groupeId ?? null,
+        ancrageInspection: e.ancrageInspection ?? null,
       }));
 
       const res = await fetch('/api/projets', {
@@ -796,6 +798,7 @@ export default function NouveauProjetPage() {
                 buffer: e.buffer,
                 interne: e.interne,
                 groupeId: e.groupeId ?? null,
+                ancrageInspection: e.ancrageInspection ?? null,
               })) : undefined}
               typeProjet={typeProjet as any}
               templateId={selectedTemplateId}
@@ -816,6 +819,7 @@ export default function NouveauProjetPage() {
                   buffer: e.buffer,
                   interne: e.interne,
                   groupeId: e.groupeId ?? null,
+                  ancrageInspection: e.ancrageInspection ?? null,
                 }));
                 setEtapes(converted as any);
                 setConflits(detecterConflits(converted as any));

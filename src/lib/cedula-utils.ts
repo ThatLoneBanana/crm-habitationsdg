@@ -23,6 +23,9 @@ export interface EtapeEditable {
   // Lien « même jour » : les étapes partageant le même groupeId forment un BLOC
   // qui débute le même jour (cf. construireBlocs / cascade par blocs ci-dessous).
   groupeId?: string | null;
+  // Marqueur d'ancrage d'inspection GCR (passthrough — la cascade l'ignore mais
+  // le préserve via le clone JSON et les spreads). Persisté au save.
+  ancrageInspection?: 'GYPSE' | 'FINITION' | null;
 }
 
 export interface Periode {

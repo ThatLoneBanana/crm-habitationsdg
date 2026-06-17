@@ -57,6 +57,27 @@ enum CategorieDepense {
   AUTRE
 }
 
+// Marqueur d'ancrage d'inspection GCR posé sur UNE étape de cédule (Tache). Une
+// inspection dérive sa date de l'étape portant le marqueur de son type. Au plus
+// un marqueur par (projet, type) — déplacer le marqueur efface l'ancien.
+enum AncrageInspection {
+  GYPSE
+  FINITION
+}
+
+enum TypeInspectionGCR {
+  GYPSE
+  FINITION
+  AUTRE
+}
+
+enum StatutInspectionGCR {
+  A_RESERVER
+  RESERVE
+  COMPLETEE
+  NON_CONFORME
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -109,12 +130,13 @@ model Projet {
   vendeur     User?   @relation("Vendeur", fields: [vendeurId], references: [id])
   chargeProjet User?  @relation("ChargeProjet", fields: [chargeProjetId], references: [id])
 
-  taches        Tache[]
-  extras        Extra[]
-  paiements     Paiement[]
-  fournisseurs  ProjetFournisseur[]
-  feuillesTemps FeuilleTemps[]
-  depenses      Depense[]
+  taches         Tache[]
+  extras         Extra[]
+  paiements      Paiement[]
+  fournisseurs   ProjetFournisseur[]
+  feuillesTemps  FeuilleTemps[]
+  depenses       Depense[]
+  inspectionsGCR InspectionGCR[]
 }
 
 model Tache {
@@ -136,6 +158,10 @@ model Tache {
   // membres ; s'il retombe à 1, son groupeId est vidé. Voir cedula-utils.ts
   // (construireBlocs / validerGroupes) pour la cascade et l'exemption de conflit.
   groupeId      String?
+  // Marqueur d'ancrage d'inspection GCR (GYPSE / FINITION). L'inspection du même
+  // type dérive sa date de cette étape (dateDebut). Au plus un par projet+type.
+  // Préservé au travers du delete+recreate de la cédule (cf. groupeId).
+  ancrageInspection AncrageInspection?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -293,6 +319,25 @@ model Depense {
   notes       String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+
+  projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+
+  @@index([projetId])
+}
+
+// Inspection GCR (garantie). Une par type GYPSE/FINITION auto-créée par projet ;
+// AUTRE = manuel. La date est DÉRIVÉE (non stockée) de l'étape de cédule portant
+// le marqueur Tache.ancrageInspection du même type. dateReservee renseignée
+// ⇒ statut RESERVE. Voir lib/inspection-gcr.ts.
+model InspectionGCR {
+  id           String              @id @default(uuid())
+  projetId     String
+  type         TypeInspectionGCR
+  statut       StatutInspectionGCR @default(A_RESERVER)
+  dateReservee DateTime?
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   projet Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
 

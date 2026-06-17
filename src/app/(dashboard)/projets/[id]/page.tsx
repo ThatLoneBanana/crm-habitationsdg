@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { getAuthUser } from '@/lib/auth-guard';
+import { getAuthUser, userHasCapability } from '@/lib/auth-guard';
 import { getProjetComplet, getParametres, getPeriodesNonOuvrables } from '@/lib/projet-data';
 import ProjetDetailClient from './ProjetDetailClient';
 
@@ -13,10 +13,11 @@ export default async function ProjetDetailPage({ params }: { params: Promise<{ i
   if (!user || !user.actif) redirect('/login');
 
   const { id } = await params;
-  const [projetData, parametresData, periodesData] = await Promise.all([
+  const [projetData, parametresData, periodesData, peutVoirGCR] = await Promise.all([
     getProjetComplet(id),
     getParametres(),
     getPeriodesNonOuvrables(),
+    userHasCapability(user, 'voirGCR'),
   ]);
   if (!projetData) notFound();
 
@@ -26,5 +27,5 @@ export default async function ProjetDetailPage({ params }: { params: Promise<{ i
   const parametres = parametresData ? JSON.parse(JSON.stringify(parametresData)) : null;
   const periodes = JSON.parse(JSON.stringify(periodesData ?? []));
 
-  return <ProjetDetailClient projet={projet} parametres={parametres} periodes={periodes} />;
+  return <ProjetDetailClient projet={projet} parametres={parametres} periodes={periodes} peutVoirGCR={peutVoirGCR} />;
 }

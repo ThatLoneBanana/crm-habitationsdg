@@ -14,7 +14,7 @@ import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
 import dynamic from 'next/dynamic';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { GCRTab } from '@/components/projets/gcr-tab';
+import { ListesTab } from '@/components/projets/listes-tab';
 import { CostingTab } from '@/components/projets/costing-tab';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
@@ -52,6 +52,7 @@ interface ProjetDetailClientProps {
   projet: any;
   parametres: any;
   periodes: any[];
+  peutVoirGCR: boolean;
 }
 
 // Composant client mince : reçoit projet + parametres en PROPS (fetchés côté
@@ -59,7 +60,7 @@ interface ProjetDetailClientProps {
 // (dialog Modifier / création de cédule) et costing (onglet Costing) sont
 // chargés PARESSEUSEMENT à l'interaction. Les mutations rafraîchissent via
 // router.refresh() — désormais EFFICACE car les données viennent du serveur.
-export default function ProjetDetailClient({ projet, parametres, periodes }: ProjetDetailClientProps) {
+export default function ProjetDetailClient({ projet, parametres, periodes, peutVoirGCR }: ProjetDetailClientProps) {
   const router = useRouter();
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [tableauVariant, setTableauVariant] = useState<'client' | 'soustraitant' | null>(null);
@@ -72,6 +73,8 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
   const [costing, setCosting] = useState<any>(null);
   const [costingLoading, setCostingLoading] = useState(false);
   const [costingLoaded, setCostingLoaded] = useState(false);
+  const [inspections, setInspections] = useState<any[] | null>(null);
+  const [inspectionsLoading, setInspectionsLoading] = useState(false);
   const [modifierCedulaOpen, setModifierCedulaOpen] = useState(false);
   const [etapesModifiees, setEtapesModifiees] = useState<any[]>([]);
   const [savingCedule, setSavingCedule] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -102,6 +105,19 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
     setCostingLoaded(true);
   };
 
+  // inspections GCR : chargées paresseusement à l'ouverture de l'onglet Listes
+  // (pattern Costing). force=true → re-fetch après une mutation.
+  const ensureInspections = async (force = false) => {
+    if (inspectionsLoading) return;
+    if (inspections !== null && !force) return;
+    setInspectionsLoading(true);
+    try {
+      const res = await fetch(`/api/projets/${projet.id}/inspections`);
+      if (res.ok) { const d = await res.json(); setInspections(d.inspections || []); }
+    } catch { /* silencieux */ }
+    setInspectionsLoading(false);
+  };
+
   // Initialiser les étapes quand le dialog s'ouvre
   useEffect(() => {
     if (modifierCedulaOpen && projet?.taches) {
@@ -119,6 +135,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
           visibleClient: t.visibleClient,
           interne: t.interne,
           groupeId: t.groupeId ?? null,
+          ancrageInspection: t.ancrageInspection ?? null,
         }));
       setEtapesModifiees(etapesProjet);
     }
@@ -206,6 +223,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
             interne: e.interne,
             buffer: e.buffer || 0,
             groupeId: e.groupeId ?? null,
+            ancrageInspection: e.ancrageInspection ?? null,
           }))
         })
       });
@@ -361,8 +379,8 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
       </div>
 
       {/* Onglets */}
-      <Tabs defaultValue="cedule" className="w-full" onValueChange={(v) => { if (v === 'costing') ensureCosting(); }}>
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="cedule" className="w-full" onValueChange={(v) => { if (v === 'costing') ensureCosting(); if (v === 'listes') ensureInspections(); }}>
+        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${peutVoirGCR ? 6 : 5}, minmax(0, 1fr))` }}>
           <TabsTrigger value="cedule">
             Cédule ({projet.taches.length})
           </TabsTrigger>
@@ -374,7 +392,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
           </TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="costing">Costing</TabsTrigger>
-          <TabsTrigger value="gcr">GCR</TabsTrigger>
+          {peutVoirGCR && <TabsTrigger value="listes">Listes</TabsTrigger>}
         </TabsList>
 
         <div className="p-6">
@@ -448,9 +466,17 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
             )}
           </TabsContent>
 
-          <TabsContent value="gcr" className="m-0">
-            <GCRTab projectId={projet.id} />
-          </TabsContent>
+          {peutVoirGCR && (
+            <TabsContent value="listes" className="m-0">
+              <ListesTab
+                projectId={projet.id}
+                taches={projet.taches}
+                inspections={inspections}
+                loading={inspectionsLoading}
+                onRefresh={() => { ensureInspections(true); }}
+              />
+            </TabsContent>
+          )}
         </div>
       </Tabs>
 
@@ -594,6 +620,7 @@ export default function ProjetDetailClient({ projet, parametres, periodes }: Pro
                         interne: e.interne,
                         buffer: e.buffer || 0,
                         groupeId: e.groupeId ?? null,
+                        ancrageInspection: e.ancrageInspection ?? null,
                       }))
                     })
                   });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { geocoderAdresse } from '@/lib/geocoding';
 import { calculerPhaseAutomatique } from '@/lib/phase-calculator';
+import { appliquerAncrageDefaut, ensureInspectionsGCR } from '@/lib/inspection-gcr';
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,42 +86,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-const ETAPES_TEMPLATE = [
-  { nom: 'Inspection du site', dureeJours: 1 },
-  { nom: 'Fondations', dureeJours: 10 },
-  { nom: 'Charpente', dureeJours: 8 },
-  { nom: 'Couverture', dureeJours: 3 },
-  { nom: 'Murs extérieurs', dureeJours: 7 },
-  { nom: 'Fenêtres et portes', dureeJours: 5 },
-  { nom: 'Plomberie brute', dureeJours: 6 },
-  { nom: 'Électricité brute', dureeJours: 6 },
-  { nom: 'Isolation', dureeJours: 5 },
-  { nom: 'Gypse intérieur', dureeJours: 8 },
-  { nom: 'Plomberie finitions', dureeJours: 5 },
-  { nom: 'Électricité finitions', dureeJours: 5 },
-  { nom: 'Revêtements sol', dureeJours: 6 },
-  { nom: 'Murs intérieurs', dureeJours: 7 },
-  { nom: 'Peinture intérieure', dureeJours: 5 },
-  { nom: 'Portes intérieures', dureeJours: 3 },
-  { nom: 'Armoires cuisine', dureeJours: 3 },
-  { nom: 'Comptoirs cuisine', dureeJours: 2 },
-  { nom: 'Finitions salles de bain', dureeJours: 4 },
-  { nom: 'Installation luminaires', dureeJours: 2 },
-  { nom: 'Installation robinetterie', dureeJours: 2 },
-  { nom: 'Revêtement extérieur', dureeJours: 8 },
-  { nom: 'Peinture extérieure', dureeJours: 3 },
-  { nom: 'Terrasses et entrées', dureeJours: 5 },
-  { nom: 'Aménagement extérieur', dureeJours: 4 },
-  { nom: 'Clôture', dureeJours: 3 },
-  { nom: 'Accès véhiculaire', dureeJours: 2 },
-  { nom: 'Ensemencement gazon', dureeJours: 1 },
-  { nom: 'Nettoyage final', dureeJours: 2 },
-  { nom: 'Inspection finale', dureeJours: 1 },
-  { nom: 'Corrections mineures', dureeJours: 2 },
-  { nom: 'Signature final', dureeJours: 1 },
-  { nom: 'Remise des clés', dureeJours: 1 },
-];
 
 function removeAccents(str: string) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -249,7 +214,9 @@ export async function POST(request: NextRequest) {
 
     // Créer les étapes depuis le body
     if (etapes && Array.isArray(etapes) && etapes.length > 0) {
-      const etapesToCreate = etapes.map((e: any, i: number) => ({
+      // Pose le marqueur d'ancrage GCR par défaut (par nom) avant création.
+      const etapesAncrees = appliquerAncrageDefaut(etapes);
+      const etapesToCreate = etapesAncrees.map((e: any, i: number) => ({
         projetId: projet.id,
         nom: e.nom,
         ordre: e.ordre || i + 1,
@@ -261,12 +228,16 @@ export async function POST(request: NextRequest) {
         interne: e.interne || false,
         buffer: e.buffer || 0,
         groupeId: e.groupeId ?? null,
+        ancrageInspection: e.ancrageInspection ?? null,
       }));
 
       await prisma.tache.createMany({
         data: etapesToCreate,
       });
     }
+
+    // Auto-crée les inspections GCR (GYPSE + FINITION) du projet, même sans cédule.
+    await ensureInspectionsGCR(projet.id);
 
     // Créer les paiements selon le type de contrat
     if (typeContrat === 'PRELIMINAIRE') {

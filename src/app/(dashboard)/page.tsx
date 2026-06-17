@@ -13,9 +13,10 @@ export default async function DashboardPage() {
         where: { phase: { not: 'TERMINE' } },
         include: {
           client: { select: { prenom: true, nom: true } },
-          taches: { select: { nom: true, dateDebut: true, dateFin: true, assigneA: true } },
+          taches: { select: { nom: true, dateDebut: true, dateFin: true, assigneA: true, ancrageInspection: true } },
           extras: { select: { statut: true, montant: true, description: true, createdAt: true } },
           paiements: { select: { recu: true, montant: true, description: true, datePrevu: true } },
+          inspectionsGCR: { select: { type: true, statut: true } },
         },
         orderBy: { dateLivraison: 'asc' }
       }),
@@ -78,6 +79,28 @@ export default async function DashboardPage() {
           titre: `Livraison dans ${joursRestants}j — ${p.client.prenom} ${p.client.nom}`,
           sous: `${p.adresse}, ${p.ville}`,
           badge: joursRestants <= 7 ? 'Urgent' : `${joursRestants}j`,
+          projetId: p.slug || p.id,
+        })
+      }
+    })
+
+    // Alertes GCR : inspection GYPSE/FINITION non réservée dont l'étape ancrée
+    // tombe à <= 21 jours (3 semaines). Disparaît dès que l'inspection est RESERVE.
+    const TYPE_INSP_LABEL: Record<string, string> = { GYPSE: 'gypse', FINITION: 'finition' }
+    data.forEach((p: any) => {
+      for (const insp of p.inspectionsGCR || []) {
+        if (insp.type !== 'GYPSE' && insp.type !== 'FINITION') continue
+        if (insp.statut !== 'A_RESERVER') continue
+        const ancre = p.taches.find((t: any) => t.ancrageInspection === insp.type)
+        if (!ancre || !ancre.dateDebut) continue
+        const jours = Math.ceil((new Date(ancre.dateDebut).getTime() - aujourd_hui.getTime()) / 86400000)
+        if (jours > 21) continue
+        const dateAncre = new Date(ancre.dateDebut).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })
+        alertes.push({
+          type: 'warning',
+          titre: `Inspection GCR ${TYPE_INSP_LABEL[insp.type]} à réserver — ${p.client.prenom} ${p.client.nom}`,
+          sous: `${p.adresse} · ${ancre.nom} le ${dateAncre}`,
+          badge: jours >= 0 ? `${jours}j` : 'En retard',
           projetId: p.slug || p.id,
         })
       }
