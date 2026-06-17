@@ -444,6 +444,7 @@ async function main() {
     prisma.tache.deleteMany({}),
     prisma.extra.deleteMany({}),
     prisma.paiement.deleteMany({}),
+    prisma.inspectionGCR.deleteMany({}),
     prisma.projet.deleteMany({}),
     prisma.client.deleteMany({}),
   ]);
@@ -476,6 +477,8 @@ async function main() {
   const costing: { adresse: string; revenu: number; depenses: number; marge: number }[] = [];
   const usedSlugs = new Set<string>();
   let exempleEntreprise: { adresse: string; avancement: number; jalons: string[] } | null = null;
+  // Dates d'ancre GCR par projet (pour créer les inspections après la boucle).
+  const inspectionsPlan: { projetId: string; gypseDate: Date | null; finitionDate: Date | null }[] = [];
 
   for (let i = 0; i < PROJETS.length; i++) {
     const p = PROJETS[i];
@@ -533,9 +536,17 @@ async function main() {
           assigneA,
           visibleClient: e.visibleClient,
           interne: e.interne,
+          // Ancre d'inspection GCR posée par nom (étapes uniques du template).
+          ancrageInspection: e.nom === 'Pose gypse' ? 'GYPSE' : e.nom === 'Pose finition' ? 'FINITION' : null,
           buffer: 0,
         };
       }),
+    });
+
+    inspectionsPlan.push({
+      projetId: projet.id,
+      gypseDate: cedule.find((e) => e.nom === 'Pose gypse')?.dateDebut ?? null,
+      finitionDate: cedule.find((e) => e.nom === 'Pose finition')?.dateDebut ?? null,
     });
 
     const paiements = paiementsPour(p.typeContrat, p.montant, A, now);
@@ -589,6 +600,31 @@ async function main() {
     resume.push({ type: p.type, phase: p.phase, avancement, ville: p.ville, adresse: p.adresse, livraison, slug, coords: `${lat}, ${lng}`, etapes: cedule.length });
   }
 
+  // 4-bis) Inspections GCR — 1 GYPSE + 1 FINITION par projet. RÉSERVÉES partout
+  // (statut RESERVE + dateReservee = date de l'étape ancrée) SAUF ~3 laissées
+  // A_RESERVER, choisies parmi celles dont l'étape ancrée tombe à <= 21 jours,
+  // pour produire ~3 alertes dashboard réelles (pas une par projet).
+  const inspData: { projetId: string; type: 'GYPSE' | 'FINITION'; statut: 'A_RESERVER' | 'RESERVE'; dateReservee: Date | null }[] = [];
+  let inspAReserver = 0;
+  for (const plan of inspectionsPlan) {
+    const paires: { type: 'GYPSE' | 'FINITION'; date: Date | null }[] = [
+      { type: 'GYPSE', date: plan.gypseDate },
+      { type: 'FINITION', date: plan.finitionDate },
+    ];
+    for (const { type, date } of paires) {
+      const j = date ? Math.ceil((date.getTime() - now.getTime()) / 86400000) : null;
+      const garderAlerte = inspAReserver < 3 && j !== null && j >= 0 && j <= 21;
+      if (garderAlerte) inspAReserver++;
+      inspData.push({
+        projetId: plan.projetId,
+        type,
+        statut: garderAlerte ? 'A_RESERVER' : 'RESERVE',
+        dateReservee: garderAlerte ? null : date,
+      });
+    }
+  }
+  await prisma.inspectionGCR.createMany({ data: inspData });
+
   // 5) Résumé
   resume.sort((a, b) => a.livraison.getTime() - b.livraison.getTime());
   console.log('\n=== SEED DÉMO — RÉSUMÉ (20 projets, triés par livraison) ===');
@@ -630,6 +666,8 @@ async function main() {
   }
 
   console.log(`\nExtras : ${totalExtras} créés — ${extrasSignesN} signés (${Math.round(extrasSignesM).toLocaleString('fr-CA')} $, ajoutés au revenu costing), ${extrasAttenteN} en attente (${Math.round(extrasAttenteM).toLocaleString('fr-CA')} $ → « Extras non signés »).`);
+
+  console.log(`\nInspections GCR : ${inspData.length} créées — ${inspAReserver} « à réserver » (~alertes dashboard), ${inspData.length - inspAReserver} réservées.`);
 
   // Attribution des étapes aux fournisseurs
   console.log('\nÉtapes assignées aux fournisseurs :');
