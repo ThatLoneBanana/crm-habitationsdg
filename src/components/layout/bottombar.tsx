@@ -12,14 +12,16 @@ import { usePathname } from 'next/navigation';
 
 const BAR_H = 56;
 
+// 3 onglets primaires (Carte déplacée dans le menu hamburger).
 const NAV: { href: string; label: string; icon: string }[] = [
   { href: '/', label: 'Tableau', icon: 'ti-layout-dashboard' },
   { href: '/projets', label: 'Projets', icon: 'ti-building-community' },
-  { href: '/map', label: 'Carte', icon: 'ti-map-2' },
   { href: '/notes', label: 'Notes', icon: 'ti-notes' },
 ];
 
+// Menu hamburger (4e emplacement) : Carte + vues secondaires.
 const PLUS: { href: string; label: string; icon: string }[] = [
+  { href: '/map', label: 'Carte', icon: 'ti-map-2' },
   { href: '/clients', label: 'Clients', icon: 'ti-users' },
   { href: '/fournisseurs', label: 'Fournisseurs', icon: 'ti-truck' },
   { href: '/costing', label: 'Costing', icon: 'ti-chart-bar' },
@@ -85,7 +87,7 @@ export default function Bottombar() {
         {NAV.map((n) => (
           <Item key={n.href} href={n.href} label={n.label} icon={n.icon} active={estActif(pathname, n.href)} />
         ))}
-        <Item label="Plus" icon="ti-dots" active={plusActif || plusOuvert} onClick={() => setPlusOuvert((v) => !v)} />
+        <Item label="Menu" icon="ti-menu-2" active={plusActif || plusOuvert} onClick={() => setPlusOuvert((v) => !v)} />
       </nav>
     </div>
   );
