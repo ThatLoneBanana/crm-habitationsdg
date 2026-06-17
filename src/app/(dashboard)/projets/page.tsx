@@ -5,9 +5,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { formatMontant, formatDate } from '@/lib/utils';
+import dynamic from 'next/dynamic';
 import { ProjetWithRelations } from '@/types';
-import { ProjetsGantt } from '@/components/projets/ProjetsGantt';
 import { ProjetIdentite } from '@/components/projets/ProjetIdentite';
+
+// Lazy-load du Gantt macro (derrière le toggle « Gantt », vue non par défaut).
+// ssr:false car la viz dépend de mesures DOM. Skeleton pour éviter le flash.
+const ProjetsGantt = dynamic(() => import('@/components/projets/ProjetsGantt').then(m => m.ProjetsGantt), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface)', color: 'var(--text-tertiary)', fontSize: 13 }}>
+      Chargement du diagramme…
+    </div>
+  ),
+});
 
 /* — Primitives DG (tokens uniquement, aucune couleur hardcodée) —
    Alignées sur le design system (cf. DashboardClient) et la maquette

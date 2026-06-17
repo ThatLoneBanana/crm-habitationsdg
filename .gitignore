@@ -45,3 +45,6 @@ next-env.d.ts
 
 # dev server log (généré localement)
 dev-server.log
+
+# sorties d'audit perf (éphémères)
+audit-vitesse.txt

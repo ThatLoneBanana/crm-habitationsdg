@@ -12,14 +12,19 @@ import CedulaEditor from '@/components/cedule/CedulaEditor';
 import { ExtrasTab } from '@/components/projets/extras-tab';
 import { PaiementsTab } from '@/components/projets/paiements-tab';
 import { DocumentsTab } from '@/components/projets/documents-tab';
-import { CedulePDFDialog } from '@/components/projets/cedule-pdf-dialog';
-import { EcheancierTableauDialog } from '@/components/projets/echeancier-tableau-dialog';
+import dynamic from 'next/dynamic';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GCRTab } from '@/components/projets/gcr-tab';
 import { CostingTab } from '@/components/projets/costing-tab';
 import { formatDate, formatMontant } from '@/lib/utils';
 import { calculateTaskStatus } from '@/lib/task-status';
 import { useRouter } from 'next/navigation';
+
+// Lazy-load des dialogs PDF (ssr:false). Combinés au rendu conditionnel
+// ci-dessous, @react-pdf n'est téléchargé qu'à la 1re ouverture du dialog —
+// hors du First Load JS de la fiche projet.
+const CedulePDFDialog = dynamic(() => import('@/components/projets/cedule-pdf-dialog').then(m => m.CedulePDFDialog), { ssr: false });
+const EcheancierTableauDialog = dynamic(() => import('@/components/projets/echeancier-tableau-dialog').then(m => m.EcheancierTableauDialog), { ssr: false });
 
 const PHASES: Record<string, { label: string; tint: string; ink: string; bar: string }> = {
   SIGNE:       { label: 'Signé',       tint: 'var(--phase-signe-tint)',       ink: 'var(--phase-signe-ink)',       bar: 'var(--phase-signe-bar)' },
@@ -686,21 +691,25 @@ export default function ProjetDetailPage({ params: paramPromise }: ProjetPagePro
       </Dialog>
 
       {/* Dialog impression PDF */}
-      <CedulePDFDialog
-        open={printDialogOpen}
-        onOpenChange={setPrintDialogOpen}
-        projet={projet}
-        parametres={parametresEntreprise}
-      />
+      {printDialogOpen && (
+        <CedulePDFDialog
+          open
+          onOpenChange={setPrintDialogOpen}
+          projet={projet}
+          parametres={parametresEntreprise}
+        />
+      )}
 
-      {/* #10 — Nouvel échéancier en tableau (Client / Sous-traitant), moteur séparé du Gantt */}
-      <EcheancierTableauDialog
-        open={tableauVariant !== null}
-        onOpenChange={(o) => { if (!o) setTableauVariant(null); }}
-        projet={projet}
-        parametres={parametresEntreprise}
-        variant={tableauVariant ?? 'client'}
-      />
+      {/* #10 — échéancier tableau (Client / Sous-traitant), moteur séparé du Gantt ; lazy (@react-pdf) */}
+      {tableauVariant !== null && (
+        <EcheancierTableauDialog
+          open
+          onOpenChange={(o) => { if (!o) setTableauVariant(null); }}
+          projet={projet}
+          parametres={parametresEntreprise}
+          variant={tableauVariant}
+        />
+      )}
     </div>
   );
 }
