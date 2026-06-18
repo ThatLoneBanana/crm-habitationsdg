@@ -9,7 +9,6 @@
     "lint": "eslint",
     "seed:jumele": "node prisma/seed-template-jumele.mjs",
     "seed:maison": "node prisma/seed-template-maison.mjs",
-    "seed:users": "npx --yes tsx prisma/seed-users.ts",
     "seed:demo": "npx --yes tsx prisma/seed-demo.ts"
   },
   "dependencies": {
